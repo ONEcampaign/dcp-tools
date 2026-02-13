@@ -58,9 +58,9 @@ def test_single_level_group():
 
     result = build_stat_var_groups_from_strings(nodes, groups_namespace="example.org")
     groups = get_group_nodes(result)
-    assert (
-        len(groups) == 1
-    ), "Should create exactly one group node for single-level path"
+    assert len(groups) == 1, (
+        "Should create exactly one group node for single-level path"
+    )
 
     group = groups[0]
     assert group.Node == "dcid:example.org/g/category"

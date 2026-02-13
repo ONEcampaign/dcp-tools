@@ -1,7 +1,7 @@
 from enum import StrEnum
 from typing import Optional, List, Dict, Literal
 
-from pydantic import BaseModel, ConfigDict, constr
+from pydantic import BaseModel, ConfigDict
 
 
 from bblocks.datacommons_tools.custom_data.models.common import (

@@ -19,7 +19,8 @@ class KGSettings(BaseSettings):
     Attributes:
         local_path: Path to the local directory that will be exported.
         gcp_project_id: GCP project ID.
-        gcp_credentials: GCP credentials in JSON format.
+        gcp_credentials: GCP credentials in JSON format. Optional; if not provided,
+            Application Default Credentials (ADC) will be used.
         gcs_bucket_name: Google Cloud Storage bucket name.
         gcs_input_folder_path: Google Cloud Storage input folder path.
         gcs_output_folder_path: Google Cloud Storage output folder path.
@@ -34,7 +35,7 @@ class KGSettings(BaseSettings):
 
     local_path: Path = Field(alias="LOCAL_PATH")
     gcp_project_id: str = Field(alias="GCP_PROJECT_ID")
-    gcp_credentials: Json[dict] = Field(alias="GCP_CREDENTIALS")
+    gcp_credentials: Json[dict] | None = Field(default=None, alias="GCP_CREDENTIALS")
 
     # cloud storage
     gcs_bucket_name: str = Field(alias="GCS_BUCKET_NAME")

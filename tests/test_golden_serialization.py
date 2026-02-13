@@ -1,12 +1,12 @@
 import json
 from pathlib import Path
 
-GOLDEN_DIR = Path(__file__).parent / "goldens"
-
 from bblocks.datacommons_tools.custom_data.data_management import CustomDataManager
 from bblocks.datacommons_tools.custom_data.models.config_file import Config
 from bblocks.datacommons_tools.custom_data.models.mcf import MCFNode
 from bblocks.datacommons_tools.custom_data.schema_tools import csv_metadata_to_nodes
+
+GOLDEN_DIR = Path(__file__).parent / "goldens"
 
 
 def test_mcfnode_snapshot():

@@ -45,17 +45,17 @@ Ready to contribute? Here's how to set up `bblocks-datacommons-tools` for local 
 1. Open an issue in the `bblocks-datacommons-tools` repository to discuss your proposed changes or enhancements. 
    This is a good way to get feedback and ensure your work aligns with the project's goals.
 2. Fork `bblocks-datacommons-places` and clone your fork:
-3. Dependencies are managed using poetry. Install poetry in your virtual environment and 
-install `bblocks-places:
+3. Dependencies are managed using uv. Install uv in your virtual environment and
+install project dependencies:
 
 ```console
-poetry install
+uv sync --group dev
 ```
 
 4.  Ensure tests are written for any new functionality
 and that existing tests pass. Code coverage is important but not critical. We prioritize
 meaningful tests that cover all major functionality. Code should be formatted 
-using `black` and adhere to the project's coding standards.
+using `ruff format` to adhere to the project's coding standards.
 
 5. When you are done developing, open a pull request on the main repository, 
 with a clear description of your changes and any relevant issue numbers.

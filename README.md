@@ -5,7 +5,7 @@ __Manage and load data to custom Data Commons instances__
 [![PyPI](https://img.shields.io/pypi/v/bblocks_datacommons_tools.svg)](https://pypi.org/project/bblocks_datacommons_tools/)
 [![PyPI - Python Version](https://img.shields.io/pypi/pyversions/bblocks_datacommons_tools.svg)](https://pypi.org/project/bblocks_datacommons_tools/)
 [![Docs](https://img.shields.io/badge/docs-bblocks-blue)](https://docs.one.org/tools/bblocks/datacommons-tools/)
-[![Code style: black](https://img.shields.io/badge/code%20style-black-000000.svg)](https://github.com/psf/black)
+[![Lint/format: Ruff](https://img.shields.io/badge/lint%2Fformat-ruff-46a758.svg)](https://github.com/astral-sh/ruff)
 [![codecov](https://codecov.io/gh/ONEcampaign/bblocks-datacommons-tools/graph/badge.svg?token=3ONEA8JQTC)](https://codecov.io/gh/ONEcampaign/bblocks-datacommons-tools)
 
 Custom [Data Commons](https://docs.datacommons.org/custom_dc/custom_data.html) requires that you provide your data in a specific schema, format, and file structure.

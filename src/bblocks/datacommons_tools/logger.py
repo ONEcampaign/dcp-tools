@@ -9,7 +9,7 @@ from typing import Final
 
 _LOG_LEVEL: Final[str] = os.getenv("LOG_LEVEL", "INFO").upper()
 
-_LOG_FORMAT = "%(" "asctime)s | %(levelname)-8s | %(name)s | %(message)s"
+_LOG_FORMAT = "%(asctime)s | %(levelname)-8s | %(name)s | %(message)s"
 _DATE_FORMAT = "%Y-%m-%d %H:%M:%S"
 
 _handler = logging.StreamHandler()

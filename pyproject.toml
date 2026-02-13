@@ -1,35 +1,37 @@
 [project]
 name = "bblocks-datacommons-tools"
-version = "0.0.9"
+version = "0.1.0"
 description = "Tools to work with Data Commons. Part of the bblocks projects."
 authors = [
-    {name = "ONE Campaign"},
-    {name = "Luca Picci",email = "lpicci96@gmail.com"},
-    {name = "Jorge Rivera", email = "jorge.rivera@one.org"}
+    { name = "ONE Campaign" },
+    { name = "Luca Picci", email = "lpicci96@gmail.com" },
+    { name = "Jorge Rivera", email = "jorge.rivera@one.org" },
 ]
-license = {text = "MIT"}
+license = { text = "MIT" }
 readme = "README.md"
 requires-python = ">=3.11"
 dependencies = [
-    "pydantic (>=2.11.3,<3.0.0)",
-    "pandas (>=2.2.3,<3.0.0)",
-    "pydantic-settings (>=2.9.1,<3.0.0)",
-    "google-cloud-storage (>=3.1.0,<4.0.0)",
-    "google-cloud-run (>=0.10.17,<0.11.0)",
+    "pydantic>=2.11.3,<3.0.0",
+    "pandas>=2.2.3,<3.0.0",
+    "pydantic-settings>=2.9.1,<3.0.0",
+    "google-cloud-storage>=3.1.0,<4.0.0",
+    "google-cloud-run>=0.10.17,<1.0.0",
 ]
 
 [project.scripts]
 bblocks-dc-tools = "bblocks.datacommons_tools.cli:main"
 
-[tool.poetry]
-packages = [{include = "bblocks", from = "src"}]
+[dependency-groups]
+dev = [
+    "pytest>=8.3.5,<9.0.0",
+    "black[d]>=25.1.0,<26.0.0",
+    "mkdocs-material>=9.6.14,<10.0.0",
+    "pytest-cov>=6.2.1,<7.0.0",
+]
 
-[tool.poetry.group.dev.dependencies]
-pytest = "^8.3.5"
-black = {extras = ["d"], version = "^25.1.0"}
-mkdocs-material = "^9.6.14"
-pytest-cov = "^6.2.1"
+[tool.uv.build-backend]
+module-name = "bblocks.datacommons_tools"
 
 [build-system]
-requires = ["poetry-core>=2.0.0,<3.0.0"]
-build-backend = "poetry.core.masonry.api"
+requires = ["uv_build>=0.10.2,<0.11.0"]
+build-backend = "uv_build"

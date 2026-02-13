@@ -11,8 +11,12 @@ DuplicatePolicy = Literal["error", "override", "ignore"]
 
 
 def iter_config_files(directory: Path, pattern: str = "config.json") -> Iterator[Path]:
-    """Yield all ``config.json`` files under ``directory`` recursively."""
-    for path in directory.rglob(pattern):
+    """Yield all ``config.json`` files under ``directory`` recursively.
+
+    Files are yielded in sorted order so that merge results are deterministic
+    across platforms.
+    """
+    for path in sorted(directory.rglob(pattern)):
         if path.is_file():
             yield path
 

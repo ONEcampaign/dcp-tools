@@ -9,5 +9,9 @@
 
 ### Changed
 - Switched build system from Poetry to uv.
+- Switched linter/formatter from Black to Ruff.
 - Widened `google-cloud-run` version constraint from `<0.11.0` to `<1.0.0`.
 - Updated all package dependencies.
+
+### Fixed
+- Config file merge order is now deterministic across platforms (sorted by path).

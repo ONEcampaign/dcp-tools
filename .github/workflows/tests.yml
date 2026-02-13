@@ -45,4 +45,4 @@ jobs:
           verbose: true # optional (default = false)
 
       - name: Check code style
-        run: uv run black src tests --check
+        run: uv run ruff format src tests --check

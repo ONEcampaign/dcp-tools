@@ -55,7 +55,7 @@ def test_mcfnode_allows_missing_name_and_serializes_without_it():
     assert lines[0] == "Node: dcid:NoNameNode"
     # With no name, typeOf should be next
     assert lines[1] == "typeOf: dcid:TypeA"
-    assert not any(l.startswith("name:") for l in lines)
+    assert not any(line.startswith("name:") for line in lines)
 
 
 def test_mcfnode_strips_linebreaks_and_trailing_spaces():

@@ -55,7 +55,7 @@ uv sync --group dev
 4.  Ensure tests are written for any new functionality
 and that existing tests pass. Code coverage is important but not critical. We prioritize
 meaningful tests that cover all major functionality. Code should be formatted 
-using `black` and adhere to the project's coding standards.
+using `ruff format` to adhere to the project's coding standards.
 
 5. When you are done developing, open a pull request on the main repository, 
 with a clear description of your changes and any relevant issue numbers.

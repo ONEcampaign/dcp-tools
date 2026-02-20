@@ -32,6 +32,12 @@ def add_parser(subparsers: argparse._SubParsersAction) -> None:
         help="Local directory to upload. Defaults to settings.LOCAL_PATH",
     )
     parser.add_argument(
+        "--sync",
+        action="store_true",
+        default=False,
+        help="Delete remote blobs that no longer have a local counterpart after uploading",
+    )
+    parser.add_argument(
         "--load-timeout",
         type=int,
         default=6000,
@@ -49,7 +55,7 @@ def add_parser(subparsers: argparse._SubParsersAction) -> None:
 def run(args: argparse.Namespace) -> int:
     """Execute the ``pipeline`` command."""
     settings = load_settings_from_args(args)
-    upload_to_cloud_storage(settings=settings, directory=args.directory)
+    upload_to_cloud_storage(settings=settings, directory=args.directory, sync=args.sync)
     run_data_load(settings=settings, timeout=args.load_timeout)
     redeploy_service(settings=settings, timeout=args.deploy_timeout)
     return 0

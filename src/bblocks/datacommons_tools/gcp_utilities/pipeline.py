@@ -18,24 +18,32 @@ from bblocks.datacommons_tools.gcp_utilities.jobs import (
     redeploy_cloud_run_service,
 )
 from bblocks.datacommons_tools.gcp_utilities.settings import KGSettings
-from bblocks.datacommons_tools.gcp_utilities.storage import upload_directory_to_gcs
+from bblocks.datacommons_tools.gcp_utilities.storage import (
+    upload_directory_to_gcs,
+    sync_directory_to_gcs,
+)
 
 
 def upload_to_cloud_storage(
-    settings: KGSettings, directory: PathLike | Path | None = None
+    settings: KGSettings,
+    directory: PathLike | Path | None = None,
+    sync: bool = False,
 ):
     """Upload data to Google Cloud Storage.
 
     Args:
         settings (KGSettings): The settings for the Knowledge Graph.
         directory (Path | None): The local directory to upload. If None, uses the default path.
+        sync (bool): If True, delete remote blobs that no longer have a local
+            counterpart after uploading. Defaults to False.
 
     """
 
     gcs_client = get_gcs_client(credentials=settings.gcp_credentials)
     bucket = gcs_client.get_bucket(settings.gcs_bucket_name)
 
-    upload_directory_to_gcs(
+    upload_fn = sync_directory_to_gcs if sync else upload_directory_to_gcs
+    upload_fn(
         bucket=bucket,
         directory=directory,
         gcs_folder_name=settings.gcs_input_folder_path,

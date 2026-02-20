@@ -1,6 +1,4 @@
-import os
-from pathlib import Path
-from unittest.mock import Mock, call
+from unittest.mock import Mock
 
 import pytest
 
@@ -58,7 +56,7 @@ def test_upload_directory_to_gcs(tmp_path):
 
     upload_directory_to_gcs(bucket, tmp_path, "prefix")
 
-    expected_keys = {"prefix/a.csv", "prefix/b.json", f"prefix/sub/c.mcf"}
+    expected_keys = {"prefix/a.csv", "prefix/b.json", "prefix/sub/c.mcf"}
     assert set(blobs.keys()) == expected_keys
     for b in blobs.values():
         b.upload_from_filename.assert_called_once()

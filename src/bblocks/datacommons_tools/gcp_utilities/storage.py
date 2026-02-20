@@ -149,9 +149,7 @@ def sync_directory_to_gcs(
         )
         delete_bucket_files(bucket, list(stale))
     else:
-        logger.info(
-            f"No stale blobs found under '{gcs_folder_name or 'root'}'"
-        )
+        logger.info(f"No stale blobs found under '{gcs_folder_name or 'root'}'")
 
 
 def list_bucket_files(bucket: Bucket, gcs_folder_name: str | None = None) -> list[str]:

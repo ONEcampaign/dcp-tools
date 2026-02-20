@@ -1,5 +1,13 @@
 # Changelog
 
+## [0.1.1] - 2026-02-19
+
+### Added
+- `--sync` flag for `upload` and `pipeline` CLI commands. When enabled, remote blobs
+  that no longer have a local counterpart are deleted after uploading.
+- `sync_directory_to_gcs` function in `storage.py` that composes upload + stale blob cleanup.
+- `sync` parameter on `upload_to_cloud_storage` in `pipeline.py`.
+
 ## [0.1.0] - 2025-02-13
 
 ### Added

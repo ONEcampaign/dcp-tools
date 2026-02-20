@@ -18,7 +18,9 @@ def test_upload_command_invokes_pipeline(tmp_path: Path) -> None:
         )
         assert exit_code == 0
         get.assert_called_once_with(source="json", file=Path("s.json"))
-        upload.assert_called_once_with(settings=get.return_value, directory=directory)
+        upload.assert_called_once_with(
+            settings=get.return_value, directory=directory, sync=False
+        )
 
 
 def test_dataload_command_invokes_pipeline() -> None:
@@ -73,7 +75,9 @@ def test_pipeline_command_runs_all(tmp_path: Path) -> None:
         )
         assert exit_code == 0
         get.assert_called_once_with(source="json", file=Path("s.json"))
-        upload.assert_called_once_with(settings=get.return_value, directory=directory)
+        upload.assert_called_once_with(
+            settings=get.return_value, directory=directory, sync=False
+        )
         load.assert_called_once_with(settings=get.return_value, timeout=7)
         red.assert_called_once_with(settings=get.return_value, timeout=3)
 

@@ -27,11 +27,17 @@ def add_parser(subparsers: argparse._SubParsersAction) -> None:
         type=Path,
         help="Local directory to upload. Defaults to settings.LOCAL_PATH",
     )
+    parser.add_argument(
+        "--sync",
+        action="store_true",
+        default=False,
+        help="Delete remote blobs that no longer have a local counterpart after uploading",
+    )
     parser.set_defaults(func=run)
 
 
 def run(args: argparse.Namespace) -> int:
     """Execute the ``upload`` command."""
     settings = load_settings_from_args(args)
-    upload_to_cloud_storage(settings=settings, directory=args.directory)
+    upload_to_cloud_storage(settings=settings, directory=args.directory, sync=args.sync)
     return 0

@@ -6,6 +6,8 @@ import pandas as pd
 
 from bblocks.datacommons_tools.gcp_utilities.storage import (
     list_bucket_files,
+    upload_directory_to_gcs,
+    sync_directory_to_gcs,
     get_unregistered_csv_files,
     get_missing_csv_files,
     delete_bucket_files,
@@ -29,6 +31,153 @@ def _minimal_config(key: str = "a.csv") -> Config:
     }
     sources = {"src": Source(url="http://s", provenances={"prov": "http://p"})}
     return Config(inputFiles=input_files, sources=sources)
+
+
+def test_upload_directory_to_gcs(tmp_path):
+    (tmp_path / "a.csv").write_text("col\n1\n")
+    (tmp_path / "b.json").write_text("{}")
+    (tmp_path / "skip.txt").write_text("nope")
+    sub = tmp_path / "sub"
+    sub.mkdir()
+    (sub / "c.mcf").write_text("Node: dcid:x\n")
+    # json in subdir should be skipped
+    (sub / "d.json").write_text("{}")
+
+    bucket = Mock()
+    blobs: dict[str, Mock] = {}
+
+    def blob_side(name: str):
+        b = Mock()
+        blobs[name] = b
+        return b
+
+    bucket.blob.side_effect = blob_side
+    bucket.name = "my-bucket"
+
+    upload_directory_to_gcs(bucket, tmp_path, "prefix")
+
+    expected_keys = {"prefix/a.csv", "prefix/b.json", "prefix/sub/c.mcf"}
+    assert set(blobs.keys()) == expected_keys
+    for b in blobs.values():
+        b.upload_from_filename.assert_called_once()
+
+
+def test_upload_directory_to_gcs_no_prefix(tmp_path):
+    (tmp_path / "a.csv").write_text("col\n1\n")
+
+    bucket = Mock()
+    blobs: dict[str, Mock] = {}
+
+    def blob_side(name: str):
+        b = Mock()
+        blobs[name] = b
+        return b
+
+    bucket.blob.side_effect = blob_side
+    bucket.name = "my-bucket"
+
+    upload_directory_to_gcs(bucket, tmp_path)
+
+    assert set(blobs.keys()) == {"a.csv"}
+
+
+def test_sync_directory_to_gcs_with_stale_blobs(tmp_path):
+    (tmp_path / "a.csv").write_text("col\n1\n")
+    (tmp_path / "b.json").write_text("{}")
+
+    bucket = Mock()
+    upload_blobs: dict[str, Mock] = {}
+    delete_blobs: dict[str, Mock] = {}
+
+    def blob_side(name: str):
+        b = Mock()
+        # Track whether this is an upload or delete call based on context
+        if name not in upload_blobs:
+            upload_blobs[name] = b
+        else:
+            delete_blobs[name] = b
+        return b
+
+    bucket.blob.side_effect = blob_side
+    bucket.name = "my-bucket"
+
+    # Remote has a stale blob "prefix/old.csv" plus the two that still exist
+    blob_a = Mock()
+    blob_a.name = "prefix/a.csv"
+    blob_b = Mock()
+    blob_b.name = "prefix/b.json"
+    blob_old = Mock()
+    blob_old.name = "prefix/old.csv"
+    bucket.list_blobs.return_value = [blob_a, blob_b, blob_old]
+
+    sync_directory_to_gcs(bucket, tmp_path, "prefix")
+
+    # Upload should have been called for a.csv and b.json
+    assert "prefix/a.csv" in upload_blobs
+    assert "prefix/b.json" in upload_blobs
+
+    # The stale blob should have been deleted
+    bucket.blob.assert_any_call("prefix/old.csv")
+    # Find the mock that was created for the delete call
+    all_blob_calls = [c.args[0] for c in bucket.blob.call_args_list]
+    assert "prefix/old.csv" in all_blob_calls
+
+
+def test_sync_directory_to_gcs_no_stale_blobs(tmp_path):
+    (tmp_path / "a.csv").write_text("col\n1\n")
+
+    bucket = Mock()
+    blobs: dict[str, Mock] = {}
+
+    def blob_side(name: str):
+        b = Mock()
+        blobs[name] = b
+        return b
+
+    bucket.blob.side_effect = blob_side
+    bucket.name = "my-bucket"
+
+    # Remote matches local exactly
+    blob_a = Mock()
+    blob_a.name = "prefix/a.csv"
+    bucket.list_blobs.return_value = [blob_a]
+
+    sync_directory_to_gcs(bucket, tmp_path, "prefix")
+
+    # Only the upload blob should have been created, no delete calls
+    assert "prefix/a.csv" in blobs
+    # The blob for upload was called, but delete was never called on it
+    # (delete_bucket_files is not called when there are no stale blobs)
+    blob_calls = [c.args[0] for c in bucket.blob.call_args_list]
+    # Only "prefix/a.csv" from the upload
+    assert blob_calls == ["prefix/a.csv"]
+
+
+def test_sync_directory_to_gcs_no_prefix(tmp_path):
+    (tmp_path / "a.csv").write_text("col\n1\n")
+
+    bucket = Mock()
+    blobs: dict[str, Mock] = {}
+
+    def blob_side(name: str):
+        b = Mock()
+        blobs[name] = b
+        return b
+
+    bucket.blob.side_effect = blob_side
+    bucket.name = "my-bucket"
+
+    blob_a = Mock()
+    blob_a.name = "a.csv"
+    blob_old = Mock()
+    blob_old.name = "old.csv"
+    bucket.list_blobs.return_value = [blob_a, blob_old]
+
+    sync_directory_to_gcs(bucket, tmp_path)
+
+    # old.csv should be deleted
+    all_blob_calls = [c.args[0] for c in bucket.blob.call_args_list]
+    assert "old.csv" in all_blob_calls
 
 
 def test_list_bucket_files_with_prefix():

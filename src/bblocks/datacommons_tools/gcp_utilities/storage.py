@@ -92,10 +92,8 @@ def upload_directory_to_gcs(
         if local_path.suffix not in _VALID_EXTENSIONS:
             logger.warning(f"Skipping unsupported file type: {local_path}")
             continue
-        relative = local_path.relative_to(directory)
-        remote_path = (
-            f"{gcs_folder_name}/{relative}" if gcs_folder_name else str(relative)
-        )
+        relative = local_path.relative_to(directory).as_posix()
+        remote_path = f"{gcs_folder_name}/{relative}" if gcs_folder_name else relative
         bucket.blob(remote_path).upload_from_filename(str(local_path))
         logger.info(f"Uploaded {local_path} to {remote_path}")
         files_uploaded += 1
@@ -104,6 +102,50 @@ def upload_directory_to_gcs(
     logger.info(
         f"Uploaded {files_uploaded} files to {dest} in GCS bucket {bucket.name}"
     )
+
+
+def sync_directory_to_gcs(
+    bucket: Bucket, directory: Path, gcs_folder_name: str | None = None
+) -> None:
+    """Upload a local directory then delete stale remote blobs.
+
+    This function first uploads all local files (via
+    :func:`upload_directory_to_gcs`) and then removes any blobs under
+    ``gcs_folder_name`` that no longer have a local counterpart.
+
+    Args:
+        bucket (Bucket): GCS bucket instance.
+        directory (Path): Local directory to upload.
+        gcs_folder_name (str | None): Name of the base folder in the GCS
+            bucket. If ``None``, the bucket root is used.
+    """
+    upload_directory_to_gcs(bucket, directory, gcs_folder_name)
+
+    # Build the set of expected remote paths from local files
+    expected: set[str] = set()
+    for local_path in _iter_local_files(directory):
+        if local_path.suffix not in _VALID_EXTENSIONS:
+            continue
+        relative = local_path.relative_to(directory).as_posix()
+        remote_path = f"{gcs_folder_name}/{relative}" if gcs_folder_name else relative
+        expected.add(remote_path)
+
+    # List current remote blobs
+    prefix = gcs_folder_name or None
+    try:
+        remote = set(list_bucket_files(bucket, prefix))
+    except FileNotFoundError:
+        remote = set()
+
+    stale = remote - expected
+    if stale:
+        logger.info(
+            f"Found {len(stale)} stale blob(s) under "
+            f"'{gcs_folder_name or 'root'}', deleting..."
+        )
+        delete_bucket_files(bucket, list(stale))
+    else:
+        logger.info(f"No stale blobs found under '{gcs_folder_name or 'root'}'")
 
 
 def list_bucket_files(bucket: Bucket, gcs_folder_name: str | None = None) -> list[str]:

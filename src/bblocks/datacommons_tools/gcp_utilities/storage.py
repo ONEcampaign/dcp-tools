@@ -93,9 +93,7 @@ def upload_directory_to_gcs(
             logger.warning(f"Skipping unsupported file type: {local_path}")
             continue
         relative = local_path.relative_to(directory).as_posix()
-        remote_path = (
-            f"{gcs_folder_name}/{relative}" if gcs_folder_name else relative
-        )
+        remote_path = f"{gcs_folder_name}/{relative}" if gcs_folder_name else relative
         bucket.blob(remote_path).upload_from_filename(str(local_path))
         logger.info(f"Uploaded {local_path} to {remote_path}")
         files_uploaded += 1
@@ -129,9 +127,7 @@ def sync_directory_to_gcs(
         if local_path.suffix not in _VALID_EXTENSIONS:
             continue
         relative = local_path.relative_to(directory).as_posix()
-        remote_path = (
-            f"{gcs_folder_name}/{relative}" if gcs_folder_name else relative
-        )
+        remote_path = f"{gcs_folder_name}/{relative}" if gcs_folder_name else relative
         expected.add(remote_path)
 
     # List current remote blobs

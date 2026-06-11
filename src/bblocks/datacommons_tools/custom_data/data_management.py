@@ -16,8 +16,6 @@ from bblocks.datacommons_tools.custom_data.config_utils import (
 )
 from bblocks.datacommons_tools.custom_data.models.config_file import Config
 from bblocks.datacommons_tools.custom_data.models.data_files import (
-    ObservationProperties,
-    ImplicitSchemaFile,
     ColumnMappings,
     ExplicitSchemaFile,
     MCFFileName,
@@ -25,7 +23,6 @@ from bblocks.datacommons_tools.custom_data.models.data_files import (
 from bblocks.datacommons_tools.custom_data.models.mcf import MCFNodes
 from bblocks.datacommons_tools.custom_data.models.sources import Source
 from bblocks.datacommons_tools.custom_data.models.stat_vars import (
-    Variable,
     StatType,
     StatVarMCFNode,
     StatVarGroupMCFNode,
@@ -90,14 +87,6 @@ class CustomDataManager:
     >>>    source_name="Source Name"
     >>> )
 
-    To add a variable to the config (using the implicit schema), use the add_variable_to_implicit_schema method
-    >>> dc_manager.add_variable_to_config(
-    >>>    "StatVar",
-    >>>     name="Variable Name",
-    >>>     description="Variable Description",
-    >>>     group="Group Name"
-    >>>    )
-
     To add a variable for export to an MCF file (using the explicit schema), use the
     add_variable_to_mcf method
     >>> dc_manager.add_variable_to_mcf(
@@ -111,16 +100,6 @@ class CustomDataManager:
     contain the variables you want to add.
     >>> dc_manager.add_variables_to_mcf_from_csv(file_path="path/to/file.csv")
 
-    To add an input file and data to the config, using the implicit (per column) schema,
-    use the add_variablePerColumn_input_file method
-    >>> dc_manager.add_implicit_schema_file(
-    >>>    file_name="input_file.csv",
-    >>>    provenance="Provenance Name",
-    >>>    data=df,
-    >>>    entityType="Country",
-    >>>    observationProperties={"unit": "USDollar"}
-    >>>    )
-
     To add an input file and data to the config, using the explicit (per row) schema,
     use the add_variablePerRow_input_file method
     >>> dc_manager.add_explicit_schema_file(
@@ -132,8 +111,7 @@ class CustomDataManager:
 
     It isn't a requirement to add the data at the same time as the input file. You can add the data
     later using the add_data method. This is useful when you want to edit the config file
-    without needing the data. For example, for the variablePerColumn input file:
-    >>> dc_manager.add_implicit_schema_file(file_name="input_file.csv",provenance="Provenance Name")
+    without needing the data.
 
     To add data to the config, you can use the add_input_file and override the information already
     registered, or you can use the add_data method.
@@ -209,7 +187,7 @@ class CustomDataManager:
             [len(var) for var in [n.nodes for n in self._mcf_nodes.values()] if var]
         )
 
-        variables_count = len(self._config.variables or {}) + nodes_count
+        variables_count = nodes_count
         dataframes_count = len(self._data)
 
         include_input_subdirs = self._config.includeInputSubdirs
@@ -509,52 +487,6 @@ class CustomDataManager:
 
         return self
 
-    def add_variable_to_config(
-        self,
-        statVar: str,
-        name: Optional[str] = None,
-        description: Optional[str] = None,
-        searchDescriptions: Optional[List[str]] = None,
-        group: Optional[str] = None,
-        properties: Optional[Dict[str, str]] = None,
-        override: bool = False,
-    ) -> CustomDataManager:
-        """Add a variable to the config. This only applies to the implicit schema.
-
-        This method registers a variable in the config. If there is no variables section
-        defined in the config, it will create one.
-
-        Args:
-            statVar: The identifier of the statistical variable. Used as the key in the config.
-            name: Name of the variable (Optional)
-            description: Description of the variable (Optional)
-            searchDescriptions: List of search descriptions (Optional)
-            group: Name of the group (Optional)
-            properties: Properties of the variable (Optional)
-            override: If True, overwrite the existing variable if it exists.
-                Defaults to False.
-        """
-
-        # check if the config has a variables section
-        if self._config.variables is None:
-            self._config.variables = {}
-
-        # check if the variable already exists
-        if statVar in self._config.variables:
-            if not override:
-                raise ValueError(
-                    f"Variable '{statVar}' already exists. Use override=True to overwrite it."
-                )
-
-        self._config.variables[statVar] = Variable(
-            name=name,
-            description=description,
-            searchDescriptions=searchDescriptions,
-            group=group,
-            properties=properties,
-        )
-        return self
-
     def _data_override_check(self, file_name: str, override: bool) -> None:
         """Check if the data already exists and override is not set"""
         if file_name in self._data:
@@ -563,59 +495,6 @@ class CustomDataManager:
                     f"Data for file '{file_name}' already exists. "
                     "Use a different name or set override as `True`."
                 )
-
-    def add_implicit_schema_file(
-        self,
-        file_name: str,
-        provenance: str,
-        entityType: str,
-        data: Optional[pd.DataFrame] = None,
-        observationProperties: Dict[str, str] = None,
-        ignoreColumns: Optional[List[str]] = None,
-        override: bool = False,
-    ) -> CustomDataManager:
-        f"""Add an inputFile to the config and optionally register the data as pandas DataFrame.
-
-        This method registers an input file in the config. Optionally it also registers the
-        data that accompanies the input file registered. The registration of the data is made
-        optional in cases where a user wants to edit the config file without the
-        accompanying data. The data can be registered later using the add data method.
-
-        This method is for the implicit schema approach (variable per column). Read more about
-        implicit and explicit schemas here:
-        {DC_DOCS_URL}#step-2-choose-between-implicit-and-explicit-schema-definition
-
-        Args:
-            file_name: Name of the file (should be a .csv file)
-            provenance: Provenance of the data. This should be the name of the provenance
-                in the sources section of the config file. Use add_provenance to add a provenance
-                to the config file.
-            data: Data to register (optional)
-            entityType: Type of the entity (optional)
-            observationProperties: Observation properties. Allowed keys
-                are [unit, observationPeriod, scalingFactor, measurementMethod]
-            ignoreColumns: List of columns to ignore (optional)
-            override: If True, overwrite the existing file if it exists. Defaults to False.
-        """
-        if observationProperties is None:
-            observationProperties = {}
-
-        # check if the file already exists
-        self._data_override_check(file_name=file_name, override=override)
-
-        # add the file to the config
-        self._config.inputFiles[file_name] = ImplicitSchemaFile(
-            entityType=entityType,
-            ignoreColumns=ignoreColumns,
-            provenance=provenance,
-            observationProperties=ObservationProperties(**observationProperties),
-        )
-
-        # if data is provided, register it
-        if data is not None:
-            self._data[file_name] = data
-
-        return self
 
     def add_explicit_schema_file(
         self,
@@ -634,8 +513,8 @@ class CustomDataManager:
         accompanying data. The data can be registered later using the add data method.
 
         This method is for the explicit schema approach (variable per row). Read more about
-        implicit and explicit schemas here:
-        {DC_DOCS_URL}#step-2-choose-between-implicit-and-explicit-schema-definition
+        the explicit (variable-per-row) schema format here:
+        {DC_DOCS_URL}
 
 
         Args:
@@ -701,7 +580,7 @@ class CustomDataManager:
     def rename_variable(
         self, old_name: str, new_name: str, *, mcf_file_name: str | None = None
     ) -> CustomDataManager:
-        """Rename a variable across config and any loaded MCF files.
+        """Rename a variable across any loaded MCF files.
 
         Args:
             old_name: The name of the variable to rename.
@@ -709,28 +588,33 @@ class CustomDataManager:
             mcf_file_name: Optional name of the MCF file from which to rename the variable.
                 If omitted, all managed MCF files are searched.
         Raises:
-            ValueError: If the variable is not found in the config or MCF files,
+            ValueError: If the variable is not found in any searched MCF file, or if the
+                new name already exists in any searched MCF file.
 
         """
 
-        if not self._config.variables or old_name not in self._config.variables:
+        file_names = (
+            [validate_mcf_file_name(mcf_file_name)]
+            if mcf_file_name
+            else list(self._mcf_nodes.keys())
+        )
+
+        found_old = any(
+            node.Node == old_name
+            for name in file_names
+            for node in (self._mcf_nodes.get(name) or MCFNodes()).nodes
+        )
+        found_new = any(
+            node.Node == new_name
+            for name in file_names
+            for node in (self._mcf_nodes.get(name) or MCFNodes()).nodes
+        )
+
+        if not found_old:
             raise ValueError(f"Variable '{old_name}' not found")
-        if new_name in (self._config.variables or {}):
+        if found_new:
             raise ValueError(f"Variable '{new_name}' already exists")
 
-        self._config.variables[new_name] = self._config.variables.pop(old_name)
-
-        file_names = (
-            [
-                (
-                    validate_mcf_file_name(mcf_file_name)
-                    if mcf_file_name is not None
-                    else None
-                )
-            ]
-            if mcf_file_name
-            else self._mcf_nodes.keys()
-        )
         for name in file_names:
             nodes = self._mcf_nodes.get(name)
             if not nodes:
@@ -773,11 +657,6 @@ class CustomDataManager:
             if info.provenance == old_name:
                 info.provenance = new_name
 
-        if self._config.variables:
-            for var in self._config.variables.values():
-                if var.properties and var.properties.get("provenance") == old_name:
-                    var.properties["provenance"] = new_name
-
         for nodes in self._mcf_nodes.values():
             for node in nodes.nodes:
                 prov = getattr(node, "provenance", None)
@@ -812,9 +691,9 @@ class CustomDataManager:
     ) -> CustomDataManager:
         """Remove a single indicator from the manager.
 
-        This deletes the indicator from the ``variables`` section of the config
-        and from any loaded MCF files. If ``mcf_file_name`` is provided, only
-        that MCF file is searched; otherwise all MCF files will be inspected.
+        This removes the indicator from any loaded MCF files. If
+        ``mcf_file_name`` is provided, only that MCF file is searched;
+        otherwise all MCF files will be inspected.
 
         Args:
             indicator_id: Identifier of the indicator/StatVar to remove.
@@ -822,16 +701,10 @@ class CustomDataManager:
                 node. If omitted, all managed MCF files are searched.
 
         Raises:
-            ValueError: If the indicator is not found in either the config or any
-                MCF file.
+            ValueError: If the indicator is not found in any MCF file.
         """
 
         found = False
-
-        # remove from config variables
-        if self._config.variables and indicator_id in self._config.variables:
-            del self._config.variables[indicator_id]
-            found = True
 
         # remove from mcf files
         file_names = (
@@ -875,13 +748,6 @@ class CustomDataManager:
             self._config.inputFiles.pop(file_name)
             self._data.pop(file_name, None)
             removed = True
-
-        # Remove variables that explicitly store the provenance in their properties
-        if self._config.variables:
-            for var_name, var in list(self._config.variables.items()):
-                if var.properties and var.properties.get("provenance") == provenance:
-                    del self._config.variables[var_name]
-                    removed = True
 
         # Remove MCF nodes with a matching provenance property
         for nodes in self._mcf_nodes.values():
@@ -1126,13 +992,12 @@ class CustomDataManager:
         """Merge all config files in a directory and its subdirectories
 
         This method will recursively search for config files in a directory and its
-        subdirectories (to a depth of?) and merge them with the config already in the manager.
+        subdirectories and merge them with the config already in the manager.
         If no config exists in the manager, it will be created from the merged config files.
 
         Args:
             directory: The directory to search for config files.
             policy: How to resolve collisions. Can be "error", "override", or "ignore".
-            How to resolve collisions. Can be "error", "override", or "ignore".
                 Defaults to "error". If "error", an error is raised if there are any
                 collisions. If "override", the new config will override the existing
                 config. If "ignore", the new config's value will be ignored if there are any

@@ -4,23 +4,30 @@
     "inputFiles": {
         "a.csv": {
             "provenance": "provA",
-            "entityType": "Country",
-            "observationProperties": { "unit": "USDollar" },
-            "format": "variablePerColumn"
+            "columnMappings": {
+                "entity": "Country",
+                "date": "Year",
+                "value": "Val"
+            },
+            "format": "variablePerRow"
         },
         "b.csv": {
             "provenance": "provB",
-            "columnMappings": { "entity": "Country", "date": "Year", "value": "Val" },
+            "columnMappings": {
+                "entity": "Country",
+                "date": "Year",
+                "value": "Val"
+            },
             "format": "variablePerRow"
         }
-    },
-    "variables": {
-        "v1": { "name": "Var One" }
     },
     "sources": {
         "S1": {
             "url": "http://source1/",
-            "provenances": { "provA": "http://prova/", "provB": "http://provb/" }
+            "provenances": {
+                "provA": "http://prova/",
+                "provB": "http://provb/"
+            }
         }
     }
 }

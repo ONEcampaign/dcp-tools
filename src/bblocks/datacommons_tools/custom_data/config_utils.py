@@ -179,17 +179,6 @@ def merge_configs(
         context="Input file",
     )
 
-    # Merge the variables
-    if new.variables:
-        if not existing.variables:
-            existing.variables = {}
-        _merge_dict(
-            target_dict=existing.variables,
-            source_dict=new.variables,
-            policy=policy,
-            context="Variable",
-        )
-
     # Merge the sources
     for name, src in new.sources.items():
         _merge_source(

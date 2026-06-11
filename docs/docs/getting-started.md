@@ -29,9 +29,8 @@ At a top level, you should be familiar with:
 [JSON configuration](https://docs.datacommons.org/custom_dc/custom_data.html#step-2-write-the-json-config-file) 
 file that specifies how to map and resolve data to the
 Data Commons schema knowledge graph.
-- **The data files**: CSV files containing the data formatted for a specified schema, either 
-[implicit](https://docs.datacommons.org/custom_dc/custom_data.html#prepare-your-data-using-implicit-schema) 
-or [explicit](https://docs.datacommons.org/custom_dc/custom_data.html#explicit).
+- **The data files**: CSV files containing the data formatted for the
+[explicit schema](https://docs.datacommons.org/custom_dc/custom_data.html#explicit).
 - **Meta Content Framework 
 ([MCF](https://docs.datacommons.org/custom_dc/custom_data.html#step-1-define-statistical-variables-in-mcf)) files**: files that provide additional flexibility form modeling data for the knowledge
 graph.
@@ -79,40 +78,27 @@ manager.add_provenance(
 )
 ```
 
-```python title="Register an indicator"
-manager.add_variable_to_config(
-    statVar="climateFinanceProvidedCommitments",
-    name="Climate Finance Commitments (bilateral)",
-    group="ONE/Environment/Climate finance/Provider perspective/Commitments",
-    description="Funding for climate adaptation and mitigation projects",
-    searchDescriptions=[
-        "Climate finance commitments provided",
-        "Adaptation and mitigation finance provided",
-    ],
-    properties={"measurementMethod": "Commitment"},
-    )
-```
+You can pass pandas DataFrames to the manager and the manager will handle exporting the data as
+CSVs in the correct format.
 
-You can pass pandas DataFrames to the manager, specifying what schema is being used, and the manager will handle 
-exporting the data as CSVs in the correct format.
-
-```python title="Add implicit schema data
+```python title="Add explicit schema data"
 import pandas as pd
+from bblocks.datacommons_tools.custom_data.models.data_files import ColumnMappings
 
 df = pd.DataFrame(...)
 
-manager.add_implicit_schema_file(
+manager.add_explicit_schema_file(
     file_name="climate_finance/one_cf_provider_commitments.csv",
     provenance="ONE Climate Finance",
-    entityType="Country",
     data=df,
-    ignoreColumns=["oecd_provider_code"],
-    observationProperties={"unit": "USDollar"},
+    columnMappings=ColumnMappings(
+        entity="country",
+        date="year",
+        variable="variable",
+        value="value",
+    ),
 )
 ```
-
-[//]: # (<--- TODO: Add explicit schema data example --->)
-```python title="Add explicit schema data"```
 
 
 Once you are finished adding and editing data and configuration, you can 

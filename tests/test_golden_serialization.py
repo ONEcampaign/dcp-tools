@@ -29,21 +29,19 @@ def test_config_json_snapshot(tmp_path):
     manager = CustomDataManager()
     manager.set_includeInputSubdirs(True).set_groupStatVarsByProperty(False)
 
-    manager.add_implicit_schema_file(
+    manager.add_explicit_schema_file(
         "a.csv",
         provenance="provA",
-        observationProperties={"unit": "USDollar"},
-        entityType="Country",
+        columnMappings={"entity": "Country", "date": "Year", "value": "Val"},
     )
     manager.add_explicit_schema_file(
         "b.csv",
         provenance="provB",
         columnMappings={"entity": "Country", "date": "Year", "value": "Val"},
     )
-    # add variable and source
+    # add sources
     manager.add_provenance("provA", "http://prova/", "S1", source_url="http://source1/")
     manager.add_provenance("provB", "http://provb/", "S1", source_url="http://source1/")
-    manager.add_variable_to_config("v1", name="Var One")
 
     # export
     manager.export_config(str(tmp_path))

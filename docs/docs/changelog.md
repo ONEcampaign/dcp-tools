@@ -2,6 +2,11 @@
 
 ## v1.0.0 (in development)
 - Stable release of the `bblocks-datacommons-tools` package
+- **Breaking:** removed implicit-schema support — `add_implicit_schema_file`,
+  `add_variable_to_config`, and the `ImplicitSchemaFile` / `ObservationProperties` / `Variable`
+  model classes are gone. Loading a legacy `variablePerColumn` config now raises `ValueError`.
+  Migrate by using `add_explicit_schema_file` with `columnMappings`; see
+  [Data Commons custom data docs](https://docs.datacommons.org/custom_dc/custom_data.html).
 
 ## v0.1.0 (in development)
 - Initial release of the `bblocks-datacommons-tools` package for external preview and testing

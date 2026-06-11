@@ -33,12 +33,22 @@ def test_mcf_quoted_str_with_single_and_multiple_items():
     assert mcf_quoted_str(None) is None
 
 
+def test_mcf_quoted_str_empty_list_returns_none():
+    """Empty list must return None, not raise IndexError (regression for #84)."""
+    assert mcf_quoted_str([]) is None
+
+
 def test_mcf_str_with_single_and_multiple_items():
     assert mcf_str("abc") == "abc"
     assert mcf_str(["x"]) == "x"
     multi = mcf_str(["a", "b", "c"])
     assert multi == "a, b, c"
     assert mcf_str(None) is None
+
+
+def test_mcf_str_empty_list_returns_none():
+    """Empty list must return None, not raise IndexError (regression for #84)."""
+    assert mcf_str([]) is None
 
 
 def test_str_or_list_str_annotation_serialization():

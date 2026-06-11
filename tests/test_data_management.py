@@ -494,3 +494,51 @@ def test_rename_variable_and_source_methods():
         manager.rename_source("unknown", "x")
     with pytest.raises(ValueError):
         manager.rename_source("s2", "s2")
+
+
+def test_validate_all_input_files_have_data(tmp_path):
+    """Verify the optional data-completeness validation on export_all and the standalone method."""
+    manager = CustomDataManager()
+    manager.add_provenance("p1", "http://prov", "s1", source_url="http://src")
+
+    df = pd.DataFrame({"A": [1, 2]})
+
+    # Register one file WITH data and one WITHOUT data
+    manager.add_implicit_schema_file(
+        file_name="with_data.csv",
+        provenance="p1",
+        data=df,
+        entityType="Country",
+    )
+    manager.add_implicit_schema_file(
+        file_name="no_data.csv",
+        provenance="p1",
+        entityType="Country",
+    )
+
+    # Standalone validation method raises because no_data.csv has no data
+    with pytest.raises(ValueError, match="no_data.csv"):
+        manager.validate_all_input_files_have_data()
+
+    # export_all without validate_data=True should NOT raise (default off)
+    # It will raise because export_data needs at least one file — so just confirm
+    # validate_data=False doesn't surface the missing-data error
+    try:
+        manager.export_all(tmp_path, validate_data=False)
+    except ValueError as exc:
+        assert "no_data.csv" not in str(exc), (
+            "validate_data=False should not raise about missing data"
+        )
+
+    # export_all with validate_data=True should raise before writing anything
+    with pytest.raises(ValueError, match="no_data.csv"):
+        manager.export_all(tmp_path, validate_data=True)
+
+    # After adding data for the second file, validation passes
+    manager.add_data(df, "no_data.csv")
+    manager.validate_all_input_files_have_data()  # should not raise
+
+    manager.export_all(tmp_path, validate_data=True)  # should not raise
+    assert (tmp_path / "config.json").exists()
+    assert (tmp_path / "with_data.csv").exists()
+    assert (tmp_path / "no_data.csv").exists()

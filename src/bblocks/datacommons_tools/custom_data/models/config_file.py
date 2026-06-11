@@ -1,13 +1,9 @@
-from typing import Optional, Dict, Annotated
+from typing import Optional, Dict
 
-from pydantic import BaseModel, ConfigDict, model_validator, Field
+from pydantic import BaseModel, ConfigDict, model_validator
 
-from bblocks.datacommons_tools.custom_data.models.data_files import (
-    ImplicitSchemaFile,
-    ExplicitSchemaFile,
-)
+from bblocks.datacommons_tools.custom_data.models.data_files import ExplicitSchemaFile
 from bblocks.datacommons_tools.custom_data.models.sources import Source
-from bblocks.datacommons_tools.custom_data.models.stat_vars import Variable
 
 
 class Config(BaseModel):
@@ -25,7 +21,6 @@ class Config(BaseModel):
         inputFiles: Dictionary of input files.
         svHierarchyPropsBlocklist: Array of additional property dcids to exclude from hierarchy generation.
             These are added to the internal blocklist used by Data Commons.
-        variables: Dictionary of variables.
         sources: Dictionary of sources.
     """
 
@@ -35,23 +30,36 @@ class Config(BaseModel):
     customIdNamespace: Optional[str] = None
     customSvgPrefix: Optional[str] = None
     svHierarchyPropsBlocklist: Optional[list[str]] = None
-    inputFiles: Dict[
-        str,
-        Annotated[
-            ImplicitSchemaFile | ExplicitSchemaFile, Field(discriminator="data_format")
-        ],
-    ]
-    variables: Optional[Dict[str, Variable]] = None  # optional section
+    inputFiles: Dict[str, ExplicitSchemaFile]
     sources: Dict[str, Source]
 
-    # model configuration - to allow for extra fields and to populate by name
-    # (for the "format" field) and forbid extra fields
+    # model configuration - populate by name (for the "format" field alias)
+    # and forbid extra fields
     model_config = ConfigDict(
         populate_by_name=True,
         extra="forbid",
         str_strip_whitespace=True,
         validate_assignment=True,
     )
+
+    @model_validator(mode="before")
+    @classmethod
+    def _reject_implicit_schema_files(cls, data):
+        """Reject legacy implicit-schema (variablePerColumn) inputFiles with a clear error."""
+        if isinstance(data, dict):
+            for key, entry in (data.get("inputFiles") or {}).items():
+                if isinstance(entry, dict) and "variablePerColumn" in {
+                    entry.get("format"),
+                    entry.get("data_format"),
+                }:
+                    raise ValueError(
+                        f"Config contains implicit-schema file '{key}': "
+                        "format 'variablePerColumn' is no longer supported. "
+                        "Migrate to explicit schema before loading. See "
+                        "https://docs.datacommons.org/custom_dc/custom_data.html "
+                        "for the explicit-schema format."
+                    )
+        return data
 
     @model_validator(mode="after")
     def validate_input_file_keys_are_csv(self) -> "Config":

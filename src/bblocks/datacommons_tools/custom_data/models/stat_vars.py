@@ -1,12 +1,9 @@
 from enum import StrEnum
-from typing import Optional, List, Dict, Literal
-
-from pydantic import BaseModel, ConfigDict
+from typing import Optional, Literal
 
 
 from bblocks.datacommons_tools.custom_data.models.common import (
     QuotedStrListOrStr,
-    StrOrListStr,
     Dcid,
     GroupDcid,
     PeerGroupDcid,
@@ -29,27 +26,6 @@ class StatType(StrEnum):
     VARIANCE_VALUE = "dcid:varianceValue"
     MARGIN_OF_ERROR = "dcid:marginOfError"
     STANDARD_ERROR = "dcid:stdErr"
-
-
-class Variable(BaseModel):
-    """Representation of the Variables section of the config file
-    This section is optional in the config file
-
-    Attributes:
-        name: Name of the variable.
-        description: Description of the variable.
-        searchDescriptions: List of search descriptions for the variable.
-        group: Group to which the variable belongs.
-        properties: Properties of the variable.
-    """
-
-    name: Optional[str] = None
-    description: Optional[str] = None
-    searchDescriptions: Optional[List[str]] = None
-    group: Optional[StrOrListStr] = None
-    properties: Optional[Dict[str, str]] = None
-
-    model_config = ConfigDict(extra="forbid")
 
 
 class StatVarMCFNode(MCFNode):

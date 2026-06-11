@@ -58,39 +58,10 @@ Additional methods exist to manage sources and provenances:
 
 ## Managing variables
 
-The `CustomDataManager` lets you easily add variables to the `config.json` or MCF files based on whether you are
-using the implicit or explicit schema. Read more about implicit and explicit schemas
-[here](dc-schemas.md).
+The `CustomDataManager` lets you add variables to MCF files for the explicit schema. Read more
+about the explicit schema [here](dc-schemas.md).
 
-
-If you are using the implicit schema, you can specify details about the variables in the `config.json` file in the
-`variables` section. Adding a `variable` section to the `config.json` is optional, but recommended to specify 
-variable names and associate properties with the variables. For each variable you can specify:
-- `statVar`: The statistical variable ID
-- `name`: A human-friendly readable name 
-- `description`: A more detailed name or description
-- `searchDescriptions`: A comma-separated list of natural-language text descriptions
-of the variable used to generate embeddings for the NL query interface
-- `group`: The group the variable belongs to
-- `properties`: Any properties associated with the variable for example `Gender` - `Male`, `Female`, `Other` etc.
-
-```python
-manager.add_variable_to_config(statVar="ghed_che",
-                               name="Current health expenditure",
-                               description="The total expenditure on health from domestic and foreign sources",
-                               group="Health",
-                               searchDescriptions=["Total health spending", "Health financing"],
-                               properties={"measurementMethod": "WHOEstimate"}
-                               )
-```
-
-If the variable already exists, you can overwrite it by setting the `override` parameter to `True`.
-
-[//]: # (<--- TODO: Explicit schema adding variables --->)
-
-
-You can rename variables using the `rename_variable` method, optionally specifying the MCF file
-if you are using the explicit schema.
+You can rename variables using the `rename_variable` method, optionally specifying the MCF file.
 
 
 ```python
@@ -114,23 +85,30 @@ The `CustomDataManager` provides support for working with pandas DataFrames, all
 data stored in a DataFrame to the manager which will export the data to a CSV file in the correct format
 for Data Commons.
 
-To register a data file using the implicit schema, use the `add_implicit_schema_file` method:
+To register a data file, use the `add_explicit_schema_file` method:
 
 ```python
 import pandas as pd
+from bblocks.datacommons_tools.custom_data.models.data_files import ColumnMappings
 
 df = pd.DataFrame({
-    "Country": ["USA", "Canada", "Mexico"],
-    "Year": [2020, 2020, 2020],
-    "gdp": [21000000, 1700000, 1200000]
+    "country": ["USA", "Canada", "Mexico"],
+    "year": [2020, 2020, 2020],
+    "variable": ["Amount_EconomicActivity_GrossDomesticProduction_Nominal"] * 3,
+    "value": [21000000, 1700000, 1200000],
 })
 
-manager.add_implicit_schema_file(file_name="gdp.csv", 
-                                 provenance="IMF", 
-                                 data=df,
-                                 entityType="Country",
-                                 observationProperties={"unit": "USDollar"}
-                                 )
+manager.add_explicit_schema_file(
+    file_name="gdp.csv",
+    provenance="IMF",
+    data=df,
+    columnMappings=ColumnMappings(
+        entity="country",
+        date="year",
+        variable="variable",
+        value="value",
+    ),
+)
 ```
 
 Adding data when registering a data file is optional. You can also add the data later using the `add_data` method:
@@ -138,8 +116,6 @@ Adding data when registering a data file is optional. You can also add the data 
 ```python
 manager.add_data(data=df, file_name="gdp.csv")
 ```
-
-[//]: # (<--- TODO: add explicit schema data file registration here --->)
 
 ## Removing variables and data files
 
@@ -179,9 +155,16 @@ and keeping them structured. By default, this is not set and the Data Commons im
 to be in the main output directory. If this is set to `True`, You can specify the subdirectory when adding a data file:
 
 ```python
-manager.add_implicit_schema_file(file_name="economics/gdp.csv", 
-                                 ...  # other parameters as before
-                                 )
+manager.add_explicit_schema_file(
+    file_name="economics/gdp.csv",
+    provenance="IMF",
+    columnMappings=ColumnMappings(
+        entity="country",
+        date="year",
+        variable="variable",
+        value="value",
+    ),
+)
 ```
 
 You can also set the `groupStatVarsByProperty` field in the `config.json` file, 

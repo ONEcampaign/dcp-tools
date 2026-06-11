@@ -1,3 +1,7 @@
+import json
+import tempfile
+import os
+
 import pandas as pd
 import pytest
 
@@ -5,8 +9,8 @@ from bblocks.datacommons_tools import CustomDataManager
 from bblocks.datacommons_tools.custom_data.data_management import DEFAULT_GROUP_NAME
 from bblocks.datacommons_tools.custom_data.models.config_file import Config
 from bblocks.datacommons_tools.custom_data.models.data_files import (
-    ImplicitSchemaFile,
-    ObservationProperties,
+    ColumnMappings,
+    ExplicitSchemaFile,
 )
 from bblocks.datacommons_tools.custom_data.models.sources import Source
 
@@ -16,12 +20,10 @@ def test_custom_data_manager_add_provenance_and_override():
     Verifies provenance addition logic in CustomDataManager.
     """
     manager = CustomDataManager()
-    # Missing source_url should fail
     with pytest.raises(ValueError):
         manager.add_provenance(
             provenance_name="pA", provenance_url="http://prov", source_name="new_source"
         )
-    # Provide source_url to succeed
     manager.add_provenance(
         provenance_name="pA",
         provenance_url="http://prov",
@@ -29,7 +31,6 @@ def test_custom_data_manager_add_provenance_and_override():
         source_url="http://src",
     )
 
-    # Adding same provenance without override should error
     with pytest.raises(ValueError):
         manager.add_provenance(
             provenance_name="pA",
@@ -37,30 +38,14 @@ def test_custom_data_manager_add_provenance_and_override():
             source_name="new_source",
         )
 
-    # Override existing provenance URL
     manager.add_provenance(
         provenance_name="pA",
         provenance_url="http://prov2",
         source_name="new_source",
         override=True,
     )
-    # Confirm update
     src = manager._config.sources["new_source"]
     assert src.provenances["pA"].unicode_string() == "http://prov2/"
-
-
-def test_custom_data_manager_add_variable_to_config_and_override():
-    """
-    Ensures variables are registered and override works in config.
-    """
-    manager = CustomDataManager()
-    manager.add_variable_to_config(statVar="v1", name="Var1")
-    # Duplicate without override errors
-    with pytest.raises(ValueError):
-        manager.add_variable_to_config(statVar="v1", name="Var1New")
-    # Override succeeds
-    manager.add_variable_to_config(statVar="v1", name="Var1New", override=True)
-    assert manager._config.variables["v1"].name == "Var1New"
 
 
 def test_set_additional_config_fields():
@@ -89,39 +74,13 @@ def test_set_additional_config_fields():
     ]
 
 
-def test_add_implicit_and_explicit_schema_file_registration_and_override(tmp_path):
+def test_add_explicit_schema_file_registration_and_override(tmp_path):
     """
-    Verifies implicit/explicit schema file registration in config and data,
+    Verifies explicit schema file registration in config and data,
     and override/error behaviors.
     """
     manager = CustomDataManager()
     manager.add_provenance("p1", "http://prov", "s1", source_url="http://src")
-
-    df1 = pd.DataFrame({"A": [1, 2]})
-    manager.add_implicit_schema_file(
-        file_name="imp.csv",
-        provenance="p1",
-        data=df1,
-        entityType="Country",
-        observationProperties={"unit": "U"},
-    )
-    assert "imp.csv" in manager._config.inputFiles
-    assert "imp.csv" in manager._data
-
-    df2 = pd.DataFrame({"A": [3, 4]})
-    with pytest.raises(ValueError):
-        manager.add_implicit_schema_file(
-            "imp.csv", provenance="p1", entityType="Country"
-        )
-
-    manager.add_implicit_schema_file(
-        file_name="imp.csv",
-        provenance="p1",
-        data=df2,
-        override=True,
-        entityType="State",
-    )
-    pd.testing.assert_frame_equal(manager._data["imp.csv"], df2)
 
     df3 = pd.DataFrame({"entity": ["e1"], "Year": [2020], "Value": [100]})
     manager.add_explicit_schema_file(
@@ -132,6 +91,21 @@ def test_add_implicit_and_explicit_schema_file_registration_and_override(tmp_pat
     )
     assert "exp.csv" in manager._config.inputFiles
     assert "exp.csv" in manager._data
+
+    with pytest.raises(ValueError):
+        manager.add_explicit_schema_file(
+            file_name="exp.csv",
+            provenance="p1",
+        )
+
+    df_new = pd.DataFrame({"entity": ["e2"], "Year": [2021], "Value": [200]})
+    manager.add_explicit_schema_file(
+        file_name="exp.csv",
+        provenance="p1",
+        data=df_new,
+        override=True,
+    )
+    pd.testing.assert_frame_equal(manager._data["exp.csv"], df_new)
 
     df4 = pd.DataFrame({"X": [1]})
     with pytest.raises(ValueError):
@@ -158,12 +132,11 @@ def test_export_methods(tmp_path):
     manager = CustomDataManager()
     manager.add_provenance("p1", "http://prov", "s1", source_url="http://src")
     df = pd.DataFrame({"A": [1]})
-    manager.add_implicit_schema_file(
+    manager.add_explicit_schema_file(
         file_name="data.csv",
         provenance="p1",
         data=df,
-        entityType="Country",
-        observationProperties={"unit": "U"},
+        columnMappings={"entity": "A"},
     )
     manager.add_variable_to_mcf(Node="dcid:vX", name="VX")
 
@@ -224,21 +197,19 @@ def test_custom_data_manager_repr():
     """
     manager = CustomDataManager()
     manager.add_provenance("p1", "http://prov", "s1", source_url="http://src")
-    manager.add_variable_to_config(statVar="dcid:v1", name="Var1")
     df = pd.DataFrame({"A": [1]})
-    manager.add_implicit_schema_file(
+    manager.add_explicit_schema_file(
         file_name="f.csv",
         provenance="p1",
         data=df,
-        entityType="Country",
-        observationProperties={"unit": "u"},
+        columnMappings={"entity": "A"},
     )
     manager.add_variable_to_mcf(Node="dcid:vX", name="VX")
     r = repr(manager)
     assert "1 inputFiles" in r
     assert "1 containing data" in r
     assert "1 sources" in r
-    assert "2 variables" in r
+    assert "1 variables" in r
 
 
 def test_remove_indicator_and_provenance():
@@ -246,18 +217,15 @@ def test_remove_indicator_and_provenance():
     manager.add_provenance("p1", "http://prov", "s1", source_url="http://src")
 
     df = pd.DataFrame({"A": [1]})
-    manager.add_implicit_schema_file(
+    manager.add_explicit_schema_file(
         file_name="a.csv",
         provenance="p1",
         data=df,
-        entityType="Country",
-        observationProperties={"unit": "u"},
+        columnMappings={"entity": "A"},
     )
-    manager.add_variable_to_config(statVar="dcid:sv1", name="Var")
     manager.add_variable_to_mcf(Node="dcid:sv1", name="Var", provenance="p1")
 
     manager.remove_indicator("dcid:sv1")
-    assert "dcid:sv1" not in (manager._config.variables or {})
     for nodes in manager._mcf_nodes.values():
         assert all(n.Node != "dcid:sv1" for n in nodes.nodes)
 
@@ -265,7 +233,6 @@ def test_remove_indicator_and_provenance():
         manager.remove_indicator("missing")
 
     manager.add_variable_to_mcf(Node="dcid:sv2", name="Var2", provenance="p1")
-    manager.add_variable_to_config(statVar="dcid:sv2", name="Var2")
     manager.add_explicit_schema_file(file_name="b.csv", provenance="p1", data=df)
 
     manager.remove_by_provenance("p1")
@@ -287,12 +254,11 @@ def test_remove_provenance_and_source_methods():
     manager.add_provenance("p2", "http://prov2", "s1")
 
     df = pd.DataFrame({"A": [1]})
-    manager.add_implicit_schema_file(
+    manager.add_explicit_schema_file(
         file_name="a.csv",
         provenance="p1",
         data=df,
-        entityType="Country",
-        observationProperties={"unit": "u"},
+        columnMappings={"entity": "A"},
     )
     manager.add_explicit_schema_file(file_name="b.csv", provenance="p2", data=df)
 
@@ -313,12 +279,11 @@ def test_remove_provenance_and_source_methods():
     # remove_source works on a fresh manager
     manager2 = CustomDataManager()
     manager2.add_provenance("p1", "http://prov", "s1", source_url="http://src")
-    manager2.add_implicit_schema_file(
+    manager2.add_explicit_schema_file(
         file_name="c.csv",
         provenance="p1",
         data=df,
-        entityType="Country",
-        observationProperties={"unit": "u"},
+        columnMappings={"entity": "A"},
     )
 
     manager2.remove_source("s1")
@@ -340,10 +305,9 @@ def _make_cfg(
     sv_blocklist: list[str] | None = None,
 ):
     input_files = {
-        key: ImplicitSchemaFile(
+        key: ExplicitSchemaFile(
             provenance=prov,
-            entityType="Country",
-            observationProperties=ObservationProperties(),
+            columnMappings=ColumnMappings(),
         )
     }
     sources = {source: Source(url="http://src", provenances={prov: "http://p"})}
@@ -446,15 +410,11 @@ def test_rename_provenance_updates_all_references():
     manager.add_provenance("p1", "http://prov1", "s1", source_url="http://src")
 
     df = pd.DataFrame({"A": [1]})
-    manager.add_implicit_schema_file(
+    manager.add_explicit_schema_file(
         file_name="a.csv",
         provenance="p1",
         data=df,
-        entityType="Country",
-        observationProperties={"unit": "u"},
-    )
-    manager.add_variable_to_config(
-        "dcid:sv1", name="Var", properties={"provenance": "p1"}
+        columnMappings={"entity": "A"},
     )
     manager.add_variable_to_mcf(Node="dcid:sv1", name="Var", provenance="p1")
 
@@ -462,7 +422,6 @@ def test_rename_provenance_updates_all_references():
 
     assert "pX" in manager._config.sources["s1"].provenances
     assert manager._config.inputFiles["a.csv"].provenance == "pX"
-    assert manager._config.variables["dcid:sv1"].properties["provenance"] == "pX"
     for nodes in manager._mcf_nodes.values():
         assert any(getattr(n, "provenance", None) == '"pX"' for n in nodes.nodes)
 
@@ -470,22 +429,31 @@ def test_rename_provenance_updates_all_references():
         manager.rename_provenance("pX", "pX")
 
 
-def test_rename_variable_and_source_methods():
+def test_rename_variable_mcf_only():
+    """rename_variable operates on MCF nodes exclusively (no config.variables)."""
     manager = CustomDataManager()
-    manager.add_provenance("p1", "http://prov1", "s1", source_url="http://src")
-    manager.add_variable_to_config("dcid:v1", name="Var1")
     manager.add_variable_to_mcf(Node="dcid:v1", name="Var1")
 
     manager.rename_variable("dcid:v1", "dcid:v2")
-    assert "dcid:v2" in manager._config.variables
     for nodes in manager._mcf_nodes.values():
         assert any(n.Node == "dcid:v2" for n in nodes.nodes)
+    for nodes in manager._mcf_nodes.values():
+        assert all(n.Node != "dcid:v1" for n in nodes.nodes)
 
-    manager.add_variable_to_config("dcid:v3", name="Var3")
+    # Renaming a missing variable raises ValueError
+    with pytest.raises(ValueError):
+        manager.rename_variable("missing", "dcid:v3")
+
+    # Renaming to an existing MCF node name raises ValueError
+    manager.add_variable_to_mcf(Node="dcid:v3", name="Var3")
     with pytest.raises(ValueError):
         manager.rename_variable("dcid:v2", "dcid:v3")
-    with pytest.raises(ValueError):
-        manager.rename_variable("missing", "dcid:v4")
+
+
+def test_rename_source():
+    """rename_source correctly updates the config sources dict."""
+    manager = CustomDataManager()
+    manager.add_provenance("p1", "http://prov1", "s1", source_url="http://src")
 
     manager.rename_source("s1", "s2")
     assert "s2" in manager._config.sources and "s1" not in manager._config.sources
@@ -504,16 +472,14 @@ def test_validate_all_input_files_have_data(tmp_path):
     df = pd.DataFrame({"A": [1, 2]})
 
     # Register one file WITH data and one WITHOUT data
-    manager.add_implicit_schema_file(
+    manager.add_explicit_schema_file(
         file_name="with_data.csv",
         provenance="p1",
         data=df,
-        entityType="Country",
     )
-    manager.add_implicit_schema_file(
+    manager.add_explicit_schema_file(
         file_name="no_data.csv",
         provenance="p1",
-        entityType="Country",
     )
 
     # Standalone validation method raises because no_data.csv has no data
@@ -542,3 +508,25 @@ def test_validate_all_input_files_have_data(tmp_path):
     assert (tmp_path / "config.json").exists()
     assert (tmp_path / "with_data.csv").exists()
     assert (tmp_path / "no_data.csv").exists()
+
+
+def test_loading_legacy_implicit_config_raises_with_message():
+    """Loading a JSON config with variablePerColumn format raises ValueError with a clear message."""
+    cfg = {
+        "inputFiles": {
+            "legacy.csv": {
+                "provenance": "p",
+                "entityType": "Country",
+                "observationProperties": {},
+                "format": "variablePerColumn",
+            }
+        },
+        "sources": {"S": {"url": "http://s/", "provenances": {"p": "http://p/"}}},
+    }
+    with tempfile.TemporaryDirectory() as tmpdir:
+        path = os.path.join(tmpdir, "config.json")
+        with open(path, "w") as f:
+            json.dump(cfg, f)
+        with pytest.raises(ValueError, match="is no longer supported") as exc_info:
+            Config.from_json(path)
+        assert "legacy.csv" in str(exc_info.value)

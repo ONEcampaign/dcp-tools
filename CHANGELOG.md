@@ -1,5 +1,24 @@
 # Changelog
 
+## [Unreleased]
+
+### Removed
+- `add_implicit_schema_file` method on `CustomDataManager`.
+- `add_variable_to_config` method on `CustomDataManager`.
+- `ImplicitSchemaFile`, `ObservationProperties`, and `Variable` model classes.
+
+### Changed
+- `Config.inputFiles` is now `Dict[str, ExplicitSchemaFile]` — the implicit
+  (`variablePerColumn`) path is no longer supported. Loading a legacy config that contains
+  `"format": "variablePerColumn"` now raises a clear `ValueError` with a migration message
+  instead of a generic Pydantic `ValidationError`.
+- `ExplicitSchemaFile` now rejects unknown keys (`extra="forbid"`).
+
+**Migration:** replace `add_implicit_schema_file` calls with `add_explicit_schema_file` and
+supply a `columnMappings` argument. See the
+[Data Commons custom data documentation](https://docs.datacommons.org/custom_dc/custom_data.html)
+for the explicit-schema format.
+
 ## [0.1.1] - 2026-02-19
 
 ### Added

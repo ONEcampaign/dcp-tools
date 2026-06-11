@@ -15,18 +15,17 @@ from bblocks.datacommons_tools.gcp_utilities.storage import (
 )
 from bblocks.datacommons_tools.custom_data.models.config_file import Config
 from bblocks.datacommons_tools.custom_data.models.data_files import (
-    ImplicitSchemaFile,
-    ObservationProperties,
+    ColumnMappings,
+    ExplicitSchemaFile,
 )
 from bblocks.datacommons_tools.custom_data.models.sources import Source
 
 
 def _minimal_config(key: str = "a.csv") -> Config:
     input_files = {
-        key: ImplicitSchemaFile(
+        key: ExplicitSchemaFile(
             provenance="prov",
-            entityType="Country",
-            observationProperties=ObservationProperties(),
+            columnMappings=ColumnMappings(),
         )
     }
     sources = {"src": Source(url="http://s", provenances={"prov": "http://p"})}
@@ -263,10 +262,9 @@ def test_get_missing_csv_files():
     bucket.list_blobs.return_value = [blob_a]
 
     cfg = _minimal_config()
-    cfg.inputFiles["extra.csv"] = ImplicitSchemaFile(
+    cfg.inputFiles["extra.csv"] = ExplicitSchemaFile(
         provenance="prov",
-        entityType="Country",
-        observationProperties=ObservationProperties(),
+        columnMappings=ColumnMappings(),
     )
 
     missing = get_missing_csv_files(bucket, cfg, "folder")
@@ -281,10 +279,9 @@ def test_get_missing_csv_files_with_prefix_added():
     bucket.list_blobs.return_value = [blob_a]
 
     cfg = _minimal_config("sub/a.csv")
-    cfg.inputFiles["sub/b.csv"] = ImplicitSchemaFile(
+    cfg.inputFiles["sub/b.csv"] = ExplicitSchemaFile(
         provenance="prov",
-        entityType="Country",
-        observationProperties=ObservationProperties(),
+        columnMappings=ColumnMappings(),
     )
 
     missing = get_missing_csv_files(bucket, cfg, "prefix")

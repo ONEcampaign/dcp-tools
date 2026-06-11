@@ -1014,11 +1014,33 @@ class CustomDataManager:
         for file, data in self._data.items():
             data.to_csv(Path(dir_path) / file, index=False)
 
+    def validate_all_input_files_have_data(self) -> CustomDataManager:
+        """Validate that every declared input file has a corresponding data entry.
+
+        Raises:
+            ValueError: If one or more input files declared in the config do not have
+                associated data registered in this manager.
+        """
+
+        missing = [
+            file_name
+            for file_name in self._config.inputFiles
+            if file_name not in self._data
+        ]
+        if missing:
+            raise ValueError(
+                f"The following input files declared in the config have no corresponding "
+                f"data: {missing}. Use add_data() or pass data= when registering the "
+                f"input file."
+            )
+        return self
+
     def export_all(
         self,
         dir_path: str | PathLike[str],
         override: bool = False,
         mcf_file_names: Optional[str | list[str]] = None,
+        validate_data: bool = False,
     ) -> None:
         """Export the config, MCF file, and data to a directory
 
@@ -1027,7 +1049,14 @@ class CustomDataManager:
             override: If True, overwrite the files if they exist. Defaults to False.
             mcf_file_names: Name of the MCF file(s) to export (must end in .mcf).
                 Defaults to None, which means no MCF file will be exported.
+            validate_data: If True, raise a ValueError before exporting if any input
+                file declared in the config does not have a corresponding data entry.
+                Defaults to False.
         """
+
+        # optionally validate that all input files have data
+        if validate_data:
+            self.validate_all_input_files_have_data()
 
         # export the config
         self.export_config(dir_path)

@@ -7,7 +7,7 @@ from os import PathLike
 from pathlib import Path
 from typing import Literal
 
-from pydantic import Field, Json
+from pydantic import Field, Json, field_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 _DEFAULT_IMAGE = "gcr.io/datcom-ci/datacommons-services:latest"
@@ -54,6 +54,11 @@ class KGSettings(BaseSettings):
     datacommons_service_image: str = Field(
         default=_DEFAULT_IMAGE, alias="DATACOMMONS_SERVICE_IMAGE"
     )
+
+    @field_validator("gcs_input_folder_path", "gcs_output_folder_path")
+    @classmethod
+    def _strip_slashes(cls, v: str) -> str:
+        return v.strip("/")
 
     @property
     def full_gcs_input_path(self) -> str:

@@ -14,12 +14,11 @@ from dcp_tools.custom_data.models.config_file import Config
 from dcp_tools.custom_data.models.mcf import MCFNodes
 from dcp_tools.logger import logger
 
-_SKIP_IN_SUBDIR = {".json"}
 _VALID_EXTENSIONS = {".csv", ".json", ".mcf"}
 
 
 def _iter_local_files(directory: Path) -> Iterable[Path]:
-    """Yield all the files to be uploaded (excluding the skipped ones in subdirectories)
+    """Yield all the files to be uploaded under ``directory``.
 
     Args:
         directory (Path): The directory to iterate through.
@@ -27,8 +26,6 @@ def _iter_local_files(directory: Path) -> Iterable[Path]:
     """
     for path in directory.rglob("*"):
         if not path.is_file():
-            continue
-        if path.parent != directory and path.suffix in _SKIP_IN_SUBDIR:
             continue
         yield path
 
@@ -66,11 +63,51 @@ def _normalize_gcs_prefix(bucket: Bucket, prefix: str | None) -> str | None:
     return f"{prefix}/"
 
 
+def _remote_path(local_path: Path, directory: Path, gcs_folder_name: str | None) -> str:
+    """Map a local file path to its remote blob name under ``gcs_folder_name``.
+
+    The relative directory structure under ``directory`` is preserved.
+    """
+    relative = local_path.relative_to(directory).as_posix()
+    return f"{gcs_folder_name}/{relative}" if gcs_folder_name else relative
+
+
+def _scoped_prefix(gcs_folder_name: str | None, import_name: str | None) -> str | None:
+    """Append ``import_name`` to ``gcs_folder_name`` when scoping to one import.
+
+    Args:
+        gcs_folder_name (str | None): Base folder path in the GCS bucket.
+        import_name (str | None): Single-segment import name (e.g. ``"myImport"``).
+            Must not contain ``/``.
+
+    Returns:
+        str | None: Effective prefix scoped to the import, or the base prefix
+            when ``import_name`` is ``None``.
+
+    Raises:
+        ValueError: If ``import_name`` contains a ``/`` (must be a single path segment).
+    """
+    base = gcs_folder_name.strip("/") if gcs_folder_name else None
+    if import_name:
+        seg = import_name.strip("/")
+        if "/" in seg:
+            raise ValueError(
+                f"import_name must be a single path segment, got {import_name!r}"
+            )
+        return f"{base}/{seg}" if base else seg
+    return base
+
+
 def upload_directory_to_gcs(
-    bucket: Bucket, directory: Path, gcs_folder_name: str | None = None
+    bucket: Bucket, directory: Path, *, gcs_folder_name: str | None = None
 ) -> None:
-    """Upload a local directory to Google Cloud Storage. Folder structures
-    is maintained in the GCS bucket in a specified base folder
+    """Upload a local directory to Google Cloud Storage. Folder structure
+    is maintained in the GCS bucket in a specified base folder.
+
+    Every file matching the supported extensions anywhere under ``directory``
+    is uploaded. Import subdirs must therefore contain only files meant for
+    upload (no scratch or intermediate ``.json``); callers are responsible for
+    keeping the source tree clean.
 
     Args:
         bucket (Bucket): GCS bucket instance.
@@ -85,14 +122,16 @@ def upload_directory_to_gcs(
     if not directory.exists():
         raise FileNotFoundError(f"The directory {directory} does not exist.")
 
+    if gcs_folder_name is not None:
+        gcs_folder_name = gcs_folder_name.strip("/") or None
+
     files_uploaded = 0
 
     for local_path in _iter_local_files(directory):
         if local_path.suffix not in _VALID_EXTENSIONS:
             logger.warning(f"Skipping unsupported file type: {local_path}")
             continue
-        relative = local_path.relative_to(directory).as_posix()
-        remote_path = f"{gcs_folder_name}/{relative}" if gcs_folder_name else relative
+        remote_path = _remote_path(local_path, directory, gcs_folder_name)
         bucket.blob(remote_path).upload_from_filename(str(local_path))
         logger.info(f"Uploaded {local_path} to {remote_path}")
         files_uploaded += 1
@@ -104,37 +143,70 @@ def upload_directory_to_gcs(
 
 
 def sync_directory_to_gcs(
-    bucket: Bucket, directory: Path, gcs_folder_name: str | None = None
+    bucket: Bucket, directory: Path, *, gcs_folder_name: str | None = None
 ) -> None:
     """Upload a local directory then delete stale remote blobs.
 
     This function first uploads all local files (via
-    :func:`upload_directory_to_gcs`) and then removes any blobs under
-    ``gcs_folder_name`` that no longer have a local counterpart.
+    :func:`upload_directory_to_gcs`) and then removes any blobs that are
+    stale (no longer have a local counterpart) within the scopes of the
+    import subdirectories present locally.
+
+    Deletion is subset-safe by directory-tree discovery: blobs under import
+    subdirectories not present locally are never deleted. Pass the parent
+    directory containing all ``<importName>/`` subdirs; the function discovers
+    which imports are present and scopes deletion automatically — no
+    ``import_name`` argument is required.
 
     Args:
         bucket (Bucket): GCS bucket instance.
-        directory (Path): Local directory to upload.
+        directory (Path): Local directory to upload (typically the parent of
+            all ``<importName>/`` subdirectories).
         gcs_folder_name (str | None): Name of the base folder in the GCS
             bucket. If ``None``, the bucket root is used.
     """
-    upload_directory_to_gcs(bucket, directory, gcs_folder_name)
+    if gcs_folder_name is not None:
+        gcs_folder_name = gcs_folder_name.strip("/") or None
 
+    upload_directory_to_gcs(bucket, directory, gcs_folder_name=gcs_folder_name)
+
+    # Remote prefix with trailing slash (empty string when no prefix)
+    base = f"{gcs_folder_name}/" if gcs_folder_name else ""
+
+    # Build the expected set and discover which import subdirs are present
     expected: set[str] = set()
+    subtree_scopes: set[str] = set()  # full subtrees safe to prune (import subdirs)
+    has_root_level_file = False  # whether any file sits directly under directory
+
     for local_path in _iter_local_files(directory):
         if local_path.suffix not in _VALID_EXTENSIONS:
             continue
-        relative = local_path.relative_to(directory).as_posix()
-        remote_path = f"{gcs_folder_name}/{relative}" if gcs_folder_name else relative
+        remote_path = _remote_path(local_path, directory, gcs_folder_name)
         expected.add(remote_path)
+        rel = local_path.relative_to(directory)
+        if len(rel.parts) > 1:
+            # Nested under an import subdir — whole subtree is in scope for pruning
+            subtree_scopes.add(f"{base}{rel.parts[0]}/")
+        else:
+            has_root_level_file = True
 
-    prefix = gcs_folder_name or None
     try:
-        remote = set(list_bucket_files(bucket, prefix))
+        remote = set(list_bucket_files(bucket, gcs_folder_name=gcs_folder_name))
     except FileNotFoundError:
         remote = set()
 
-    stale = remote - expected
+    def _deletable(r: str) -> bool:
+        # Subtree rule: any depth under a present import subdir
+        if any(r.startswith(s) for s in subtree_scopes):
+            return True
+        # Root rule: ONLY direct children of `base` (no further "/"), and only
+        # when this run actually had root-level local files. Deletes legacy
+        # prefix/old.csv but never prefix/otherImport/b.csv (deeper "/").
+        if has_root_level_file and r.startswith(base) and "/" not in r[len(base) :]:
+            return True
+        return False
+
+    stale = {r for r in (remote - expected) if _deletable(r)}
     if stale:
         logger.info(
             f"Found {len(stale)} stale blob(s) under "
@@ -145,7 +217,9 @@ def sync_directory_to_gcs(
         logger.info(f"No stale blobs found under '{gcs_folder_name or 'root'}'")
 
 
-def list_bucket_files(bucket: Bucket, gcs_folder_name: str | None = None) -> list[str]:
+def list_bucket_files(
+    bucket: Bucket, *, gcs_folder_name: str | None = None
+) -> list[str]:
     """Return the list of blob names in ``gcs_folder_name``.
 
     Args:
@@ -168,30 +242,47 @@ def list_bucket_files(bucket: Bucket, gcs_folder_name: str | None = None) -> lis
 
 
 def get_unregistered_csv_files(
-    bucket: Bucket, config: Config | dict, gcs_folder_name: str | None = None
+    bucket: Bucket,
+    config: Config | dict,
+    *,
+    gcs_folder_name: str | None = None,
+    import_name: str | None = None,
 ) -> list[str]:
     """Identify CSV files in the bucket not referenced in ``config``.
+
+    When ``import_name`` is provided, the check is scoped to that import's
+    subdirectory (e.g. ``import_name="myImport"`` checks under
+    ``gcs_folder_name/myImport/``). Blobs from sibling imports are not
+    returned. When omitted, behaves as today — compares against ``gcs_folder_name``
+    directly.
 
     Args:
         bucket (Bucket): GCS bucket instance.
         config (Config): Parsed configuration object.
         gcs_folder_name (str | None): Folder path prefix in the bucket. If
             ``None``, search the entire bucket.
+        import_name (str | None): Single-segment import name used to scope
+            the listing to ``gcs_folder_name/<import_name>/``. Must not
+            contain ``/``.
 
     Returns:
         list[str]: CSV file names present in the bucket but missing from
             ``config.inputFiles``.
     """
+    effective = _scoped_prefix(gcs_folder_name, import_name)
+    try:
+        blob_names = list_bucket_files(bucket=bucket, gcs_folder_name=effective)
+    except FileNotFoundError:
+        blob_names = []
 
-    blob_names = list_bucket_files(bucket=bucket, gcs_folder_name=gcs_folder_name)
     csv_files: list[str] = []
     for name in blob_names:
         path = Path(name)
         if path.suffix != ".csv":
             continue
-        if gcs_folder_name:
+        if effective:
             try:
-                prefix = gcs_folder_name.rstrip("/")
+                prefix = effective.rstrip("/")
                 path = path.relative_to(prefix)
             except ValueError:
                 pass
@@ -205,22 +296,37 @@ def get_unregistered_csv_files(
 
 
 def get_missing_csv_files(
-    bucket: Bucket, config: Config | dict, gcs_folder_name: str | None = None
+    bucket: Bucket,
+    config: Config | dict,
+    *,
+    gcs_folder_name: str | None = None,
+    import_name: str | None = None,
 ) -> list[str]:
     """Identify CSV files referenced in ``config`` but absent from ``bucket``.
+
+    When ``import_name`` is provided, the check is scoped to that import's
+    subdirectory (e.g. ``import_name="myImport"`` checks under
+    ``gcs_folder_name/myImport/``). When omitted, behaves as today — compares
+    against ``gcs_folder_name`` directly.
 
     Args:
         bucket (Bucket): GCS bucket instance.
         config (Config | dict): Parsed configuration object.
         gcs_folder_name (str | None): Folder path prefix in the bucket. If
             ``None``, search the entire bucket.
+        import_name (str | None): Single-segment import name used to scope
+            the check to ``gcs_folder_name/<import_name>/``. Must not
+            contain ``/``.
 
     Returns:
         list[str]: CSV file names present in ``config.inputFiles`` but missing
             from the bucket.
     """
-
-    blob_names = set(list_bucket_files(bucket=bucket, gcs_folder_name=gcs_folder_name))
+    effective = _scoped_prefix(gcs_folder_name, import_name)
+    try:
+        blob_names = set(list_bucket_files(bucket=bucket, gcs_folder_name=effective))
+    except FileNotFoundError:
+        blob_names = set()
 
     if isinstance(config, dict):
         config = Config.model_validate(config)
@@ -230,7 +336,7 @@ def get_missing_csv_files(
         path = Path(name)
         if path.suffix != ".csv":
             continue
-        blob_name = f"{gcs_folder_name}/{name}" if gcs_folder_name else name
+        blob_name = f"{effective}/{name}" if effective else name
         if blob_name not in blob_names:
             missing.append(name)
 

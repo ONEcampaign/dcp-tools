@@ -150,13 +150,14 @@ def sync_directory_to_gcs(
     This function first uploads all local files (via
     :func:`upload_directory_to_gcs`) and then removes any blobs that are
     stale (no longer have a local counterpart) within the scopes of the
-    import subdirectories present locally.
+    import subdirectories that contain files locally.
 
-    Deletion is subset-safe by directory-tree discovery: blobs under import
-    subdirectories not present locally are never deleted. Pass the parent
-    directory containing all ``<importName>/`` subdirs; the function discovers
-    which imports are present and scopes deletion automatically — no
-    ``import_name`` argument is required.
+    Deletion is subset-safe by directory-tree discovery. Blobs under import
+    subdirectories with no files locally are never deleted. This includes both
+    imports not brought locally at all and import subdirs that are present but
+    empty. Pass the parent directory containing all ``<importName>/`` subdirs;
+    the function discovers which imports have files and scopes deletion to
+    them, so no ``import_name`` argument is required.
 
     Args:
         bucket (Bucket): GCS bucket instance.
@@ -202,9 +203,7 @@ def sync_directory_to_gcs(
         # Root rule: ONLY direct children of `base` (no further "/"), and only
         # when this run actually had root-level local files. Deletes legacy
         # prefix/old.csv but never prefix/otherImport/b.csv (deeper "/").
-        if has_root_level_file and r.startswith(base) and "/" not in r[len(base) :]:
-            return True
-        return False
+        return has_root_level_file and r.startswith(base) and "/" not in r[len(base) :]
 
     stale = {r for r in (remote - expected) if _deletable(r)}
     if stale:

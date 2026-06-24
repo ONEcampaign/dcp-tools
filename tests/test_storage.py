@@ -9,6 +9,7 @@ from dcp_tools.custom_data.models.data_files import (
     ExplicitSchemaFile,
 )
 from dcp_tools.custom_data.models.sources import Source
+from dcp_tools.gcp_utilities.settings import KGSettings
 from dcp_tools.gcp_utilities.storage import (
     delete_bucket_files,
     get_bucket_files,
@@ -363,13 +364,11 @@ def test_get_missing_csv_files_with_prefix_added():
     assert missing == ["sub/b.csv"]
 
 
-def test_get_unregistered_csv_files_per_import(tmp_path):
+def test_get_unregistered_csv_files_per_import():
     """Per-import scoping prevents sibling-import blobs from appearing as unregistered."""
     bucket = Mock()
     blob_a = Mock()
     blob_a.name = "prefix/myImport/a.csv"
-    blob_other = Mock()
-    blob_other.name = "prefix/otherImport/b.csv"
     bucket.list_blobs.return_value = [blob_a]
     bucket.name = "my-bucket"
 
@@ -378,6 +377,8 @@ def test_get_unregistered_csv_files_per_import(tmp_path):
         bucket, cfg, gcs_folder_name="prefix", import_name="myImport"
     )
 
+    # The listing is scoped to the import's own subdir, so a sibling import's
+    # blobs never reach the comparison and cannot show up as unregistered.
     assert result == []
     bucket.list_blobs.assert_called_once_with(prefix="prefix/myImport/")
 
@@ -429,8 +430,6 @@ def test_registration_checks_fresh_import_empty_prefix():
 
 def test_gcs_input_folder_path_strips_slashes(monkeypatch):
     """KGSettings strips leading/trailing slashes from folder paths at model init."""
-    from bblocks.datacommons_tools.gcp_utilities.settings import KGSettings
-
     env_vals = {
         "LOCAL_PATH": "/tmp/data",
         "GCP_PROJECT_ID": "proj",

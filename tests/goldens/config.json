@@ -6,18 +6,18 @@
         "a.csv": {
             "provenance": "provA",
             "columnMappings": {
-                "entity": "Country",
-                "date": "Year",
-                "value": "Val"
+                "dcid:observationAbout": "Country",
+                "dcid:observationDate": "Year",
+                "dcid:value": "Val"
             },
             "format": "variablePerRow"
         },
         "b.csv": {
             "provenance": "provB",
             "columnMappings": {
-                "entity": "Country",
-                "date": "Year",
-                "value": "Val"
+                "dcid:observationAbout": "Country",
+                "dcid:observationDate": "Year",
+                "dcid:value": "Val"
             },
             "format": "variablePerRow"
         }

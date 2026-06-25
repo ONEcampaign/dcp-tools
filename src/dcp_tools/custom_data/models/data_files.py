@@ -1,6 +1,6 @@
 from typing import Annotated, Literal
 
-from pydantic import BaseModel, ConfigDict, Field, StringConstraints
+from pydantic import AliasChoices, BaseModel, ConfigDict, Field, StringConstraints
 
 
 class MCFFileName(BaseModel):
@@ -11,6 +11,11 @@ class MCFFileName(BaseModel):
 
 class ColumnMappings(BaseModel):
     """Representation of the ColumnMappings section of the InputFiles section of the config file
+
+    The DCP importer keys observations by ``dcid:``-prefixed predicate names, so each
+    field serialises to its ``dcid:`` alias (via ``model_dump(by_alias=True)``) while the
+    friendly short name remains the Python attribute. Both forms are accepted on input.
+    ``scalingFactor`` has no recognised ``dcid:`` key and stays a plain short field.
 
     Attributes:
         variable: Variable name.
@@ -23,14 +28,42 @@ class ColumnMappings(BaseModel):
         observationPeriod: Observation period of the data.
     """
 
-    variable: str | None = None
-    entity: str | None = None
-    date: str | None = None
-    value: str | None = None
-    unit: str | None = None
+    variable: str | None = Field(
+        default=None,
+        validation_alias=AliasChoices("variable", "dcid:variableMeasured"),
+        serialization_alias="dcid:variableMeasured",
+    )
+    entity: str | None = Field(
+        default=None,
+        validation_alias=AliasChoices("entity", "dcid:observationAbout"),
+        serialization_alias="dcid:observationAbout",
+    )
+    date: str | None = Field(
+        default=None,
+        validation_alias=AliasChoices("date", "dcid:observationDate"),
+        serialization_alias="dcid:observationDate",
+    )
+    value: str | None = Field(
+        default=None,
+        validation_alias=AliasChoices("value", "dcid:value"),
+        serialization_alias="dcid:value",
+    )
+    unit: str | None = Field(
+        default=None,
+        validation_alias=AliasChoices("unit", "dcid:unit"),
+        serialization_alias="dcid:unit",
+    )
     scalingFactor: str | None = None
-    measurementMethod: str | None = None
-    observationPeriod: str | None = None
+    measurementMethod: str | None = Field(
+        default=None,
+        validation_alias=AliasChoices("measurementMethod", "dcid:measurementMethod"),
+        serialization_alias="dcid:measurementMethod",
+    )
+    observationPeriod: str | None = Field(
+        default=None,
+        validation_alias=AliasChoices("observationPeriod", "dcid:observationPeriod"),
+        serialization_alias="dcid:observationPeriod",
+    )
 
     model_config = ConfigDict(extra="forbid")
 

@@ -856,7 +856,7 @@ class CustomDataManager:
 
         self._config.validate_config()
 
-        return self._config.model_dump(mode="json", exclude_none=True)
+        return self._config.model_dump(mode="json", exclude_none=True, by_alias=True)
 
     def export_data(self, dir_path: str | PathLike[str]) -> None:
         """Export the data to CSV files

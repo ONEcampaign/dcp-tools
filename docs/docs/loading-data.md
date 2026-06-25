@@ -27,21 +27,21 @@ The settings should include the following information:
 create a KGSettings object from a `.env` file, a `.json` file, or directly instantiating an object.
 
 ```python title="settings from .env file"
-from bblocks.datacommons_tools.gcp_utilities import get_kg_settings
+from dcp_tools.gcp_utilities import get_kg_settings
 
 settings = get_kg_settings(source="env", env_file="customDC.env")
 
 ```
 
 ```python title="settings from .json file"
-from bblocks.datacommons_tools.gcp_utilities import get_kg_settings
+from dcp_tools.gcp_utilities import get_kg_settings
 
 settings = get_kg_settings(source="json", env_file="customDC.json")
 
 ```
 
 ```python title="settings from KGSettings object"
-from bblocks.datacommons_tools.gcp_utilities import KGSettings
+from dcp_tools.gcp_utilities import KGSettings
 
 settings = KGSettings(
     local_path="path/to/local/directory",
@@ -68,7 +68,7 @@ First, you need to upload the directory containing the `config.json` file and an
 Google Cloud Storage.
 
 ```python title="Upload to GCS"
-from bblocks.datacommons_tools.gcp_utilities import (
+from dcp_tools.gcp_utilities import (
     upload_to_cloud_storage,
     run_data_load,
     redeploy_service,

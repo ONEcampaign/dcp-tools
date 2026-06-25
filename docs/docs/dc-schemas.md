@@ -35,7 +35,7 @@ the importer which columns map to entities, dates, variable DCIDs, and observati
 First, create a `CustomDataManager` instance:
 
 ```python
-from bblocks.datacommons_tools import CustomDataManager
+from dcp_tools import CustomDataManager
 
 manager = CustomDataManager()
 ```
@@ -54,7 +54,7 @@ manager.add_provenance(
 Register the data file with its column mappings:
 
 ```python
-from bblocks.datacommons_tools.custom_data.models.data_files import ColumnMappings
+from dcp_tools.custom_data.models.data_files import ColumnMappings
 
 manager.add_explicit_schema_file(
     file_name="economy/gdp.csv",

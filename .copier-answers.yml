@@ -1,0 +1,12 @@
+# Changes here will be overwritten by Copier; NEVER EDIT MANUALLY
+_commit: v1.0.2
+_src_path: https://github.com/ONEcampaign/bblocks-projects.git
+author_email: jorge.rivera@one.org
+author_name: ONE Campaign
+github_username: ONEcampaign
+license: mit
+project_description: Tools to work with the Data Commons Platform.
+project_name: dcp-tools
+project_slug: dcp_tools
+project_type: package
+python_version: '3.13'

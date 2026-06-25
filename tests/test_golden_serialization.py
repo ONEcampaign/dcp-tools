@@ -1,10 +1,10 @@
 import json
 from pathlib import Path
 
-from bblocks.datacommons_tools.custom_data.data_management import CustomDataManager
-from bblocks.datacommons_tools.custom_data.models.config_file import Config
-from bblocks.datacommons_tools.custom_data.models.mcf import MCFNode
-from bblocks.datacommons_tools.custom_data.schema_tools import csv_metadata_to_nodes
+from dcp_tools.custom_data.data_management import CustomDataManager
+from dcp_tools.custom_data.models.config_file import Config
+from dcp_tools.custom_data.models.mcf import MCFNode
+from dcp_tools.custom_data.schema_tools import csv_metadata_to_nodes
 
 GOLDEN_DIR = Path(__file__).parent / "goldens"
 

@@ -1,6 +1,6 @@
 import pytest
 
-from bblocks.datacommons_tools.custom_data.models.mcf import MCFNodes, MCFNode
+from dcp_tools.custom_data.models.mcf import MCFNode, MCFNodes
 
 
 def test_mcfnode_mcf_output_order_and_formatting():

@@ -7,22 +7,22 @@ implicit-schema path is removed (since they never reference ImplicitSchemaFile,
 ObservationProperties, Variable, or add_variable_to_config).
 """
 
-import pandas as pd
-import pytest
 from unittest.mock import Mock
 
-from bblocks.datacommons_tools import CustomDataManager
-from bblocks.datacommons_tools.custom_data.models.config_file import Config
-from bblocks.datacommons_tools.custom_data.models.data_files import (
-    ExplicitSchemaFile,
-    ColumnMappings,
-)
-from bblocks.datacommons_tools.custom_data.models.sources import Source
-from bblocks.datacommons_tools.gcp_utilities.storage import (
-    get_unregistered_csv_files,
-    get_missing_csv_files,
-)
+import pandas as pd
+import pytest
 
+from dcp_tools import CustomDataManager
+from dcp_tools.custom_data.models.config_file import Config
+from dcp_tools.custom_data.models.data_files import (
+    ColumnMappings,
+    ExplicitSchemaFile,
+)
+from dcp_tools.custom_data.models.sources import Source
+from dcp_tools.gcp_utilities.storage import (
+    get_missing_csv_files,
+    get_unregistered_csv_files,
+)
 
 # ---------------------------------------------------------------------------
 # Module-level helpers

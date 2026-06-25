@@ -1,6 +1,6 @@
 import pytest
 
-from bblocks.datacommons_tools.custom_data.models.config_file import Config
+from dcp_tools.custom_data.models.config_file import Config
 
 
 def test_config_validators_raise_on_invalid_input_files(tmp_path):

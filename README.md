@@ -1,12 +1,11 @@
-# bblocks-datacommons-tools
+# dcp-tools
 
 __Manage and load data to custom Data Commons instances__
 
-[![PyPI](https://img.shields.io/pypi/v/bblocks_datacommons_tools.svg)](https://pypi.org/project/bblocks_datacommons_tools/)
-[![PyPI - Python Version](https://img.shields.io/pypi/pyversions/bblocks_datacommons_tools.svg)](https://pypi.org/project/bblocks_datacommons_tools/)
+[![PyPI](https://img.shields.io/pypi/v/dcp-tools.svg)](https://pypi.org/project/dcp-tools/)
+[![PyPI - Python Version](https://img.shields.io/pypi/pyversions/dcp-tools.svg)](https://pypi.org/project/dcp-tools/)
 [![Docs](https://img.shields.io/badge/docs-bblocks-blue)](https://docs.one.org/tools/bblocks/datacommons-tools/)
 [![Lint/format: Ruff](https://img.shields.io/badge/lint%2Fformat-ruff-46a758.svg)](https://github.com/astral-sh/ruff)
-[![codecov](https://codecov.io/gh/ONEcampaign/bblocks-datacommons-tools/graph/badge.svg?token=3ONEA8JQTC)](https://codecov.io/gh/ONEcampaign/bblocks-datacommons-tools)
 
 Custom [Data Commons](https://docs.datacommons.org/custom_dc/custom_data.html) requires that you provide your data in a specific schema, format, and file structure.
 
@@ -19,7 +18,7 @@ At a high level, you need to provide the following:
 
 Managing this workflow by hand is tedious and easy to get wrong.
 
-The `bblocks.datacommons_tools` package streamlines that process. It provides a Python API and command line utilities for building config files, generating MCF from CSV metadata and running the data load pipeline on Google Cloud. 
+The `dcp_tools` package streamlines that process. It provides a Python API and command line utilities for building config files, generating MCF from CSV metadata and running the data load pipeline on Google Cloud. 
 
 Use this package when you want to:
 
@@ -27,11 +26,7 @@ Use this package when you want to:
 - Define statistical variables, entities or groups using MCF files.
 - Programmatically upload CSVs, MCF files, and the `config.json` file to Cloud Storage, trigger the load job and redeploy your custom Data Commons service with code.
 
-In short, `datacommons-tools` removes much of the manual work involved in setting up and maintaining a custom Data Commons Knowledge Graph.
-
-`bblocks-datacommons-tools` is part of the `bblocks` ecosystem, 
-a set of Python packages designed as building blocks for working with data in the international development 
-and humanitarian sectors.
+In short, `dcp-tools` removes much of the manual work involved in setting up and maintaining a custom Data Commons Knowledge Graph.
 
 Read the [documentation](https://docs.one.org/tools/bblocks/datacommons-tools/)
 for more details on how to use the package and the motivation for its creation.
@@ -43,13 +38,7 @@ The package can be installed in various ways.
 
 Directly as
 ```bash
-pip install bblocks-datacommons-tools
-```
-
-Or from the main `bblocks` package with an extra:
-
-```bash
-pip install "bblocks[datacommons-tools]"
+pip install dcp-tools
 ```
 
 It can also be installed from GitHub:
@@ -71,7 +60,7 @@ The CustomDataManager object will handle generating the `config.json` file, as w
 In this example, we assume a `config.json` does not yet exist.
 
 ```python title="Instantiate the CustomDataManager class"
-from bblocks.datacommons_tools import CustomDataManager
+from dcp_tools import CustomDataManager
 
 # Create the object and call it "manager"
 manager = CustomDataManager()
@@ -168,7 +157,7 @@ A detailed description of the needed information, can be found in the documentat
 First, load the settings using `get_kg_settings`. In this example, we will load them from a `.env` file available in our working directory.
 
 ```python  title="Load settings"
-from bblocks.datacommons_tools.gcp_utilities import (
+from dcp_tools.gcp_utilities import (
     upload_to_cloud_storage,
     run_data_load,
     redeploy_service,

@@ -1,7 +1,7 @@
 # Changelog
 
 ## v1.0.0 (in development)
-- Stable release of the `bblocks-datacommons-tools` package
+- Stable release of the `dcp-tools` package
 - **Breaking:** removed implicit-schema support — `add_implicit_schema_file`,
   `add_variable_to_config`, and the `ImplicitSchemaFile` / `ObservationProperties` / `Variable`
   model classes are gone. Loading a legacy `variablePerColumn` config now raises `ValueError`.
@@ -9,7 +9,7 @@
   [Data Commons custom data docs](https://docs.datacommons.org/custom_dc/custom_data.html).
 
 ## v0.1.0 (in development)
-- Initial release of the `bblocks-datacommons-tools` package for external preview and testing
+- Initial release of the `dcp-tools` package for external preview and testing
 
 ## v0.0.9 (2025-09-17)
 - Added new configuration options, including `set_customIdNamespace`, `set_customSvgPrefix`,
@@ -42,4 +42,4 @@ automatically trims spaces between `dcid:` and the start of the id string.
 - Minor update to documentation and release to PyPI
 
 ## v0.0.1 (2025-07-07)
-- Initial release of the `bblocks-datacommons-tools`
+- Initial release of the `dcp-tools`

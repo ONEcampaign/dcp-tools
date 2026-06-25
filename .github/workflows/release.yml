@@ -1,36 +1,58 @@
-# this workflow will upload the package to pypi when a new release is created
-name: release
+name: Release
 
 on:
-  release:
-    types: [created]
-  workflow_dispatch:
+  push:
+    tags:
+      - 'v*'
+
+permissions:
+  contents: read
+  id-token: write  # Required for PyPI trusted publishing
 
 jobs:
-  release:
-    name: Release package to PyPI
+  build:
     runs-on: ubuntu-latest
-
     steps:
-      - name: Check-out repository
-        uses: actions/checkout@v4
+      - uses: actions/checkout@v7
 
-      - name: Set up uv and Python
-        uses: astral-sh/setup-uv@v7
+      - name: Install uv
+        uses: astral-sh/setup-uv@v8.2.0
+
+      - name: Cache uv
+        uses: actions/cache@v6
         with:
-          python-version: "3.11"
+          path: ~/.cache/uv
+          key: ${{ runner.os }}-uv-${{ hashFiles('uv.lock') }}
+          restore-keys: |
+            ${{ runner.os }}-uv-
 
-      - name: Install package
-        run: uv sync --no-dev
+      - name: Set up Python 3.13
+        run: uv python install '3.13'
 
-      - name: Build wheels and source tarball
+      - name: Build package
         run: uv build
 
-      - name: Publish package to PyPI
-        uses: pypa/gh-action-pypi-publish@release/v1
+      - name: Upload build artifacts
+        uses: actions/upload-artifact@v7
         with:
-          user: __token__
-          password: ${{ secrets.PYPI_API_TOKEN }}
-          skip_existing: true
-          verify_metadata: true
-          verbose: true
+          name: dist
+          path: dist/
+
+  publish:
+    needs: build
+    runs-on: ubuntu-latest
+    environment:
+      name: pypi
+      url: https://pypi.org/project/dcp-tools
+    steps:
+      - name: Install uv
+        uses: astral-sh/setup-uv@v8.2.0
+
+      - name: Download build artifacts
+        uses: actions/download-artifact@v8
+        with:
+          name: dist
+          path: dist/
+
+      - name: Publish to PyPI
+        run: uv publish

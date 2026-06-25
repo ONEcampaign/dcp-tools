@@ -1,4 +1,4 @@
-# Getting started with `bblocks-datacommons-tools`
+# Getting started with `dcp-tools`
 
 This page walks you through the basic steps to install and start using 
 `bblocks-datacommonst-tools` to prepare and load the data for your custom instance.
@@ -16,7 +16,7 @@ For smaller projects with limited data and infrequent updates, managing the work
 sufficient. But for larger datasets or pipelines with regular refreshes, the process quickly 
 becomes tedious and difficult to maintain.
 
-`bblocks-datacommons-tools` streamlines this workflow by allowing you to programmatically prepare and load data using
+`dcp-tools` streamlines this workflow by allowing you to programmatically prepare and load data using
 a Python-based pipeline.
 
 Before you get started, you should have a basic understanding of how custom Data Commons instances work and 
@@ -44,23 +44,17 @@ The package can be installed in various ways.
 
 Directly as
 ```bash
-pip install bblocks-datacommons-tools
-```
-
-Or from the main `bblocks` package with an extra:
-
-```bash
-pip install "bblocks[datacommons-tools]"
+pip install dcp-tools
 ```
 
 ## Preparing data
 
-`bblocks-datacommons-tools` offers convenient functionality to prepare configuration JSON, MCF, and custom data files
+`dcp-tools` offers convenient functionality to prepare configuration JSON, MCF, and custom data files
 without having to manually edit these files. To access this functionality, create an instance of the 
 `CustomDataManager` class.
 
 ```python
-from bblocks.datacommons_tools import CustomDataManager
+from dcp_tools import CustomDataManager
 
 manager = CustomDataManager()
 ```
@@ -83,7 +77,7 @@ CSVs in the correct format.
 
 ```python title="Add explicit schema data"
 import pandas as pd
-from bblocks.datacommons_tools.custom_data.models.data_files import ColumnMappings
+from dcp_tools.custom_data.models.data_files import ColumnMappings
 
 df = pd.DataFrame(...)
 
@@ -122,7 +116,7 @@ can be specified in a `.env` file (read more about the configuration settings [h
 
 
 ```python
-from bblocks.datacommons_tools.gcp_utilities import get_kg_settings
+from dcp_tools.gcp_utilities import get_kg_settings
 
 settings = get_kg_settings(source="env", env_file="customDC.env")
 ```
@@ -132,7 +126,7 @@ Now we can load data and configuration files to the storage bucket, run the data
 and redeploy the custom Data Commons instance.
 
 ```python
-from bblocks.datacommons_tools.gcp_utilities import (
+from dcp_tools.gcp_utilities import (
     upload_to_cloud_storage,
     run_data_load,
     redeploy_service,

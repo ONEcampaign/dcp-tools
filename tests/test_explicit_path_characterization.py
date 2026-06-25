@@ -166,8 +166,9 @@ def test_export_config_round_trip_explicit(tmp_path):
 def test_config_to_dict_explicit_shape():
     """B5 — config_to_dict returns the expected serialized shape for the explicit path.
 
-    Pins the key names and values as observed on current HEAD. The key for the
-    format is 'data_format' (not the alias 'format') in config_to_dict output.
+    Pins the key names and values for the explicit path. The keys use the
+    DC-import aliases: 'format' for the data format and the 'dcid:' predicate
+    forms for columnMappings.
     """
     manager, _ = _explicit_manager()
 
@@ -176,11 +177,11 @@ def test_config_to_dict_explicit_shape():
 
     expected = {
         "provenance": "p1",
-        "data_format": "variablePerRow",
+        "format": "variablePerRow",
         "columnMappings": {
-            "entity": "entity",
-            "date": "Year",
-            "value": "Value",
+            "dcid:observationAbout": "entity",
+            "dcid:observationDate": "Year",
+            "dcid:value": "Value",
         },
     }
     assert entry == expected

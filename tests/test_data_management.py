@@ -556,3 +556,63 @@ def test_loading_legacy_implicit_config_raises_with_message():
         with pytest.raises(ValueError, match="is no longer supported") as exc_info:
             Config.from_json(path)
         assert "legacy.csv" in str(exc_info.value)
+
+
+def test_column_mappings_emit_dcid_keys():
+    """Verify ColumnMappings emits dcid: prefixed keys on serialization."""
+    cm = ColumnMappings(
+        variable="Var",
+        entity="Country",
+        date="Year",
+        value="Val",
+        unit="USD",
+        scalingFactor="1000",
+        measurementMethod="Census",
+        observationPeriod="P1Y",
+    )
+    result = cm.model_dump(by_alias=True)
+    print()
+    print(result)
+
+    # All 7 aliased fields must emit dcid: keys
+    assert result["dcid:variableMeasured"] == "Var"
+    assert result["dcid:observationAbout"] == "Country"
+    assert result["dcid:observationDate"] == "Year"
+    assert result["dcid:value"] == "Val"
+    assert result["dcid:unit"] == "USD"
+    assert result["dcid:measurementMethod"] == "Census"
+    assert result["dcid:observationPeriod"] == "P1Y"
+
+    # scalingFactor stays short on both sides
+    assert "scalingFactor" in result
+    assert "dcid:scalingFactor" not in result
+
+    # Short keys must NOT appear for aliased fields
+    for short_key in [
+        "variable",
+        "entity",
+        "date",
+        "value",
+        "unit",
+        "measurementMethod",
+        "observationPeriod",
+    ]:
+        assert short_key not in result
+
+
+def test_column_mappings_accepts_dcid_keys_on_input():
+    """Verify ColumnMappings accepts dcid: keys on input (read-back guard)."""
+    cm = ColumnMappings.model_validate(
+        {
+            "dcid:observationAbout": "Country",
+            "dcid:observationDate": "Year",
+            "dcid:value": "Val",
+        }
+    )
+    assert cm.entity == "Country"
+    assert cm.date == "Year"
+    assert cm.value == "Val"
+
+    # Short-key input must also still work
+    cm2 = ColumnMappings.model_validate({"entity": "Country"})
+    assert cm2.entity == "Country"

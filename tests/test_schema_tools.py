@@ -1,11 +1,11 @@
-from bblocks.datacommons_tools.custom_data.models.mcf import MCFNodes
-from bblocks.datacommons_tools.custom_data.models.stat_vars import (
-    StatVarMCFNode,
+from dcp_tools.custom_data.models.mcf import MCFNodes
+from dcp_tools.custom_data.models.stat_vars import (
     StatVarGroupMCFNode,
+    StatVarMCFNode,
 )
-from bblocks.datacommons_tools.custom_data.schema_tools import (
-    csv_metadata_to_nodes,
+from dcp_tools.custom_data.schema_tools import (
     build_stat_var_groups_from_strings,
+    csv_metadata_to_nodes,
     to_camelCase,
 )
 

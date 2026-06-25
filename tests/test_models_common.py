@@ -1,11 +1,11 @@
 from pydantic import BaseModel
 
-from bblocks.datacommons_tools.custom_data.models.common import (
+from dcp_tools.custom_data.models.common import (
+    StrOrListStr,
     _ensure_quoted,
     mcf_quoted_str,
     mcf_str,
     parse_str_or_list,
-    StrOrListStr,
 )
 
 

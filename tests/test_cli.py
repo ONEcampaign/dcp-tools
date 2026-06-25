@@ -1,5 +1,6 @@
 from pathlib import Path
-from bblocks.datacommons_tools.cli import main
+
+from dcp_tools.cli import main
 
 
 def test_csv2mcf(tmp_path: Path) -> None:

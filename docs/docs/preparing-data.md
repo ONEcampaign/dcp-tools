@@ -1,6 +1,6 @@
 # Preparing data for Data Commons
 
-`bblocks-datacommons-tools` offers convenient functionality to prepare configuration JSON, 
+`dcp-tools` offers convenient functionality to prepare configuration JSON, 
 MCF, and custom data files without having to manually edit these files. The `CustomDataManager`
 lets you create or edit an existing `config.json` file, work with MCF files, export data stored as pandas
 DataFrames in correct CSV formats, and validate all the files ensuring they are correctly structured for
@@ -11,7 +11,7 @@ Data Commons.
 To start preparing your data, create a `CustomDataManager` instance.
 
 ```python
-from bblocks.datacommons_tools import CustomDataManager
+from dcp_tools import CustomDataManager
 
 manager = CustomDataManager()
 ```
@@ -89,7 +89,7 @@ To register a data file, use the `add_explicit_schema_file` method:
 
 ```python
 import pandas as pd
-from bblocks.datacommons_tools.custom_data.models.data_files import ColumnMappings
+from dcp_tools.custom_data.models.data_files import ColumnMappings
 
 df = pd.DataFrame({
     "country": ["USA", "Canada", "Mexico"],

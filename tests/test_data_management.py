@@ -1,18 +1,18 @@
 import json
-import tempfile
 import os
+import tempfile
 
 import pandas as pd
 import pytest
 
-from bblocks.datacommons_tools import CustomDataManager
-from bblocks.datacommons_tools.custom_data.data_management import DEFAULT_GROUP_NAME
-from bblocks.datacommons_tools.custom_data.models.config_file import Config
-from bblocks.datacommons_tools.custom_data.models.data_files import (
+from dcp_tools import CustomDataManager
+from dcp_tools.custom_data.data_management import DEFAULT_GROUP_NAME
+from dcp_tools.custom_data.models.config_file import Config
+from dcp_tools.custom_data.models.data_files import (
     ColumnMappings,
     ExplicitSchemaFile,
 )
-from bblocks.datacommons_tools.custom_data.models.sources import Source
+from dcp_tools.custom_data.models.sources import Source
 
 
 def test_custom_data_manager_add_provenance_and_override():
@@ -483,7 +483,7 @@ def test_validate_all_input_files_have_data(tmp_path):
     )
 
     # Standalone validation method raises because no_data.csv has no data
-    with pytest.raises(ValueError, match="no_data.csv"):
+    with pytest.raises(ValueError, match=r"no_data\.csv"):
         manager.validate_all_input_files_have_data()
 
     # export_all without validate_data=True should NOT raise (default off)
@@ -497,7 +497,7 @@ def test_validate_all_input_files_have_data(tmp_path):
         )
 
     # export_all with validate_data=True should raise before writing anything
-    with pytest.raises(ValueError, match="no_data.csv"):
+    with pytest.raises(ValueError, match=r"no_data\.csv"):
         manager.export_all(tmp_path, validate_data=True)
 
     # After adding data for the second file, validation passes

@@ -1,7 +1,7 @@
 import pandas as pd
 
-from bblocks.datacommons_tools.custom_data.models.stat_vars import StatVarMCFNode
-from bblocks.datacommons_tools.custom_data.schema_tools import _rows_to_stat_var_nodes
+from dcp_tools.custom_data.models.stat_vars import StatVarMCFNode
+from dcp_tools.custom_data.schema_tools import _rows_to_stat_var_nodes
 
 
 def test_search_description_serialization_str_and_list():

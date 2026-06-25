@@ -2,6 +2,15 @@
 
 ## [Unreleased]
 
+### Changed
+- **Renamed the package from `bblocks-datacommons-tools` to `dcp-tools`.** The import
+  path is now `dcp_tools` (was `bblocks.datacommons_tools`). Installing the old
+  `bblocks-datacommons-tools` distribution now pulls in `dcp-tools` and re-exports it
+  with a `DeprecationWarning`; update imports to `dcp_tools` at your convenience.
+- Minimum supported Python is now 3.13 (was 3.11).
+- Packaging now follows the `bblocks-projects` copier template (ruff lint preset, `ty`
+  type checking, pre-commit hooks, PyPI trusted publishing).
+
 ### Removed
 - `add_implicit_schema_file` method on `CustomDataManager`.
 - `add_variable_to_config` method on `CustomDataManager`.

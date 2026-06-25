@@ -11,6 +11,9 @@ class Config(BaseModel):
     """Representation of the config file
 
     Attributes:
+        importName: Name of the import. Used by the platform prep job to name the
+            JSON-LD output directory. Optional; defaults to the export directory name
+            on export when unset.
         includeInputSubdirs: Include input subdirectories.
         groupStatVarsByProperty: Group stat vars by property.
         defaultCustomRootStatVarGroupName: Display name for the custom root StatVarGroup.
@@ -25,6 +28,7 @@ class Config(BaseModel):
         sources: Dictionary of sources.
     """
 
+    importName: str | None = None
     includeInputSubdirs: bool | None = None
     groupStatVarsByProperty: bool | None = None
     defaultCustomRootStatVarGroupName: str | None = None

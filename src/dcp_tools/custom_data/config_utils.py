@@ -26,6 +26,7 @@ def iter_config_files(directory: Path, pattern: str = "config.json") -> Iterator
 def _merge_simple_attrs(existing: Config, new: Config, policy: DuplicatePolicy) -> None:
     """Merge simple attributes that are booleans, strings, or None."""
     for attr in (
+        "importName",
         "includeInputSubdirs",
         "groupStatVarsByProperty",
         "defaultCustomRootStatVarGroupName",

@@ -74,6 +74,32 @@ def test_set_additional_config_fields():
     ]
 
 
+def test_import_name_set_and_export_default(tmp_path):
+    """set_importName stores the value; export_config defaults it to the dir name."""
+    # explicit importName survives export unchanged
+    manager = CustomDataManager()
+    manager.set_importName("MyImport")
+    assert manager._config.importName == "MyImport"
+    out = tmp_path / "OECD_wage_data"
+    out.mkdir()
+    manager.export_config(out)
+    assert Config.from_json(str(out / "config.json")).importName == "MyImport"
+
+    # unset importName defaults to each export directory name without mutating state,
+    # so re-exporting the same manager elsewhere picks up the new directory's name.
+    manager2 = CustomDataManager()
+    out2 = tmp_path / "frog_data"
+    out2.mkdir()
+    manager2.export_config(out2)
+    assert Config.from_json(str(out2 / "config.json")).importName == "frog_data"
+    assert manager2._config.importName is None
+
+    out3 = tmp_path / "toad_data"
+    out3.mkdir()
+    manager2.export_config(out3)
+    assert Config.from_json(str(out3 / "config.json")).importName == "toad_data"
+
+
 def test_add_explicit_schema_file_registration_and_override(tmp_path):
     """
     Verifies explicit schema file registration in config and data,

@@ -167,3 +167,5 @@ cython_debug/
 .pypirc
 /.claude
 .DS_Store
+/.codegraph
+

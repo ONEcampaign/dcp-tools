@@ -27,6 +27,7 @@ def test_mcfnode_snapshot():
 
 def test_config_json_snapshot(tmp_path):
     manager = CustomDataManager()
+    manager.set_importName("test_import")
     manager.set_includeInputSubdirs(True).set_groupStatVarsByProperty(False)
 
     manager.add_explicit_schema_file(

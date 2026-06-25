@@ -1,4 +1,5 @@
 {
+    "importName": "test_import",
     "includeInputSubdirs": true,
     "groupStatVarsByProperty": false,
     "inputFiles": {

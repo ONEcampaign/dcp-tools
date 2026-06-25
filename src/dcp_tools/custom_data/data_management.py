@@ -189,6 +189,7 @@ class CustomDataManager:
         variables_count = nodes_count
         dataframes_count = len(self._data)
 
+        import_name = self._config.importName
         include_input_subdirs = self._config.includeInputSubdirs
         group_statvars = self._config.groupStatVarsByProperty
         root_group_name = self._config.defaultCustomRootStatVarGroupName
@@ -201,12 +202,23 @@ class CustomDataManager:
             f"\n{input_files_count} inputFiles, with {dataframes_count} containing data"
             f"\n{sources_count} sources"
             f"\n{variables_count} variables"
-            f"\nflags: includeInputSubdirs={include_input_subdirs}, "
+            f"\nflags: importName={import_name}, "
+            f"includeInputSubdirs={include_input_subdirs}, "
             f"groupStatVarsByProperty={group_statvars}, "
             f"defaultCustomRootStatVarGroupName={root_group_name}, "
             f"customIdNamespace={namespace}, customSvgPrefix={svg_prefix}, "
             f"svHierarchyPropsBlocklist={blocklist}>"
         )
+
+    def set_importName(self, name: str | None) -> CustomDataManager:
+        """Set the import name in the config.
+
+        The import name is used by the platform prep job to name the JSON-LD output
+        directory. Pass ``None`` to unset it; ``export_config`` then defaults it to the
+        export directory name.
+        """
+        self._config.importName = name
+        return self
 
     def set_includeInputSubdirs(self, set_value: bool) -> CustomDataManager:
         """Set the includeInputSubdirs attribute of the config"""
@@ -793,11 +805,16 @@ class CustomDataManager:
 
         self._config.validate_config()
 
+        # Default importName to the export directory name (matching the prep job's
+        # fallback) for this export only, without mutating manager state, so
+        # re-exporting to another directory picks up that directory's name.
+        config = self._config
+        if config.importName is None:
+            config = config.model_copy(update={"importName": Path(dir_path).name})
+
         output_path = Path(dir_path) / "config.json"
         with output_path.open("w") as f:
-            f.write(
-                self._config.model_dump_json(indent=4, exclude_none=True, by_alias=True)
-            )
+            f.write(config.model_dump_json(indent=4, exclude_none=True, by_alias=True))
 
     def export_mfc_file(
         self,
@@ -826,7 +843,9 @@ class CustomDataManager:
         """Export the config to a dictionary
 
         Before exporting, the config is validated to ensure that all required fields are
-        present and that the config is valid.
+        present and that the config is valid. Unlike ``export_config``, this is a raw
+        state dump: it does not default ``importName`` (there is no directory to derive
+        it from), so an unset ``importName`` is absent from the returned dict.
 
         Returns:
             Dict: The config as a dictionary

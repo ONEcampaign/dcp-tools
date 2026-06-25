@@ -311,7 +311,7 @@ def test_get_unregistered_and_missing_csv_files_explicit():
     bucket.list_blobs.return_value = [blob_a, blob_extra]
     bucket.name = "my-bucket"
 
-    unregistered = get_unregistered_csv_files(bucket, cfg, "folder")
+    unregistered = get_unregistered_csv_files(bucket, cfg, gcs_folder_name="folder")
     assert unregistered == ["extra.csv"]
 
     # --- get_missing_csv_files ---
@@ -326,5 +326,5 @@ def test_get_unregistered_and_missing_csv_files_explicit():
     bucket2.list_blobs.return_value = [blob_a2]
     bucket2.name = "my-bucket"
 
-    missing = get_missing_csv_files(bucket2, cfg, "folder")
+    missing = get_missing_csv_files(bucket2, cfg, gcs_folder_name="folder")
     assert missing == ["extra.csv"]

@@ -9,6 +9,7 @@ from dcp_tools.custom_data.models.data_files import (
     ExplicitSchemaFile,
 )
 from dcp_tools.custom_data.models.sources import Source
+from dcp_tools.gcp_utilities.settings import KGSettings
 from dcp_tools.gcp_utilities.storage import (
     delete_bucket_files,
     get_bucket_files,
@@ -38,7 +39,6 @@ def test_upload_directory_to_gcs(tmp_path):
     sub = tmp_path / "sub"
     sub.mkdir()
     (sub / "c.mcf").write_text("Node: dcid:x\n")
-    # json in subdir should be skipped
     (sub / "d.json").write_text("{}")
 
     bucket = Mock()
@@ -52,9 +52,14 @@ def test_upload_directory_to_gcs(tmp_path):
     bucket.blob.side_effect = blob_side
     bucket.name = "my-bucket"
 
-    upload_directory_to_gcs(bucket, tmp_path, "prefix")
+    upload_directory_to_gcs(bucket, tmp_path, gcs_folder_name="prefix")
 
-    expected_keys = {"prefix/a.csv", "prefix/b.json", "prefix/sub/c.mcf"}
+    expected_keys = {
+        "prefix/a.csv",
+        "prefix/b.json",
+        "prefix/sub/c.mcf",
+        "prefix/sub/d.json",
+    }
     assert set(blobs.keys()) == expected_keys
     for b in blobs.values():
         b.upload_from_filename.assert_called_once()
@@ -108,7 +113,7 @@ def test_sync_directory_to_gcs_with_stale_blobs(tmp_path):
     blob_old.name = "prefix/old.csv"
     bucket.list_blobs.return_value = [blob_a, blob_b, blob_old]
 
-    sync_directory_to_gcs(bucket, tmp_path, "prefix")
+    sync_directory_to_gcs(bucket, tmp_path, gcs_folder_name="prefix")
 
     # Upload should have been called for a.csv and b.json
     assert "prefix/a.csv" in upload_blobs
@@ -140,7 +145,7 @@ def test_sync_directory_to_gcs_no_stale_blobs(tmp_path):
     blob_a.name = "prefix/a.csv"
     bucket.list_blobs.return_value = [blob_a]
 
-    sync_directory_to_gcs(bucket, tmp_path, "prefix")
+    sync_directory_to_gcs(bucket, tmp_path, gcs_folder_name="prefix")
 
     # Only the upload blob should have been created, no delete calls
     assert "prefix/a.csv" in blobs
@@ -178,6 +183,71 @@ def test_sync_directory_to_gcs_no_prefix(tmp_path):
     assert "old.csv" in all_blob_calls
 
 
+def test_sync_directory_to_gcs_preserves_sibling_import(tmp_path):
+    """Sync of a present import must never delete a sibling import's blobs."""
+    my_import = tmp_path / "myImport"
+    my_import.mkdir()
+    (my_import / "a.csv").write_text("col\n1\n")
+
+    bucket = Mock()
+    blobs: dict[str, Mock] = {}
+
+    def blob_side(name: str):
+        b = Mock()
+        blobs[name] = b
+        return b
+
+    bucket.blob.side_effect = blob_side
+    bucket.name = "my-bucket"
+
+    # Remote has blobs for myImport (one current, one stale) and otherImport
+    blob_a = Mock()
+    blob_a.name = "prefix/myImport/a.csv"
+    blob_stale = Mock()
+    blob_stale.name = "prefix/myImport/stale.csv"
+    blob_other = Mock()
+    blob_other.name = "prefix/otherImport/b.csv"
+    bucket.list_blobs.return_value = [blob_a, blob_stale, blob_other]
+
+    sync_directory_to_gcs(bucket, tmp_path, gcs_folder_name="prefix")
+
+    all_blob_calls = [c.args[0] for c in bucket.blob.call_args_list]
+
+    # POSITIVE: the stale blob within myImport is deleted
+    assert "prefix/myImport/stale.csv" in all_blob_calls
+
+    # NEGATIVE: the sibling import's blob is never touched
+    assert "prefix/otherImport/b.csv" not in all_blob_calls
+
+
+def test_sync_directory_to_gcs_legacy_root_level_still_prunes(tmp_path):
+    """Root-level stale blobs are still pruned when local files sit directly
+    under tmp_path (no import subdirs), maintaining backward compatibility."""
+    (tmp_path / "a.csv").write_text("col\n1\n")
+
+    bucket = Mock()
+    blobs: dict[str, Mock] = {}
+
+    def blob_side(name: str):
+        b = Mock()
+        blobs[name] = b
+        return b
+
+    bucket.blob.side_effect = blob_side
+    bucket.name = "my-bucket"
+
+    blob_a = Mock()
+    blob_a.name = "prefix/a.csv"
+    blob_old = Mock()
+    blob_old.name = "prefix/old.csv"
+    bucket.list_blobs.return_value = [blob_a, blob_old]
+
+    sync_directory_to_gcs(bucket, tmp_path, gcs_folder_name="prefix")
+
+    all_blob_calls = [c.args[0] for c in bucket.blob.call_args_list]
+    assert "prefix/old.csv" in all_blob_calls
+
+
 def test_list_bucket_files_with_prefix():
     bucket = Mock()
     blob_a = Mock()
@@ -186,7 +256,10 @@ def test_list_bucket_files_with_prefix():
     blob_b.name = "folder/b.csv"
     bucket.list_blobs.return_value = [blob_a, blob_b]
     bucket.name = "my-bucket"
-    files = [f.replace("\\", "/") for f in list_bucket_files(bucket, "folder")]
+    files = [
+        f.replace("\\", "/")
+        for f in list_bucket_files(bucket, gcs_folder_name="folder")
+    ]
     assert files == ["folder/a.csv", "folder/b.csv"]
     bucket.list_blobs.assert_called_once_with(prefix="folder/")
 
@@ -198,7 +271,9 @@ def test_list_bucket_files_with_gs_path():
     bucket.list_blobs.return_value = [blob]
     bucket.name = "one-datacommons-staging"
 
-    result = list_bucket_files(bucket, "gs://one-datacommons-staging/one-data")
+    result = list_bucket_files(
+        bucket, gcs_folder_name="gs://one-datacommons-staging/one-data"
+    )
 
     assert [f.replace("\\", "/") for f in result] == ["one-data/a.csv"]
     bucket.list_blobs.assert_called_once_with(prefix="one-data/")
@@ -220,7 +295,7 @@ def test_list_bucket_files_missing_folder():
     bucket.name = "my-bucket"
 
     with pytest.raises(FileNotFoundError):
-        list_bucket_files(bucket, "missing")
+        list_bucket_files(bucket, gcs_folder_name="missing")
 
     bucket.list_blobs.assert_called_once_with(prefix="missing/")
 
@@ -234,7 +309,7 @@ def test_get_unregistered_csv_files():
     bucket.list_blobs.return_value = [blob_a, blob_extra]
     bucket.name = "my-bucket"
     cfg = _minimal_config()
-    missing = get_unregistered_csv_files(bucket, cfg, "folder")
+    missing = get_unregistered_csv_files(bucket, cfg, gcs_folder_name="folder")
     assert missing == ["extra.csv"]
 
 
@@ -248,7 +323,7 @@ def test_get_unregistered_csv_files_with_prefix_removed():
     bucket.name = "my-bucket"
 
     cfg = _minimal_config("sub/a.csv")
-    missing = get_unregistered_csv_files(bucket, cfg, "prefix")
+    missing = get_unregistered_csv_files(bucket, cfg, gcs_folder_name="prefix")
     missing = [f.replace("\\", "/") for f in missing]
 
     assert missing == ["sub/b.csv"]
@@ -266,7 +341,7 @@ def test_get_missing_csv_files():
         columnMappings=ColumnMappings(),
     )
 
-    missing = get_missing_csv_files(bucket, cfg, "folder")
+    missing = get_missing_csv_files(bucket, cfg, gcs_folder_name="folder")
 
     assert missing == ["extra.csv"]
 
@@ -283,10 +358,126 @@ def test_get_missing_csv_files_with_prefix_added():
         columnMappings=ColumnMappings(),
     )
 
-    missing = get_missing_csv_files(bucket, cfg, "prefix")
+    missing = get_missing_csv_files(bucket, cfg, gcs_folder_name="prefix")
     missing = [f.replace("\\", "/") for f in missing]
 
     assert missing == ["sub/b.csv"]
+
+
+def test_get_unregistered_csv_files_per_import():
+    """Per-import scoping prevents sibling-import blobs from appearing as unregistered."""
+    bucket = Mock()
+    blob_a = Mock()
+    blob_a.name = "prefix/myImport/a.csv"
+    bucket.list_blobs.return_value = [blob_a]
+    bucket.name = "my-bucket"
+
+    cfg = _minimal_config("a.csv")
+    result = get_unregistered_csv_files(
+        bucket, cfg, gcs_folder_name="prefix", import_name="myImport"
+    )
+
+    # The listing is scoped to the import's own subdir, so a sibling import's
+    # blobs never reach the comparison and cannot show up as unregistered.
+    assert result == []
+    bucket.list_blobs.assert_called_once_with(prefix="prefix/myImport/")
+
+
+def test_get_missing_csv_files_per_import():
+    """Per-import scoping checks the correct blob path (with importName segment)."""
+    bucket = Mock()
+    blob_a = Mock()
+    blob_a.name = "prefix/myImport/a.csv"
+    bucket.list_blobs.return_value = [blob_a]
+    bucket.name = "my-bucket"
+
+    cfg = _minimal_config("a.csv")
+    cfg.inputFiles["b.csv"] = ExplicitSchemaFile(
+        provenance="prov",
+        columnMappings=ColumnMappings(),
+    )
+
+    result = get_missing_csv_files(
+        bucket, cfg, gcs_folder_name="prefix", import_name="myImport"
+    )
+
+    assert result == ["b.csv"]
+    bucket.list_blobs.assert_called_once_with(prefix="prefix/myImport/")
+
+
+def test_registration_checks_fresh_import_empty_prefix():
+    """When the import prefix yields no blobs, treat remote as empty."""
+    bucket = Mock()
+    bucket.list_blobs.return_value = []
+    bucket.name = "my-bucket"
+
+    cfg = _minimal_config("a.csv")
+    cfg.inputFiles["b.csv"] = ExplicitSchemaFile(
+        provenance="prov",
+        columnMappings=ColumnMappings(),
+    )
+
+    unregistered = get_unregistered_csv_files(
+        bucket, cfg, gcs_folder_name="prefix", import_name="myImport"
+    )
+    assert unregistered == []
+
+    missing = get_missing_csv_files(
+        bucket, cfg, gcs_folder_name="prefix", import_name="myImport"
+    )
+    assert sorted(missing) == ["a.csv", "b.csv"]
+
+
+def test_gcs_input_folder_path_strips_slashes(monkeypatch):
+    """KGSettings strips leading/trailing slashes from folder paths at model init."""
+    env_vals = {
+        "LOCAL_PATH": "/tmp/data",
+        "GCP_PROJECT_ID": "proj",
+        "GCS_BUCKET_NAME": "bucket",
+        "GCS_INPUT_FOLDER_PATH": "ingestion/input/",
+        "GCS_OUTPUT_FOLDER_PATH": "/output/path/",
+        "CLOUD_SQL_DB_NAME": "db",
+        "CLOUD_SQL_REGION": "us-central1",
+        "CLOUD_JOB_REGION": "us-central1",
+        "CLOUD_SERVICE_REGION": "us-central1",
+        "CLOUD_RUN_JOB_NAME": "job",
+        "CLOUD_RUN_SERVICE_NAME": "svc",
+    }
+    for k, v in env_vals.items():
+        monkeypatch.setenv(k, v)
+
+    settings = KGSettings()
+    assert settings.gcs_input_folder_path == "ingestion/input"
+    assert settings.gcs_output_folder_path == "output/path"
+
+
+def test_upload_trailing_slash_single_slash_keys(tmp_path):
+    """Trailing slash in gcs_folder_name produces single-slash blob paths."""
+    (tmp_path / "a.csv").write_text("col\n1\n")
+
+    bucket = Mock()
+    blobs: dict[str, Mock] = {}
+
+    def blob_side(name: str):
+        b = Mock()
+        blobs[name] = b
+        return b
+
+    bucket.blob.side_effect = blob_side
+    bucket.name = "my-bucket"
+
+    upload_directory_to_gcs(bucket, tmp_path, gcs_folder_name="prefix/")
+
+    assert "prefix/a.csv" in blobs
+    assert "prefix//a.csv" not in blobs
+
+
+def test_upload_directory_to_gcs_kwargs_only(tmp_path):
+    """gcs_folder_name must be passed as a keyword argument."""
+    bucket = Mock()
+    bucket.name = "my-bucket"
+    with pytest.raises(TypeError):
+        upload_directory_to_gcs(bucket, tmp_path, "prefix")  # type: ignore[call-arg]
 
 
 def test_delete_bucket_files():

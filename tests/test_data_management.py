@@ -528,6 +528,26 @@ def test_export_all_requires_provenance_mcf(tmp_path):
     assert (tmp_path / "provenance.mcf").exists()
 
 
+def test_export_all_requires_linked_source_mcf(tmp_path):
+    """The guard follows sourceLink: a Source kept in a separate MCF file must be exported too."""
+    manager = CustomDataManager()
+    manager.add_source(name="s1", url="http://src", mcf_file_name="sources.mcf")
+    manager.add_provenance(name="p1", url="http://prov", source="s1")
+    manager.add_explicit_schema_file(
+        file_name="data.csv", provenance="p1", data=pd.DataFrame({"A": [1]})
+    )
+
+    # Exporting only provenance.mcf leaves the sourceLink dangling -> raises, names sources.mcf.
+    with pytest.raises(ValueError, match=r"sources\.mcf"):
+        manager.export_all(tmp_path, mcf_file_names=["provenance.mcf"])
+    assert not (tmp_path / "config.json").exists(), "must not write a partial bundle"
+
+    # Exporting both the provenance and its source file makes the bundle complete.
+    manager.export_all(tmp_path, mcf_file_names=["provenance.mcf", "sources.mcf"])
+    assert (tmp_path / "provenance.mcf").exists()
+    assert (tmp_path / "sources.mcf").exists()
+
+
 def test_loading_legacy_implicit_config_raises_with_message():
     """Loading a JSON config with variablePerColumn format raises ValueError with a clear message."""
     cfg = {

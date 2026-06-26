@@ -64,11 +64,11 @@ The `CustomDataManager` lets you create or edit the `config.json` file without e
 You can register variables, sources or provenances, and data files. 
 
 ```python title="Add source and provenance"
-manager.add_source(name="ONE Data", url="https://data.one.org")
+manager.add_source(name="ONEData", url="https://data.one.org")
 manager.add_provenance(
-    name="ONE Climate Finance",
+    name="ONEClimateFinance",
     url="https://datacommons.one.org/data/climate-finance-files",
-    source="ONE Data",
+    source="ONEData",
 )
 ```
 
@@ -83,7 +83,7 @@ df = pd.DataFrame(...)
 
 manager.add_explicit_schema_file(
     file_name="climate_finance/one_cf_provider_commitments.csv",
-    provenance="ONE Climate Finance",
+    provenance="ONEClimateFinance",
     data=df,
     columnMappings=ColumnMappings(
         entity="country",

@@ -76,11 +76,11 @@ You can add or manage provenance information using `add_source` and `add_provena
 In this example, we will add a source and provenance for ONE Data's Climate Finance Files.
 
 ```python title="Add source and provenance"
-manager.add_source(name="ONE Data", url="https://data.one.org")
+manager.add_source(name="ONEData", url="https://data.one.org")
 manager.add_provenance(
-    name="ONE Climate Finance",
+    name="ONEClimateFinance",
     url="https://datacommons.one.org/data/climate-finance-files",
-    source="ONE Data",
+    source="ONEData",
 )
 ```
 
@@ -97,7 +97,7 @@ To add to the `CustomDataManager`, using the Implicit Schema:
 ```python title="Register data"
 manager.add_implicit_schema_file(
     file_name="climate_finance/one_cf_provider_commitments.csv",
-    provenance="ONE Climate Finance",
+    provenance="ONEClimateFinance",
     entityType="Country",
     data=data,
     ignoreColumns=["oecd_provider_code"],

@@ -1,3 +1,4 @@
+import fnmatch
 import io
 import json
 import os
@@ -291,7 +292,13 @@ def get_unregistered_csv_files(
         config = Config.model_validate(config)
 
     registered = {e.filename for e in config.inputFiles if e.filename}
-    return [name for name in csv_files if name not in registered]
+    patterns = [e.pattern for e in config.inputFiles if e.pattern]
+    return [
+        name
+        for name in csv_files
+        if name not in registered
+        and not any(fnmatch.fnmatch(name, pattern) for pattern in patterns)
+    ]
 
 
 def get_missing_csv_files(

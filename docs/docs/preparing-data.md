@@ -41,13 +41,17 @@ as `dcid:provenance/<name>`.
 Add a source first, then add one or more provenances that point to it:
 
 ```python
-manager.add_source(name="Source Name", url="https://example.com/source")
+manager.add_source(name="SourceName", url="https://example.com/source")
 manager.add_provenance(
-    name="Provenance Name",
+    name="ProvenanceName",
     url="https://example.com/provenance",
-    source="Source Name",
+    source="SourceName",
 )
 ```
+
+Each `name` becomes part of a dcid (`dcid:source/<name>`, `dcid:provenance/<name>`), so it must be a
+valid dcid token — no whitespace (use `"ONEData"`, not `"ONE Data"`). A name containing whitespace
+raises a `ValueError`.
 
 `add_provenance` requires the named source to already exist (added via `add_source`). If a source or
 provenance with the same name already exists, a `ValueError` is raised unless you pass `override=True`.

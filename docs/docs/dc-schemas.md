@@ -44,13 +44,13 @@ Add the source and provenance:
 
 ```python
 manager.add_source(
-    name="International Monetary Fund (IMF)",
+    name="IMF",
     url="https://www.imf.org/en/Home",
 )
 manager.add_provenance(
-    name="World Economic Outlook (WEO)",
+    name="WEO",
     url="https://www.imf.org/en/Publications/WEO",
-    source="International Monetary Fund (IMF)",
+    source="IMF",
 )
 ```
 
@@ -61,7 +61,7 @@ from dcp_tools.custom_data.models.data_files import ColumnMappings
 
 manager.add_explicit_schema_file(
     file_name="economy/gdp.csv",
-    provenance="World Economic Outlook (WEO)",
+    provenance="WEO",
     data=df,
     columnMappings=ColumnMappings(
         entityColumn="country",

@@ -313,6 +313,31 @@ def test_get_unregistered_csv_files():
     assert missing == ["extra.csv"]
 
 
+def test_get_unregistered_csv_files_honors_patterns():
+    """Files matched by an inputFile ``pattern`` count as registered, not unregistered."""
+    bucket = Mock()
+    matched = Mock()
+    matched.name = "folder/data_2024.csv"
+    stray = Mock()
+    stray.name = "folder/other.csv"
+    bucket.list_blobs.return_value = [matched, stray]
+    bucket.name = "my-bucket"
+
+    cfg = Config(
+        inputFiles=[
+            ExplicitSchemaFile(
+                pattern="data_*.csv",
+                provenance="prov",
+                columnMappings=ColumnMappings(),
+            )
+        ]
+    )
+
+    # data_2024.csv matches the glob -> registered; only the non-matching file is unregistered.
+    missing = get_unregistered_csv_files(bucket, cfg, gcs_folder_name="folder")
+    assert missing == ["other.csv"]
+
+
 def test_get_unregistered_csv_files_with_prefix_removed():
     bucket = Mock()
     blob_a = Mock()

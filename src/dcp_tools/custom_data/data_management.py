@@ -814,31 +814,50 @@ class CustomDataManager:
                 )
 
     def _validate_provenance_files_exported(self, exported_mcf: set[str]) -> None:
-        """Raise if an inputFile references a provenance whose MCF file is not exported.
+        """Raise if an inputFile references a provenance — or its linked Source —
+        defined in an MCF file that is not being exported.
 
         ``export_all`` writes a complete bundle, so every provenance an input file
-        references must be defined in an MCF file included in ``mcf_file_names``.
-        Without this check a forgotten ``mcf_file_names=["provenance.mcf"]`` would
-        write a config.json that points at provenance nodes absent from the bundle —
-        a reference the DCP importer rejects. Unknown provenances (no node at all)
-        are left to ``_validate_provenances``.
+        references must be defined in an exported MCF file, and so must the Source it
+        links to via ``sourceLink``. Without this check a forgotten
+        ``mcf_file_names=["provenance.mcf"]`` (or a Source kept in a separate, unexported
+        MCF file) would write a config.json pointing at nodes absent from the bundle —
+        references the DCP importer rejects. Unknown provenances (no node at all) are
+        left to ``_validate_provenances``.
         """
-        defined_in = {
-            n.Node: fname
-            for fname, nodes in self._mcf_nodes.items()
-            for n in nodes.nodes
-            if getattr(n, "typeOf", None) == "dcs:Provenance"
-        }
+        prov_file: dict[str, str] = {}
+        prov_source: dict[str, str | None] = {}
+        source_file: dict[str, str] = {}
+        for fname, nodes in self._mcf_nodes.items():
+            for n in nodes.nodes:
+                node_type = getattr(n, "typeOf", None)
+                if node_type == "dcs:Provenance":
+                    prov_file[n.Node] = fname
+                    prov_source[n.Node] = getattr(n, "sourceLink", None)
+                elif node_type == "dcs:Source":
+                    source_file[n.Node] = fname
+
         missing: dict[str, str] = {}
         for entry in self._config.inputFiles:
-            owning = defined_in.get(entry.provenance)
-            if owning is not None and owning not in exported_mcf:
-                missing.setdefault(owning, entry.provenance)
+            ref = entry.provenance
+            owning = prov_file.get(ref)
+            if owning is None:
+                continue  # unknown provenance -> _validate_provenances reports it
+            if owning not in exported_mcf:
+                missing.setdefault(owning, ref)
+                continue
+            # The provenance is exported; the Source it links to must be too.
+            link = prov_source.get(ref)
+            if link is not None:
+                src_owner = source_file.get(link)
+                if src_owner is not None and src_owner not in exported_mcf:
+                    missing.setdefault(src_owner, link)
+
         if missing:
             files = sorted(missing)
             raise ValueError(
-                f"export_all() would write a config.json that references provenance(s) "
-                f"defined in MCF file(s) not being exported: {files}. Add them to "
+                f"export_all() would write a config.json referencing source/provenance "
+                f"node(s) defined in MCF file(s) not being exported: {files}. Add them to "
                 f"mcf_file_names (e.g. mcf_file_names={files!r}) so the bundle is complete."
             )
 

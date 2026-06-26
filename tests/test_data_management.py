@@ -12,40 +12,99 @@ from dcp_tools.custom_data.models.data_files import (
     ColumnMappings,
     ExplicitSchemaFile,
 )
-from dcp_tools.custom_data.models.sources import Source
 
 
 def test_custom_data_manager_add_provenance_and_override():
     """
-    Verifies provenance addition logic in CustomDataManager.
+    Verifies source/provenance addition logic in CustomDataManager.
     """
     manager = CustomDataManager()
-    with pytest.raises(ValueError):
-        manager.add_provenance(
-            provenance_name="pA", provenance_url="http://prov", source_name="new_source"
-        )
-    manager.add_provenance(
-        provenance_name="pA",
-        provenance_url="http://prov",
-        source_name="new_source",
-        source_url="http://src",
-    )
 
+    # add_provenance without a prior add_source must raise
     with pytest.raises(ValueError):
-        manager.add_provenance(
-            provenance_name="pA",
-            provenance_url="http://prov2",
-            source_name="new_source",
-        )
+        manager.add_provenance(name="pA", url="http://prov", source="new_source")
 
-    manager.add_provenance(
-        provenance_name="pA",
-        provenance_url="http://prov2",
-        source_name="new_source",
-        override=True,
+    # add_source then add_provenance succeeds
+    manager.add_source(name="new_source", url="http://src")
+    manager.add_provenance(name="pA", url="http://prov", source="new_source")
+
+    prov_nodes = manager._mcf_nodes["provenance.mcf"].nodes
+    source_node = next(
+        n for n in prov_nodes if getattr(n, "typeOf", None) == "dcs:Source"
     )
-    src = manager._config.sources["new_source"]
-    assert src.provenances["pA"].unicode_string() == "http://prov2/"
+    prov_node = next(
+        n for n in prov_nodes if getattr(n, "typeOf", None) == "dcs:Provenance"
+    )
+    assert source_node.Node == "dcid:source/new_source"
+    assert prov_node.Node == "dcid:provenance/pA"
+    assert prov_node.sourceLink == "dcid:source/new_source"
+
+    # duplicate provenance without override raises
+    with pytest.raises(ValueError):
+        manager.add_provenance(name="pA", url="http://prov2", source="new_source")
+
+    # override replaces the node
+    manager.add_provenance(
+        name="pA", url="http://prov2", source="new_source", override=True
+    )
+    updated_prov = next(
+        n
+        for n in manager._mcf_nodes["provenance.mcf"].nodes
+        if getattr(n, "typeOf", None) == "dcs:Provenance"
+    )
+    # url is stored raw; QuotedStr serialization wraps it in quotes at dump time
+    assert updated_prov.url == "http://prov2"
+    assert updated_prov.model_dump()["url"] == '"http://prov2"'
+
+
+def test_add_source_metadata_lands_on_node():
+    """Metadata kwargs on add_source are stored on the Source node."""
+    manager = CustomDataManager()
+    manager.add_source(
+        name="MySource",
+        url="http://mysource.org",
+        description="A test source",
+        license="CC-BY-4.0",
+    )
+    nodes = manager._mcf_nodes["provenance.mcf"].nodes
+    node = next(n for n in nodes if getattr(n, "typeOf", None) == "dcs:Source")
+    assert node.Node == "dcid:source/MySource"
+    # QuotedStr fields are stored raw; quotes applied at serialization
+    assert node.description == "A test source"
+    assert node.license == "CC-BY-4.0"
+
+
+def test_add_provenance_metadata_lands_on_node():
+    """Metadata kwargs on add_provenance are stored on the Provenance node."""
+    manager = CustomDataManager()
+    manager.add_source(name="SrcX", url="http://srcx.org")
+    manager.add_provenance(
+        name="ProvX",
+        url="http://provx.org",
+        source="SrcX",
+        description="Prov desc",
+        lastDataRefreshDate="2024-01-01",
+    )
+    nodes = manager._mcf_nodes["provenance.mcf"].nodes
+    prov_node = next(n for n in nodes if getattr(n, "typeOf", None) == "dcs:Provenance")
+    # QuotedStr fields are stored raw; quotes applied at serialization
+    assert prov_node.description == "Prov desc"
+    assert prov_node.lastDataRefreshDate == "2024-01-01"
+
+
+def test_validate_provenances_raises_for_unknown_provenance(tmp_path):
+    """An inputFile referencing a provenance with no matching node raises at export."""
+    manager = CustomDataManager()
+    # Register a file with a provenance that has no corresponding MCF node
+    manager._config.inputFiles.append(
+        ExplicitSchemaFile(
+            filename="x.csv",
+            provenance="dcid:provenance/ghost",
+            columnMappings=ColumnMappings(),
+        )
+    )
+    with pytest.raises(ValueError, match="ghost"):
+        manager.export_config(tmp_path)
 
 
 def test_set_additional_config_fields():
@@ -106,7 +165,8 @@ def test_add_explicit_schema_file_registration_and_override(tmp_path):
     and override/error behaviors.
     """
     manager = CustomDataManager()
-    manager.add_provenance("p1", "http://prov", "s1", source_url="http://src")
+    manager.add_source(name="s1", url="http://src")
+    manager.add_provenance(name="p1", url="http://prov", source="s1")
 
     df3 = pd.DataFrame({"entity": ["e1"], "Year": [2020], "Value": [100]})
     manager.add_explicit_schema_file(
@@ -115,7 +175,7 @@ def test_add_explicit_schema_file_registration_and_override(tmp_path):
         data=df3,
         columnMappings={"entity": "entity", "date": "Year", "value": "Value"},
     )
-    assert "exp.csv" in manager._config.inputFiles
+    assert any(e.filename == "exp.csv" for e in manager._config.inputFiles)
     assert "exp.csv" in manager._data
 
     with pytest.raises(ValueError):
@@ -141,14 +201,30 @@ def test_add_explicit_schema_file_registration_and_override(tmp_path):
 def test_add_explicit_schema_file_without_column_mappings():
     """Ensure missing columnMappings defaults to empty dict without error."""
     manager = CustomDataManager()
-    manager.add_provenance("p1", "http://prov", "s1", source_url="http://src")
+    manager.add_source(name="s1", url="http://src")
+    manager.add_provenance(name="p1", url="http://prov", source="s1")
 
     df = pd.DataFrame({"A": [1]})
     manager.add_explicit_schema_file(file_name="exp.csv", provenance="p1", data=df)
 
-    assert "exp.csv" in manager._config.inputFiles
-    mappings = manager._config.inputFiles["exp.csv"].columnMappings
+    entry = next(e for e in manager._config.inputFiles if e.filename == "exp.csv")
+    mappings = entry.columnMappings
     assert mappings.model_dump(exclude_none=True) == {}
+
+
+def test_add_explicit_schema_file_pattern_xor_filename():
+    """add_explicit_schema_file raises when neither or both of file_name/pattern are given."""
+    manager = CustomDataManager()
+    manager.add_source(name="s1", url="http://src")
+    manager.add_provenance(name="p1", url="http://prov", source="s1")
+
+    with pytest.raises(ValueError, match="Exactly one"):
+        manager.add_explicit_schema_file(provenance="p1")
+
+    with pytest.raises(ValueError, match="Exactly one"):
+        manager.add_explicit_schema_file(
+            file_name="a.csv", pattern="a*", provenance="p1"
+        )
 
 
 def test_export_methods(tmp_path):
@@ -156,7 +232,8 @@ def test_export_methods(tmp_path):
     Exercises export_config, export_data, and export_mcf_file.
     """
     manager = CustomDataManager()
-    manager.add_provenance("p1", "http://prov", "s1", source_url="http://src")
+    manager.add_source(name="s1", url="http://src")
+    manager.add_provenance(name="p1", url="http://prov", source="s1")
     df = pd.DataFrame({"A": [1]})
     manager.add_explicit_schema_file(
         file_name="data.csv",
@@ -210,7 +287,7 @@ def test_config_round_trip(tmp_path):
     """
     Ensures a Config can be dumped to JSON and loaded back identically.
     """
-    cfg = Config(inputFiles={}, sources={})
+    cfg = Config(inputFiles=[])
     path = tmp_path / "cfg.json"
     path.write_text(cfg.model_dump_json())
     loaded = Config.from_json(str(path))
@@ -222,7 +299,8 @@ def test_custom_data_manager_repr():
     Sanity-check CustomDataManager.__repr__ for correct counts.
     """
     manager = CustomDataManager()
-    manager.add_provenance("p1", "http://prov", "s1", source_url="http://src")
+    manager.add_source(name="s1", url="http://src")
+    manager.add_provenance(name="p1", url="http://prov", source="s1")
     df = pd.DataFrame({"A": [1]})
     manager.add_explicit_schema_file(
         file_name="f.csv",
@@ -235,12 +313,14 @@ def test_custom_data_manager_repr():
     assert "1 inputFiles" in r
     assert "1 containing data" in r
     assert "1 sources" in r
+    assert "1 provenances" in r
     assert "1 variables" in r
 
 
-def test_remove_indicator_and_provenance():
+def test_remove_indicator():
     manager = CustomDataManager()
-    manager.add_provenance("p1", "http://prov", "s1", source_url="http://src")
+    manager.add_source(name="s1", url="http://src")
+    manager.add_provenance(name="p1", url="http://prov", source="s1")
 
     df = pd.DataFrame({"A": [1]})
     manager.add_explicit_schema_file(
@@ -258,70 +338,10 @@ def test_remove_indicator_and_provenance():
     with pytest.raises(ValueError):
         manager.remove_indicator("missing")
 
-    manager.add_variable_to_mcf(Node="dcid:sv2", name="Var2", provenance="p1")
-    manager.add_explicit_schema_file(file_name="b.csv", provenance="p1", data=df)
-
-    manager.remove_by_provenance("p1")
-
-    assert not any(
-        info.provenance == "p1" for info in manager._config.inputFiles.values()
-    )
-    assert "a.csv" not in manager._data and "b.csv" not in manager._data
-    for nodes in manager._mcf_nodes.values():
-        assert all(getattr(n, "provenance", None) != '"p1"' for n in nodes.nodes)
-
-    with pytest.raises(ValueError):
-        manager.remove_by_provenance("unknown")
-
-
-def test_remove_provenance_and_source_methods():
-    manager = CustomDataManager()
-    manager.add_provenance("p1", "http://prov1", "s1", source_url="http://src")
-    manager.add_provenance("p2", "http://prov2", "s1")
-
-    df = pd.DataFrame({"A": [1]})
-    manager.add_explicit_schema_file(
-        file_name="a.csv",
-        provenance="p1",
-        data=df,
-        columnMappings={"entity": "A"},
-    )
-    manager.add_explicit_schema_file(file_name="b.csv", provenance="p2", data=df)
-
-    manager.remove_provenance("p1")
-
-    # provenance removed from sources and data
-    assert "p1" not in manager._config.sources["s1"].provenances
-    assert "a.csv" not in manager._config.inputFiles
-    assert "a.csv" not in manager._data
-
-    manager.remove_by_source("s1")
-
-    # remaining provenance data removed but source still present
-    assert "b.csv" not in manager._config.inputFiles
-    assert "b.csv" not in manager._data
-    assert "s1" in manager._config.sources
-
-    # remove_source works on a fresh manager
-    manager2 = CustomDataManager()
-    manager2.add_provenance("p1", "http://prov", "s1", source_url="http://src")
-    manager2.add_explicit_schema_file(
-        file_name="c.csv",
-        provenance="p1",
-        data=df,
-        columnMappings={"entity": "A"},
-    )
-
-    manager2.remove_source("s1")
-
-    assert "s1" not in manager2._config.sources
-    assert "c.csv" not in manager2._config.inputFiles
-
 
 def _make_cfg(
     key: str,
     prov: str,
-    source: str,
     *,
     include_subdirs: bool | None = None,
     group_by_property: bool | None = None,
@@ -330,16 +350,15 @@ def _make_cfg(
     custom_svg_prefix: str | None = None,
     sv_blocklist: list[str] | None = None,
 ):
-    input_files = {
-        key: ExplicitSchemaFile(
+    input_files = [
+        ExplicitSchemaFile(
+            filename=key,
             provenance=prov,
             columnMappings=ColumnMappings(),
         )
-    }
-    sources = {source: Source(url="http://src", provenances={prov: "http://p"})}
+    ]
     return Config(
         inputFiles=input_files,
-        sources=sources,
         includeInputSubdirs=include_subdirs,
         groupStatVarsByProperty=group_by_property,
         defaultCustomRootStatVarGroupName=root_group_name,
@@ -355,7 +374,6 @@ def test_merge_configs_from_directory(tmp_path):
     cfg1 = _make_cfg(
         "a.csv",
         "p1",
-        "s",
         custom_namespace="ns",
         sv_blocklist=["measurementDenominator"],
     )
@@ -369,7 +387,6 @@ def test_merge_configs_from_directory(tmp_path):
     cfg2 = _make_cfg(
         "b.csv",
         "p2",
-        "s",
         custom_svg_prefix="ns/custom/",
     )
     (d2 / "config.json").write_text(
@@ -378,9 +395,8 @@ def test_merge_configs_from_directory(tmp_path):
 
     manager = CustomDataManager.from_config_files_in_directory(tmp_path)
 
-    assert set(manager._config.inputFiles.keys()) == {"a.csv", "b.csv"}
-    provs = manager._config.sources["s"].provenances
-    assert set(provs.keys()) == {"p1", "p2"}
+    filenames = {e.filename for e in manager._config.inputFiles}
+    assert filenames == {"a.csv", "b.csv"}
     assert manager._config.includeInputSubdirs is True
     assert manager._config.customIdNamespace == "ns"
     # Blocklist remains the one provided explicitly (none defined in the second config).
@@ -390,14 +406,14 @@ def test_merge_configs_from_directory(tmp_path):
 def test_merge_configs_duplicate_error(tmp_path):
     d1 = tmp_path / "one"
     d1.mkdir()
-    cfg1 = _make_cfg("a.csv", "p1", "s")
+    cfg1 = _make_cfg("a.csv", "p1")
     (d1 / "config.json").write_text(
         cfg1.model_dump_json(indent=2, exclude_none=True, by_alias=True)
     )
 
     d2 = tmp_path / "two"
     d2.mkdir()
-    cfg2 = _make_cfg("a.csv", "p2", "s")
+    cfg2 = _make_cfg("a.csv", "p2")
     (d2 / "config.json").write_text(
         cfg2.model_dump_json(indent=2, exclude_none=True, by_alias=True)
     )
@@ -409,16 +425,14 @@ def test_merge_configs_duplicate_error(tmp_path):
 def test_merge_configs_blocklist_override(tmp_path):
     d1 = tmp_path / "one"
     d1.mkdir()
-    cfg1 = _make_cfg(
-        "a.csv", "p1", "s", sv_blocklist=["measurementDenominator", "statType"]
-    )
+    cfg1 = _make_cfg("a.csv", "p1", sv_blocklist=["measurementDenominator", "statType"])
     (d1 / "config.json").write_text(
         cfg1.model_dump_json(indent=2, exclude_none=True, by_alias=True)
     )
 
     d2 = tmp_path / "two"
     d2.mkdir()
-    cfg2 = _make_cfg("b.csv", "p2", "s", sv_blocklist=["statType", "unit"])
+    cfg2 = _make_cfg("b.csv", "p2", sv_blocklist=["statType", "unit"])
     (d2 / "config.json").write_text(
         cfg2.model_dump_json(indent=2, exclude_none=True, by_alias=True)
     )
@@ -429,30 +443,6 @@ def test_merge_configs_blocklist_override(tmp_path):
 
     # When overriding, we take the latest list but still remove duplicates.
     assert manager._config.svHierarchyPropsBlocklist == ["statType", "unit"]
-
-
-def test_rename_provenance_updates_all_references():
-    manager = CustomDataManager()
-    manager.add_provenance("p1", "http://prov1", "s1", source_url="http://src")
-
-    df = pd.DataFrame({"A": [1]})
-    manager.add_explicit_schema_file(
-        file_name="a.csv",
-        provenance="p1",
-        data=df,
-        columnMappings={"entity": "A"},
-    )
-    manager.add_variable_to_mcf(Node="dcid:sv1", name="Var", provenance="p1")
-
-    manager.rename_provenance("p1", "pX")
-
-    assert "pX" in manager._config.sources["s1"].provenances
-    assert manager._config.inputFiles["a.csv"].provenance == "pX"
-    for nodes in manager._mcf_nodes.values():
-        assert any(getattr(n, "provenance", None) == '"pX"' for n in nodes.nodes)
-
-    with pytest.raises(ValueError):
-        manager.rename_provenance("pX", "pX")
 
 
 def test_rename_variable_mcf_only():
@@ -476,24 +466,11 @@ def test_rename_variable_mcf_only():
         manager.rename_variable("dcid:v2", "dcid:v3")
 
 
-def test_rename_source():
-    """rename_source correctly updates the config sources dict."""
-    manager = CustomDataManager()
-    manager.add_provenance("p1", "http://prov1", "s1", source_url="http://src")
-
-    manager.rename_source("s1", "s2")
-    assert "s2" in manager._config.sources and "s1" not in manager._config.sources
-
-    with pytest.raises(ValueError):
-        manager.rename_source("unknown", "x")
-    with pytest.raises(ValueError):
-        manager.rename_source("s2", "s2")
-
-
 def test_validate_all_input_files_have_data(tmp_path):
     """Verify the optional data-completeness validation on export_all and the standalone method."""
     manager = CustomDataManager()
-    manager.add_provenance("p1", "http://prov", "s1", source_url="http://src")
+    manager.add_source(name="s1", url="http://src")
+    manager.add_provenance(name="p1", url="http://prov", source="s1")
 
     df = pd.DataFrame({"A": [1, 2]})
 
@@ -512,15 +489,8 @@ def test_validate_all_input_files_have_data(tmp_path):
     with pytest.raises(ValueError, match=r"no_data\.csv"):
         manager.validate_all_input_files_have_data()
 
-    # export_all without validate_data=True should NOT raise (default off)
-    # It will raise because export_data needs at least one file — so just confirm
-    # validate_data=False doesn't surface the missing-data error
-    try:
-        manager.export_all(tmp_path, validate_data=False)
-    except ValueError as exc:
-        assert "no_data.csv" not in str(exc), (
-            "validate_data=False should not raise about missing data"
-        )
+    # validate_data=False does not surface the missing-data error
+    manager.export_all(tmp_path, validate_data=False, mcf_file_names=["provenance.mcf"])
 
     # export_all with validate_data=True should raise before writing anything
     with pytest.raises(ValueError, match=r"no_data\.csv"):
@@ -530,10 +500,32 @@ def test_validate_all_input_files_have_data(tmp_path):
     manager.add_data(df, "no_data.csv")
     manager.validate_all_input_files_have_data()  # should not raise
 
-    manager.export_all(tmp_path, validate_data=True)  # should not raise
+    manager.export_all(
+        tmp_path, validate_data=True, mcf_file_names=["provenance.mcf"]
+    )  # should not raise
     assert (tmp_path / "config.json").exists()
     assert (tmp_path / "with_data.csv").exists()
     assert (tmp_path / "no_data.csv").exists()
+
+
+def test_export_all_requires_provenance_mcf(tmp_path):
+    """export_all raises (before writing) if a referenced provenance's MCF file is omitted."""
+    manager = CustomDataManager()
+    manager.add_source(name="s1", url="http://src")
+    manager.add_provenance(name="p1", url="http://prov", source="s1")
+    manager.add_explicit_schema_file(
+        file_name="data.csv", provenance="p1", data=pd.DataFrame({"A": [1]})
+    )
+
+    # Omitting mcf_file_names would ship a config.json referencing a node not on disk.
+    with pytest.raises(ValueError, match=r"provenance\.mcf"):
+        manager.export_all(tmp_path)
+    assert not (tmp_path / "config.json").exists(), "must not write a partial bundle"
+
+    # Listing the provenance MCF file makes the bundle complete.
+    manager.export_all(tmp_path, mcf_file_names=["provenance.mcf"])
+    assert (tmp_path / "config.json").exists()
+    assert (tmp_path / "provenance.mcf").exists()
 
 
 def test_loading_legacy_implicit_config_raises_with_message():

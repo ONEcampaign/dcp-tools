@@ -43,11 +43,14 @@ manager = CustomDataManager()
 Add the source and provenance:
 
 ```python
+manager.add_source(
+    name="International Monetary Fund (IMF)",
+    url="https://www.imf.org/en/Home",
+)
 manager.add_provenance(
-    provenance_name="World Economic Outlook (WEO)",
-    provenance_url="https://www.imf.org/en/Publications/WEO",
-    source_name="International Monetary Fund (IMF)",
-    source_url="https://www.imf.org/en/Home",
+    name="World Economic Outlook (WEO)",
+    url="https://www.imf.org/en/Publications/WEO",
+    source="International Monetary Fund (IMF)",
 )
 ```
 

@@ -63,12 +63,12 @@ The `CustomDataManager` lets you create or edit the `config.json` file without e
 
 You can register variables, sources or provenances, and data files. 
 
-```python title="Add provenance and source"
+```python title="Add source and provenance"
+manager.add_source(name="ONE Data", url="https://data.one.org")
 manager.add_provenance(
-    provenance_name="ONE Climate Finance",
-    provenance_url="https://datacommons.one.org/data/climate-finance-files",
-    source_name="ONE Data",
-    source_url="https://data.one.org",
+    name="ONE Climate Finance",
+    url="https://datacommons.one.org/data/climate-finance-files",
+    source="ONE Data",
 )
 ```
 

@@ -4,7 +4,6 @@ from typing import Any
 from pydantic import BaseModel, ConfigDict, model_validator
 
 from dcp_tools.custom_data.models.data_files import ExplicitSchemaFile
-from dcp_tools.custom_data.models.sources import Source
 
 
 class Config(BaseModel):
@@ -22,10 +21,11 @@ class Config(BaseModel):
             Default: `"custom"`.
         customSvgPrefix: String prefix for generated custom StatVarGroup ids. If not set,
             and `customIdNamespace` is provided, it defaults to `<customIdNamespace>/g/`.
-        inputFiles: Dictionary of input files.
+        inputFiles: List of input file entries. Each entry specifies exactly one of
+            ``filename`` (exact CSV name) or ``pattern`` (glob), plus ``provenance``
+            and column mapping information.
         svHierarchyPropsBlocklist: Array of additional property dcids to exclude from hierarchy generation.
             These are added to the internal blocklist used by Data Commons.
-        sources: Dictionary of sources.
     """
 
     importName: str | None = None
@@ -35,8 +35,7 @@ class Config(BaseModel):
     customIdNamespace: str | None = None
     customSvgPrefix: str | None = None
     svHierarchyPropsBlocklist: list[str] | None = None
-    inputFiles: dict[str, ExplicitSchemaFile]
-    sources: dict[str, Source]
+    inputFiles: list[ExplicitSchemaFile]
 
     # model configuration - populate by name (for the "format" field alias)
     # and forbid extra fields
@@ -50,47 +49,46 @@ class Config(BaseModel):
     @model_validator(mode="before")
     @classmethod
     def _reject_implicit_schema_files(cls, data: Any) -> Any:
-        """Reject legacy implicit-schema (variablePerColumn) inputFiles with a clear error."""
+        """Reject legacy implicit-schema (variablePerColumn) inputFiles with a clear error.
+
+        Handles both the legacy dict format and the current list format for ``inputFiles``
+        so that the friendly migration message fires before any type-coercion error.
+        """
         if isinstance(data, dict):
-            for key, entry in (data.get("inputFiles") or {}).items():
-                if isinstance(entry, dict) and "variablePerColumn" in {
-                    entry.get("format"),
-                    entry.get("data_format"),
-                }:
-                    raise ValueError(
-                        f"Config contains implicit-schema file '{key}': "
-                        "format 'variablePerColumn' is no longer supported. "
-                        "Migrate to explicit schema before loading. See "
-                        "https://docs.datacommons.org/custom_dc/custom_data.html "
-                        "for the explicit-schema format."
-                    )
+            input_files = data.get("inputFiles") or {}
+            if isinstance(input_files, dict):
+                # Legacy dict format — use the dict key in the error message so callers
+                # can identify the offending file (e.g. test_loading_legacy_implicit_config).
+                for key, entry in input_files.items():
+                    if isinstance(entry, dict) and "variablePerColumn" in {
+                        entry.get("format"),
+                        entry.get("data_format"),
+                    }:
+                        raise ValueError(
+                            f"Config contains implicit-schema file '{key}': "
+                            "format 'variablePerColumn' is no longer supported. "
+                            "Migrate to explicit schema before loading. See "
+                            "https://docs.datacommons.org/custom_dc/custom_data.html "
+                            "for the explicit-schema format."
+                        )
+            elif isinstance(input_files, list):
+                # Current list format — key off filename or pattern for the message.
+                for entry in input_files:
+                    if isinstance(entry, dict) and "variablePerColumn" in {
+                        entry.get("format"),
+                        entry.get("data_format"),
+                    }:
+                        key = (
+                            entry.get("filename") or entry.get("pattern") or "<unknown>"
+                        )
+                        raise ValueError(
+                            f"Config contains implicit-schema file '{key}': "
+                            "format 'variablePerColumn' is no longer supported. "
+                            "Migrate to explicit schema before loading. See "
+                            "https://docs.datacommons.org/custom_dc/custom_data.html "
+                            "for the explicit-schema format."
+                        )
         return data
-
-    @model_validator(mode="after")
-    def validate_input_file_keys_are_csv(self) -> "Config":
-        """Validate that all input file keys are .csv files"""
-
-        for key in self.inputFiles:
-            if not key.lower().endswith(".csv"):
-                raise ValueError(f'Input file key "{key}" must be a .csv file name')
-        return self
-
-    @model_validator(mode="after")
-    def validate_provenance_in_sources(self) -> "Config":
-        """Validate that all input file provenances are in the sources section"""
-
-        known_provenances = set()
-        for source in self.sources.values():
-            known_provenances.update(source.provenances.keys())
-
-        # Validate that each InputFile provenance is among them
-        for file_key, input_file in self.inputFiles.items():
-            if input_file.provenance not in known_provenances:
-                raise ValueError(
-                    f'Input file "{file_key}" references unknown provenance "{input_file.provenance}".'
-                )
-
-        return self
 
     def validate_config(self) -> None:
         """Validate the config"""

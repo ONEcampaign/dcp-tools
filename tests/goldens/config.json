@@ -2,9 +2,10 @@
     "importName": "test_import",
     "includeInputSubdirs": true,
     "groupStatVarsByProperty": false,
-    "inputFiles": {
-        "a.csv": {
-            "provenance": "provA",
+    "inputFiles": [
+        {
+            "filename": "a.csv",
+            "provenance": "dcid:provenance/provA",
             "columnMappings": {
                 "dcid:observationAbout": "Country",
                 "dcid:observationDate": "Year",
@@ -12,8 +13,9 @@
             },
             "format": "variablePerRow"
         },
-        "b.csv": {
-            "provenance": "provB",
+        {
+            "filename": "b.csv",
+            "provenance": "dcid:provenance/provB",
             "columnMappings": {
                 "dcid:observationAbout": "Country",
                 "dcid:observationDate": "Year",
@@ -21,14 +23,5 @@
             },
             "format": "variablePerRow"
         }
-    },
-    "sources": {
-        "S1": {
-            "url": "http://source1/",
-            "provenances": {
-                "provA": "http://prova/",
-                "provB": "http://provb/"
-            }
-        }
-    }
+    ]
 }

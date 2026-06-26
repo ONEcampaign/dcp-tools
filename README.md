@@ -71,16 +71,16 @@ manager.set_includeInputSubdirs(True)
 ```
 
 ### 2. Add the provenance information for our data
-You can add or manage provenance information on the `config.py` file.
+You can add or manage provenance information using `add_source` and `add_provenance`.
 
-In this example, we will add a provenance for ONE Data's Climate Finance Files.
+In this example, we will add a source and provenance for ONE Data's Climate Finance Files.
 
-```python title="Add provenance and source"
+```python title="Add source and provenance"
+manager.add_source(name="ONE Data", url="https://data.one.org")
 manager.add_provenance(
-    provenance_name="ONE Climate Finance",
-    provenance_url="https://datacommons.one.org/data/climate-finance-files",
-    source_name="ONE Data",
-    source_url="https://data.one.org",
+    name="ONE Climate Finance",
+    url="https://datacommons.one.org/data/climate-finance-files",
+    source="ONE Data",
 )
 ```
 
@@ -140,8 +140,12 @@ manager.add_variable_to_config(
 Next, once all the data is added and the config is set up, you can export the `config.json` and data. When you export, the `config.json` is validated automatically
 
 ```python title="Export config and data"
-manager.export_all("path/to/output/folder")
+manager.export_all("path/to/output/folder", mcf_file_names=["provenance.mcf"])
 ```
+
+`export_all` writes a complete bundle: if an input file references a provenance,
+the MCF file defining it (`provenance.mcf` by default) must be listed in
+`mcf_file_names`, or it raises before writing anything.
 
 ### 6. (Optionally) load to the Knowledge Graph
 You can also programmatically push the data and config to a Google Cloud

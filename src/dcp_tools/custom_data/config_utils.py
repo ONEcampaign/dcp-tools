@@ -6,7 +6,6 @@ from pathlib import Path
 from typing import Any, Literal
 
 from dcp_tools.custom_data.models.config_file import Config
-from dcp_tools.custom_data.models.sources import Source
 from dcp_tools.logger import logger
 
 DuplicatePolicy = Literal["error", "override", "ignore"]
@@ -43,37 +42,6 @@ def _merge_simple_attrs(existing: Config, new: Config, policy: DuplicatePolicy) 
     )
 
 
-def _merge_source(
-    target_sources: dict[str, Source],
-    name: str,
-    source: Source,
-    policy: DuplicatePolicy,
-) -> None:
-    """Merge a *Source* entry and its nested structures."""
-    if name not in target_sources:
-        logger.info(f"Added source '{name}'")
-        target_sources[name] = source
-        return
-
-    target = target_sources[name]
-    if target.url != source.url:
-        _handle_conflict(
-            field=f"URL for source '{name}'",
-            target_value=target,
-            source_value=source,
-            policy=policy,
-        )
-        if policy == "override":
-            target.url = source.url
-
-    _merge_dict(
-        target_dict=target.provenances,
-        source_dict=source.provenances,
-        policy=policy,
-        context=f"provenance of source '{name}'",
-    )
-
-
 def _handle_conflict(
     field: str, target_value: Any, source_value: Any, policy: DuplicatePolicy
 ) -> None:
@@ -86,30 +54,43 @@ def _handle_conflict(
         raise ValueError(f"Conflicting {field}: {target_value!r} vs {source_value!r}")
 
 
-def _merge_dict(
-    target_dict: dict[Any, Any],
-    source_dict: dict[Any, Any],
-    policy: DuplicatePolicy,
-    context: str,
-) -> None:
-    """Merge two mapping-like structures, according to *policy*."""
-    for key, src_val in source_dict.items():
-        if key not in target_dict:
-            target_dict[key] = src_val
+def _merge_input_files(existing: Config, new: Config, policy: DuplicatePolicy) -> None:
+    """Merge input file entries from *new* into *existing* in-place.
+
+    Entries are keyed by ``filename`` or ``pattern`` (whichever is set).
+    Conflict semantics follow *policy*: ``"error"`` raises, ``"override"``
+    replaces, ``"ignore"`` and equal entries are skipped.
+    """
+    existing_by_key: dict[str, int] = {}
+    for i, e in enumerate(existing.inputFiles):
+        k = e.filename or e.pattern
+        if k is not None:
+            existing_by_key[k] = i
+
+    for entry in new.inputFiles:
+        key = entry.filename or entry.pattern
+        if key is None:
+            # Should not happen: ExplicitSchemaFile enforces filename XOR pattern.
+            continue
+        if key not in existing_by_key:
+            logger.info(f"Added input file '{key}'")
+            existing.inputFiles.append(entry)
+            existing_by_key[key] = len(existing.inputFiles) - 1
             continue
 
-        tgt_val = target_dict[key]
-        if tgt_val == src_val:
+        idx = existing_by_key[key]
+        tgt = existing.inputFiles[idx]
+        if tgt == entry:
             continue
 
         _handle_conflict(
-            field=f"{context} '{key}'",
-            target_value=tgt_val,
-            source_value=src_val,
+            field=f"Input file '{key}'",
+            target_value=tgt,
+            source_value=entry,
             policy=policy,
         )
         if policy == "override":
-            target_dict[key] = src_val
+            existing.inputFiles[idx] = entry
 
 
 def _merge_attribute(
@@ -175,18 +156,7 @@ def merge_configs(
     _merge_simple_attrs(existing=existing, new=new, policy=policy)
 
     # Merge the input file list
-    _merge_dict(
-        target_dict=existing.inputFiles,
-        source_dict=new.inputFiles,
-        policy=policy,
-        context="Input file",
-    )
-
-    # Merge the sources
-    for name, src in new.sources.items():
-        _merge_source(
-            target_sources=existing.sources, name=name, source=src, policy=policy
-        )
+    _merge_input_files(existing=existing, new=new, policy=policy)
 
 
 def merge_configs_from_directory(
@@ -202,7 +172,7 @@ def merge_configs_from_directory(
             values are encountered.
 
     """
-    base = Config(inputFiles={}, sources={})
+    base = Config(inputFiles=[])
     for path in iter_config_files(Path(directory)):
         logger.info(f"Merging config file {path}")
         config = Config.from_json(str(path))

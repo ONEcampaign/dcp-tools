@@ -1,0 +1,14 @@
+Node: dcid:source/S1
+typeOf: dcs:Source
+url: "http://source1"
+
+Node: dcid:provenance/provA
+typeOf: dcs:Provenance
+url: "http://prova"
+sourceLink: dcid:source/S1
+
+Node: dcid:provenance/provB
+typeOf: dcs:Provenance
+url: "http://provb"
+sourceLink: dcid:source/S1
+

@@ -30,6 +30,10 @@ def test_config_json_snapshot(tmp_path):
     manager.set_importName("test_import")
     manager.set_includeInputSubdirs(True).set_groupStatVarsByProperty(False)
 
+    manager.add_source(name="S1", url="http://source1")
+    manager.add_provenance(name="provA", url="http://prova", source="S1")
+    manager.add_provenance(name="provB", url="http://provb", source="S1")
+
     manager.add_explicit_schema_file(
         "a.csv",
         provenance="provA",
@@ -40,14 +44,24 @@ def test_config_json_snapshot(tmp_path):
         provenance="provB",
         columnMappings={"entity": "Country", "date": "Year", "value": "Val"},
     )
-    # add sources
-    manager.add_provenance("provA", "http://prova/", "S1", source_url="http://source1/")
-    manager.add_provenance("provB", "http://provb/", "S1", source_url="http://source1/")
 
     # export
     manager.export_config(str(tmp_path))
     got = json.loads(Path(tmp_path / "config.json").read_text())
     expected = json.loads((GOLDEN_DIR / "config.json").read_text())
+    assert "sources" not in got
+    assert got == expected
+
+
+def test_provenance_mcf_snapshot(tmp_path):
+    manager = CustomDataManager()
+    manager.add_source(name="S1", url="http://source1")
+    manager.add_provenance(name="provA", url="http://prova", source="S1")
+    manager.add_provenance(name="provB", url="http://provb", source="S1")
+
+    manager.export_mfc_file(str(tmp_path), mcf_file_name="provenance.mcf")
+    got = (tmp_path / "provenance.mcf").read_text()
+    expected = (GOLDEN_DIR / "provenance.mcf").read_text()
     assert got == expected
 
 

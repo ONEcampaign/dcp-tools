@@ -144,3 +144,37 @@ TopicDcidOrListTopicDcid = Annotated[
     PlainSerializer(mcf_str, return_type=TopicDcid | None, when_used="always"),
 ]
 """Accepts a string or list and serialises to a comma-separated string."""
+
+
+def mint_dcid(*, prefix: str, name: str) -> str:
+    """Mint a dcid for a source/provenance node id or reference.
+
+    Three-way minting rule (canonical):
+        Bare name                     -> ``dcid:<prefix>/<name>``
+                                         e.g. ``'CustomSource'`` -> ``'dcid:source/CustomSource'``
+        Already ``dcid:``-prefixed    -> returned verbatim (power-user escape hatch)
+                                         e.g. ``'dcid:bio/y'`` -> ``'dcid:bio/y'``
+        Contains ``/`` (no ``dcid:``) -> prepended with ``dcid:``
+                                         e.g. ``'source/Foo'`` -> ``'dcid:source/Foo'``
+        Whitespace or empty name      -> ``ValueError`` (strict contract; no slugify)
+
+    Args:
+        prefix: Namespace prefix used when minting a bare name (e.g. ``'source'``,
+            ``'provenance'``).
+        name: The bare name, partially-qualified path, or already-minted dcid.
+
+    Returns:
+        A fully-qualified dcid string.
+
+    Raises:
+        ValueError: If *name* is empty or contains any whitespace character.
+    """
+    if not name or any(c.isspace() for c in name):
+        raise ValueError(
+            f"mint_dcid: name must be a non-empty token with no whitespace; got {name!r}"
+        )
+    if name.startswith("dcid:"):
+        return name
+    if "/" in name:
+        return f"dcid:{name}"
+    return f"dcid:{prefix}/{name}"

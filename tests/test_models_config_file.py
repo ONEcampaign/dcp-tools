@@ -1,31 +1,74 @@
 import pytest
 
 from dcp_tools.custom_data.models.config_file import Config
+from dcp_tools.custom_data.models.data_files import ColumnMappings, ExplicitSchemaFile
 
 
-def test_config_validators_raise_on_invalid_input_files(tmp_path):
+def test_config_validators_raise_on_invalid_input_files():
     """
-    Validates that non-CSV file keys and unknown provenances cause errors.
+    Validates that a non-CSV filename causes an error on ExplicitSchemaFile construction.
     """
-    # Non-CSV file extension
-    config1 = tmp_path / "config1.json"
-    config1.write_text(
-        '{"inputFiles": {"data.txt": {"provenance": "p1"}},'
-        ' "sources": {"s1": {"url": "http://example.com",'
-        ' "provenances": {"p1": "http://ex.com"}}}}'
-    )
     with pytest.raises(ValueError):
-        Config.from_json(str(config1))
+        ExplicitSchemaFile(
+            filename="data.txt",
+            provenance="p1",
+            columnMappings=ColumnMappings(),
+        )
 
-    # Unknown provenance reference
-    config2 = tmp_path / "config2.json"
-    config2.write_text(
-        '{"inputFiles": {"data.csv": {"provenance": "unknown"}},'
-        ' "sources": {"s1": {"url": "http://example.com",'
-        ' "provenances": {"p1": "http://ex.com"}}}}'
-    )
+
+def test_explicit_schema_file_filename_pattern_xor():
+    """Exactly one of filename/pattern must be set; providing both or neither raises."""
+    # Neither provided
     with pytest.raises(ValueError):
-        Config.from_json(str(config2))
+        ExplicitSchemaFile(
+            provenance="p1",
+            columnMappings=ColumnMappings(),
+        )
+
+    # Both provided
+    with pytest.raises(ValueError):
+        ExplicitSchemaFile(
+            filename="a.csv",
+            pattern="a*",
+            provenance="p1",
+            columnMappings=ColumnMappings(),
+        )
+
+    # filename only — valid
+    ef = ExplicitSchemaFile(
+        filename="a.csv",
+        provenance="p1",
+        columnMappings=ColumnMappings(),
+    )
+    assert ef.filename == "a.csv"
+    assert ef.pattern is None
+
+    # pattern only — valid (no .csv check on pattern)
+    ep = ExplicitSchemaFile(
+        pattern="data_*",
+        provenance="p1",
+        columnMappings=ColumnMappings(),
+    )
+    assert ep.pattern == "data_*"
+    assert ep.filename is None
+
+
+def test_explicit_schema_file_provenance_minted():
+    """ExplicitSchemaFile mints the provenance to dcid:provenance/<name>."""
+    ef = ExplicitSchemaFile(
+        filename="a.csv",
+        provenance="myProv",
+        columnMappings=ColumnMappings(),
+    )
+    assert ef.provenance == "dcid:provenance/myProv"
+
+    # Already-minted provenance is returned verbatim
+    ef2 = ExplicitSchemaFile(
+        filename="b.csv",
+        provenance="dcid:provenance/myProv",
+        columnMappings=ColumnMappings(),
+    )
+    assert ef2.provenance == "dcid:provenance/myProv"
 
 
 def test_config_round_trips_import_name(tmp_path):
@@ -33,9 +76,8 @@ def test_config_round_trips_import_name(tmp_path):
     config = tmp_path / "config.json"
     config.write_text(
         '{"importName": "OECD_wage_data",'
-        ' "inputFiles": {"data.csv": {"provenance": "p1", "columnMappings": {}}},'
-        ' "sources": {"s1": {"url": "http://example.com",'
-        ' "provenances": {"p1": "http://ex.com"}}}}'
+        ' "inputFiles": [{"filename": "data.csv", "provenance": "p1", "columnMappings": {},'
+        ' "format": "variablePerRow"}]}'
     )
     loaded = Config.from_json(str(config))
     assert loaded.importName == "OECD_wage_data"

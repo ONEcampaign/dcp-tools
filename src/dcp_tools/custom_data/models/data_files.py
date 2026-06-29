@@ -1,6 +1,16 @@
 from typing import Annotated, Literal
 
-from pydantic import AliasChoices, BaseModel, ConfigDict, Field, StringConstraints
+from pydantic import (
+    AliasChoices,
+    BaseModel,
+    ConfigDict,
+    Field,
+    StringConstraints,
+    field_validator,
+    model_validator,
+)
+
+from dcp_tools.custom_data.models.common import mint_dcid
 
 
 class MCFFileName(BaseModel):
@@ -71,8 +81,17 @@ class ColumnMappings(BaseModel):
 class ExplicitSchemaFile(BaseModel):
     """Representation of an input file using the explicit (variable-per-row) schema.
 
+    Exactly one of ``filename`` or ``pattern`` must be set. The ``.csv``-suffix
+    check applies to ``filename`` only; ``pattern`` entries are exempt.
+
     Attributes:
-        provenance: Provenance of the data.
+        filename: Exact CSV file name (mutually exclusive with ``pattern``).
+        pattern: Glob pattern matching one or more input files (mutually exclusive
+            with ``filename``). Pattern entries are config-only: ``data=`` is not
+            accepted with ``pattern=``.
+        provenance: Provenance name for the data. Bare name is minted as
+            ``dcid:provenance/<name>``; pass an already ``dcid:``-prefixed value to
+            use it verbatim. Names must be valid dcid tokens (no whitespace).
         ignoreColumns: List of columns to ignore.
         columnMappings: If headings in the CSV file do not use the default names,
             the equivalent names for each column.
@@ -80,6 +99,8 @@ class ExplicitSchemaFile(BaseModel):
             This attribute is represented as "format" in the JSON.
     """
 
+    filename: str | None = None
+    pattern: str | None = None
     provenance: str
     ignoreColumns: list[str] | None = None
     columnMappings: ColumnMappings
@@ -88,3 +109,16 @@ class ExplicitSchemaFile(BaseModel):
     )
 
     model_config = ConfigDict(extra="forbid", populate_by_name=True)
+
+    @field_validator("provenance", mode="after")
+    @classmethod
+    def _mint_provenance(cls, value: str) -> str:
+        return mint_dcid(prefix="provenance", name=value)
+
+    @model_validator(mode="after")
+    def _validate_filename_or_pattern(self) -> "ExplicitSchemaFile":
+        if (self.filename is None) == (self.pattern is None):
+            raise ValueError("Exactly one of 'filename' or 'pattern' must be set.")
+        if self.filename is not None and not self.filename.lower().endswith(".csv"):
+            raise ValueError(f'filename "{self.filename}" must have a .csv extension.')
+        return self

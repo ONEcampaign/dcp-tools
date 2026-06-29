@@ -33,27 +33,42 @@ manager = CustomDataManager.from_config_files_in_directory("path/to/directory")
 
 ## Managing provenances and sources
 
-The `CustomDataManager` allows you to manage the sources and provenances in the `config.json` file.
-You can add a provenance and source using the `add_provenance` methods.
+The `CustomDataManager` allows you to define the sources and provenances for your data. Sources and
+provenances are written as MCF `Source` and `Provenance` nodes — by default into a file called
+`provenance.mcf`. Each input file references a provenance by name; internally that reference is stored
+as `dcid:provenance/<name>`.
+
+Add a source first, then add one or more provenances that point to it:
 
 ```python
-manager.add_provenance(provenance_name="Provenance Name",
-                       provenance_url="https://example.com/provenance",
-                       source_name="Source Name",
-                       source_url="https://example.com/source"
-                       )
+manager.add_source(name="SourceName", url="https://example.com/source")
+manager.add_provenance(
+    name="ProvenanceName",
+    url="https://example.com/provenance",
+    source="SourceName",
+)
 ```
 
-If the source already exists in the `config.json`, it will not be added again. But if the source does not exist
-yet, you should specify the source URL. If the provenance already exists, you can override it by setting the 
-`overwrite` parameter to `True`.
+Each `name` becomes part of a dcid (`dcid:source/<name>`, `dcid:provenance/<name>`), so it must be a
+valid dcid token — no whitespace (use `"ONEData"`, not `"ONE Data"`). A name containing whitespace
+raises a `ValueError`.
 
-Additional methods exist to manage sources and provenances:
+`add_provenance` requires the named source to already exist (added via `add_source`). If a source or
+provenance with the same name already exists, a `ValueError` is raised unless you pass `override=True`.
 
-- `remove_source` - removes a source and all its provenances from the `config.json`.
-- `remove_provenance` - removes a provenance from the `config.json`.
-- `rename_source` - renames a source in the `config.json`.
-- `rename_provenance` - renames a provenance in the `config.json`.
+Both methods accept optional metadata kwargs (`description`, `license`, `isPartOf` on both; additionally
+`licenseType`, `lastDataRefreshDate`, `nextDataRefreshDate`, `nextSourceReleaseDate`,
+`sourceReleaseFrequency`, `earliestObservationDate`, `latestObservationDate`, and `curator` on
+`add_provenance`). Use the `additional_properties` dict for any property not covered by those kwargs.
+
+Source and Provenance nodes live in `provenance.mcf` by default. To write that file to disk you must list
+it explicitly when exporting:
+
+```python
+manager.export_all("path/to/output/folder", mcf_file_names=["provenance.mcf"])
+```
+
+This is the same mechanism used for any other MCF file — `provenance.mcf` is not exported automatically.
 
 
 ## Managing variables
@@ -119,18 +134,7 @@ manager.add_data(data=df, file_name="gdp.csv")
 
 ## Removing variables and data files
 
-You have already seen above how to remove variables and data files using the `remove_variable` 
-and `remove_data_file` methods.
-You can also remove variables and files based on their associated provenance or source.
-
-```python title="Remove variables by provenance"
-manager.remove_by_provenance("World Economic Outlook")
-```
-
-```python title="Remove data files by source"
-manager.remove_by_source("IMF")
-```
-
+You can remove variables and data files using the `remove_indicator` and `rename_variable` methods.
 
 
 ## Adding and merging config files
@@ -235,3 +239,7 @@ To export MCF files as well, you should specify the `mcf_file_names` parameter:
 ```python
 manager.export_all("path/to/output/folder", mcf_file_names=["mcf_file1.mcf", "mcf_file2.mcf"])
 ```
+
+If an input file references a provenance, the MCF file defining it (`provenance.mcf` by default)
+must be among `mcf_file_names`; otherwise `export_all` raises before writing anything, so the
+exported bundle can never reference a provenance node that is missing from disk.

@@ -8,13 +8,13 @@ from pathlib import Path
 from typing import Any
 
 import pandas as pd
-from pydantic import HttpUrl
 
 from dcp_tools.custom_data.config_utils import (
     DuplicatePolicy,
     merge_configs,
     merge_configs_from_directory,
 )
+from dcp_tools.custom_data.models.common import mint_dcid
 from dcp_tools.custom_data.models.config_file import Config
 from dcp_tools.custom_data.models.data_files import (
     ColumnMappings,
@@ -22,7 +22,7 @@ from dcp_tools.custom_data.models.data_files import (
     MCFFileName,
 )
 from dcp_tools.custom_data.models.mcf import MCFNodes
-from dcp_tools.custom_data.models.sources import Source
+from dcp_tools.custom_data.models.sources import ProvenanceMCFNode, SourceMCFNode
 from dcp_tools.custom_data.models.stat_vars import (
     StatType,
     StatVarGroupMCFNode,
@@ -36,17 +36,19 @@ from dcp_tools.custom_data.schema_tools import (
 
 DEFAULT_STATVAR_MCF_NAME: str = "custom_nodes.mcf"
 DEFAULT_GROUP_NAME: str = "custom_groups.mcf"
+DEFAULT_PROVENANCE_MCF_NAME: str = "provenance.mcf"
 
 
-def _parse_kwargs_into_properties(locals_dict: dict[str, Any]) -> dict[str, Any]:
+def _parse_kwargs_into_properties(
+    locals_dict: dict[str, Any], *, extra_exclude: set[str] | None = None
+) -> dict[str, Any]:
     """Parse a dictionary of keyword arguments into a dictionary of properties"""
 
-    props = {
-        k: v
-        for k, v in locals_dict.items()
-        if k not in {"self", "additional_properties", "override", "mcf_file_name"}
-        and v is not None
-    }
+    exclude = {"self", "additional_properties", "override", "mcf_file_name"}
+    if extra_exclude:
+        exclude |= extra_exclude
+
+    props = {k: v for k, v in locals_dict.items() if k not in exclude and v is not None}
 
     if "additional_properties" in locals_dict:
         additional = locals_dict.get("additional_properties", {})
@@ -60,7 +62,7 @@ class CustomDataManager:
     """Class to handle the config json, data, and MCF files for Custom Data Commons
 
     Args:
-        config_file: Path to the config json file. If not provided, a new config objet will be created.
+        config_file: Path to the config json file. If not provided, a new config object will be created.
         mcf_files: Path to one or more MCF files. If not provided, a new MCFNodes object will be created.
 
     Usage:
@@ -70,20 +72,15 @@ class CustomDataManager:
     or
     >>> dc_manager = CustomDataManager(config_file="path/to/config.json", mcf_file="path/to/mcf_file.mcf")
 
-    To add a provenance to the config, use the add_provenance method
-    >>> dc_manager.add_provenance(
-    >>>     provenance_name="Provenance Name",
-    >>>     provenance_url="https://example.com/provenance",
-    >>>     source_name="Source Name",
-    >>>     source_url="https://example.com/source"
-    >>> )
+    Source/Provenance (MCF):
 
-    This will add a provenance and a source in the config. If the source already exists,
-    you can add another provenance to the existing source
+    To add a Source and Provenance (emitted as MCF nodes to ``provenance.mcf`` by default),
+    use the ``add_source`` and ``add_provenance`` methods:
+    >>> dc_manager.add_source(name="ONE Data", url="https://data.one.org")
     >>> dc_manager.add_provenance(
-    >>>    provenance_name="Provenance Name",
-    >>>    provenance_url="https://example.com/provenance",
-    >>>    source_name="Source Name"
+    >>>     name="ONE Climate Finance",
+    >>>     url="https://datacommons.one.org/data/climate-finance-files",
+    >>>     source="ONE Data",
     >>> )
 
     To add a variable for export to an MCF file (using the explicit schema), use the
@@ -100,7 +97,7 @@ class CustomDataManager:
     >>> dc_manager.add_variables_to_mcf_from_csv(file_path="path/to/file.csv")
 
     To add an input file and data to the config, using the explicit (per row) schema,
-    use the add_variablePerRow_input_file method
+    use the add_explicit_schema_file method
     >>> dc_manager.add_explicit_schema_file(
     >>>    file_name="input_file.csv",
     >>>    provenance="Provenance Name",
@@ -156,9 +153,7 @@ class CustomDataManager:
         """
 
         self._config = (
-            Config.from_json(config_file)
-            if config_file
-            else Config(inputFiles={}, sources={})
+            Config.from_json(config_file) if config_file else Config(inputFiles=[])
         )
 
         if mcf_files:
@@ -181,12 +176,16 @@ class CustomDataManager:
 
     def __repr__(self) -> str:
         input_files_count = len(self._config.inputFiles)
-        sources_count = len(self._config.sources)
-        nodes_count = sum(
-            [len(var) for var in [n.nodes for n in self._mcf_nodes.values()] if var]
-        )
 
-        variables_count = nodes_count
+        all_nodes = [n for nodes in self._mcf_nodes.values() for n in nodes.nodes]
+        sources_count = sum(
+            1 for n in all_nodes if getattr(n, "typeOf", None) == "dcid:Source"
+        )
+        provenances_count = sum(
+            1 for n in all_nodes if getattr(n, "typeOf", None) == "dcid:Provenance"
+        )
+        variables_count = len(all_nodes) - sources_count - provenances_count
+
         dataframes_count = len(self._data)
 
         import_name = self._config.importName
@@ -201,6 +200,7 @@ class CustomDataManager:
             f"<CustomDataManager config: "
             f"\n{input_files_count} inputFiles, with {dataframes_count} containing data"
             f"\n{sources_count} sources"
+            f"\n{provenances_count} provenances"
             f"\n{variables_count} variables"
             f"\nflags: importName={import_name}, "
             f"includeInputSubdirs={include_input_subdirs}, "
@@ -284,56 +284,126 @@ class CustomDataManager:
             self._config.svHierarchyPropsBlocklist = deduped
         return self
 
-    def add_provenance(
+    def add_source(
         self,
-        provenance_name: str,
-        provenance_url: HttpUrl | str,
-        source_name: str,
-        source_url: HttpUrl | str | None = None,
+        *,
+        name: str,
+        url: str,
+        description: str | None = None,
+        license: str | None = None,
+        isPartOf: str | None = None,
+        additional_properties: dict[str, str] | None = None,
         override: bool = False,
+        mcf_file_name: MCFFileName | str = DEFAULT_PROVENANCE_MCF_NAME,
     ) -> CustomDataManager:
-        """Add a provenance to the config
+        """Add a Source MCF node.
 
-        Add a provenance (optionally with a new source) to the sources section of the config
-        file. If the source does not exist, it will be added but a source URL must be provided.
-        If the source exists, the provenance will be added to the existing source.
-        If the provenance already exists, it will be overwritten if override is set to True.
+        Emits a ``dcid:Source`` node to the MCF collection (default: ``provenance.mcf``).
+        The node is referenced by ``add_provenance`` via the same bare ``name``.
 
         Args:
-            provenance_name: Name of the provenance
-            provenance_url: URL of the provenance
-            source_name: Name of the source
-            source_url: URL of the source (optional)
-            override: If True, overwrite the existing provenance if it exists. Defaults to False.
+            name: Bare name for the source. Minting rule: bare name →
+                ``dcid:source/<name>``; pass an already ``dcid:``-prefixed value to use
+                it verbatim. Names must be valid dcid tokens (no whitespace).
+            url: URL of the data source.
+            description: Optional human-readable description. (Optional)
+            license: Optional license information. (Optional)
+            isPartOf: Optional DCID of a parent source. (Optional)
+            additional_properties: Additional MCF properties, passed as a dictionary
+                with the target property as key. (Optional)
+            override: If True, overwrite the existing node if it exists. Defaults to False.
+            mcf_file_name: Name of the MCF file (must end in .mcf).
+                Defaults to ``"provenance.mcf"``.
+
+        Returns:
+            CustomDataManager object
 
         Raises:
-            ValueError: If the source does not exist and no source URL is provided,
-                or if the provenance already exists and override is not set to True.
+            ValueError: If the name contains whitespace, if a node with the same id
+                already exists and ``override`` is False, or if the file name is invalid.
         """
 
-        if source_name not in self._config.sources:
-            if source_url is None:
-                raise ValueError(
-                    f"Source '{source_name}' not found. "
-                    "Please provide a source URL so the source can be added."
-                )
-            self._config.sources[source_name] = Source(
-                url=HttpUrl(source_url),
-                provenances={provenance_name: HttpUrl(provenance_url)},
-            )
+        Node = mint_dcid(prefix="source", name=name)
+        url = str(url)
+        props = _parse_kwargs_into_properties(locals(), extra_exclude={"name"})
+        node = SourceMCFNode(**props)
 
-        else:
-            if (
-                provenance_name in self._config.sources[source_name].provenances
-                and not override
-            ):
-                raise ValueError(
-                    f"Provenance '{provenance_name}' already exists for source '{source_name}'. "
-                    "Use override=True to overwrite it."
-                )
-            self._config.sources[source_name].provenances[provenance_name] = HttpUrl(
-                provenance_url
-            )
+        mcf_name = validate_mcf_file_name(mcf_file_name)
+        self._mcf_nodes.setdefault(mcf_name, MCFNodes()).add(node, override=override)
+
+        return self
+
+    def add_provenance(
+        self,
+        *,
+        name: str,
+        url: str,
+        source: str,
+        description: str | None = None,
+        license: str | None = None,
+        licenseType: str | None = None,
+        lastDataRefreshDate: str | None = None,
+        nextDataRefreshDate: str | None = None,
+        nextSourceReleaseDate: str | None = None,
+        sourceReleaseFrequency: str | None = None,
+        earliestObservationDate: str | None = None,
+        latestObservationDate: str | None = None,
+        curator: str | None = None,
+        isPartOf: str | None = None,
+        additional_properties: dict[str, str] | None = None,
+        override: bool = False,
+        mcf_file_name: MCFFileName | str = DEFAULT_PROVENANCE_MCF_NAME,
+    ) -> CustomDataManager:
+        """Add a Provenance MCF node linked to an existing Source.
+
+        Emits a ``dcid:Provenance`` node to the MCF collection (default: ``provenance.mcf``).
+        The corresponding Source must already be registered via ``add_source``.
+
+        Args:
+            name: Bare name for the provenance. Minting rule: bare name →
+                ``dcid:provenance/<name>``; pass an already ``dcid:``-prefixed value to
+                use it verbatim. Names must be valid dcid tokens (no whitespace).
+            url: URL of the provenance dataset.
+            source: Bare name of the parent Source (must already have been added via
+                ``add_source``). The same minting rule applies: bare name →
+                ``dcid:source/<source>``; ``dcid:``-prefixed → verbatim.
+            description: Optional human-readable description. (Optional)
+            license: Optional license information. (Optional)
+            licenseType: Optional license type. (Optional)
+            lastDataRefreshDate: Optional date of last data refresh. (Optional)
+            nextDataRefreshDate: Optional date of next expected data refresh. (Optional)
+            nextSourceReleaseDate: Optional date of next source release. (Optional)
+            sourceReleaseFrequency: Optional frequency of source releases. (Optional)
+            earliestObservationDate: Optional earliest observation date. (Optional)
+            latestObservationDate: Optional latest observation date. (Optional)
+            curator: Optional curator of the dataset. (Optional)
+            isPartOf: Optional DCID of a parent provenance. (Optional)
+            additional_properties: Additional MCF properties, passed as a dictionary
+                with the target property as key. (Optional)
+            override: If True, overwrite the existing node if it exists. Defaults to False.
+            mcf_file_name: Name of the MCF file (must end in .mcf).
+                Defaults to ``"provenance.mcf"``.
+
+        Returns:
+            CustomDataManager object
+
+        Raises:
+            ValueError: If the ``source`` has not been added yet, if either name
+                contains whitespace, if a node with the same id already exists and
+                ``override`` is False, or if the file name is invalid.
+        """
+
+        Node = mint_dcid(prefix="provenance", name=name)
+        url = str(url)
+        sourceLink = mint_dcid(prefix="source", name=source)
+        self._require_source_exists(source, sourceLink)
+        props = _parse_kwargs_into_properties(
+            locals(), extra_exclude={"name", "source"}
+        )
+        node = ProvenanceMCFNode(**props)
+
+        mcf_name = validate_mcf_file_name(mcf_file_name)
+        self._mcf_nodes.setdefault(mcf_name, MCFNodes()).add(node, override=override)
 
         return self
 
@@ -498,11 +568,13 @@ class CustomDataManager:
 
     def add_explicit_schema_file(
         self,
-        file_name: str,
+        file_name: str | None = None,
+        *,
         provenance: str,
         data: pd.DataFrame | None = None,
         columnMappings: dict[str, str] | None = None,
         ignoreColumns: list[str] | None = None,
+        pattern: str | None = None,
         override: bool = False,
     ) -> CustomDataManager:
         """Add an inputFile to the config and optionally register the data as pandas DataFrame.
@@ -510,41 +582,77 @@ class CustomDataManager:
         This method registers an input file in the config. Optionally it also registers the
         data that accompanies the input file registered. The registration of the data is made
         optional in cases where a user wants to edit the config file without the
-        accompanying data. The data can be registered later using the add data method.
+        accompanying data. The data can be registered later using the add_data method.
 
         This method is for the explicit schema approach (variable per row). Read more about
         the explicit (variable-per-row) schema format here:
         https://docs.datacommons.org/custom_dc/custom_data.html
 
+        Exactly one of ``file_name`` or ``pattern`` must be provided. Pattern entries are
+        config-only: ``data=`` is not accepted with ``pattern=``.
 
         Args:
-            file_name: Name of the file (should be a .csv file)
-            provenance: Provenance of the data. This should be the name of the provenance
-                in the sources section of the config file. Use add_provenance to add a provenance
-                to the config file.
-            data: Data to register (optional)
-            columnMappings: Column mappings. Match the headings in the CSV file to the allowed
-                properties. Allowed keys are [entity, date, value, unit,
+            file_name: Exact name of the file (must have a .csv extension). Mutually
+                exclusive with ``pattern``.
+            provenance: Provenance name for the data. Bare name → minted as
+                ``dcid:provenance/<name>``; pass an already ``dcid:``-prefixed value to
+                use it verbatim. Names must be valid dcid tokens (no whitespace).
+            data: Data to register (optional; only valid with ``file_name``).
+            columnMappings: Column mappings. Match the headings in the CSV file to the
+                allowed properties. Allowed keys are [entity, date, value, unit,
                 scalingFactor, measurementMethod, observationPeriod].
-            ignoreColumns: List of columns to ignore (optional)
-            override: If True, overwrite the existing file if it exists. Defaults to False.
+            ignoreColumns: List of columns to ignore (optional).
+            pattern: Glob pattern matching one or more input files. Mutually exclusive
+                with ``file_name``. Pattern entries carry no local data.
+            override: If True, overwrite the existing entry if it exists. Defaults to False.
 
+        Raises:
+            ValueError: If neither or both of ``file_name``/``pattern`` are provided,
+                if ``data`` is passed together with ``pattern``, or if a duplicate entry
+                exists and ``override`` is False.
         """
 
-        # check if the file already exists
-        self._data_override_check(file_name=file_name, override=override)
+        if (file_name is None) == (pattern is None):
+            raise ValueError(
+                "Exactly one of 'file_name' or 'pattern' must be provided."
+            )
+        if pattern is not None and data is not None:
+            raise ValueError("'data' cannot be provided together with 'pattern'.")
 
-        if columnMappings is None:
-            columnMappings = {}
-
-        self._config.inputFiles[file_name] = ExplicitSchemaFile(
-            ignoreColumns=ignoreColumns,
+        entry = ExplicitSchemaFile(
+            filename=file_name,
+            pattern=pattern,
             provenance=provenance,
-            columnMappings=ColumnMappings(**columnMappings),
+            columnMappings=ColumnMappings(**(columnMappings or {})),
+            ignoreColumns=ignoreColumns,
         )
 
-        # if data is provided, register it
+        # Upsert into the list keyed by filename or pattern
+        existing_idx: int | None = None
+        for i, e in enumerate(self._config.inputFiles):
+            if file_name is not None and e.filename == file_name:
+                existing_idx = i
+                break
+            if pattern is not None and e.pattern == pattern:
+                existing_idx = i
+                break
+
+        if existing_idx is not None:
+            if not override:
+                key = file_name if file_name is not None else pattern
+                raise ValueError(
+                    f"Input file '{key}' already registered. "
+                    "Use override=True to replace it."
+                )
+            self._config.inputFiles[existing_idx] = entry
+        else:
+            self._config.inputFiles.append(entry)
+
+        # Register data if provided (filename path only).
+        # file_name is non-None here: the pattern+data guard and XOR check above ensure it.
         if data is not None:
+            assert file_name is not None
+            self._data_override_check(file_name=file_name, override=override)
             self._data[file_name] = data
 
         return self
@@ -561,7 +669,7 @@ class CustomDataManager:
             override: If True, overwrite the existing data if it exists.
         """
 
-        if file_name not in self._config.inputFiles:
+        if not any(e.filename == file_name for e in self._config.inputFiles):
             raise ValueError(
                 f"File '{file_name}' not found in the config file. Please register the "
                 "file in the config file before adding data, using the "
@@ -621,67 +729,6 @@ class CustomDataManager:
 
         return self
 
-    def rename_provenance(self, old_name: str, new_name: str) -> CustomDataManager:
-        """Rename a provenance and update all references.
-
-        Args:
-            old_name: The name of the provenance to rename.
-            new_name: The new name for the provenance.
-        Raises:
-            ValueError: If the provenance is not found in the config or MCF files,
-                or if the new name already exists.
-        Raises:
-            ValueError: If the provenance is not found in the config or MCF files,
-                or if the new name already exists.
-
-        """
-
-        source = None
-        for src in self._config.sources.values():
-            if old_name in src.provenances:
-                source = src
-                break
-
-        if source is None:
-            raise ValueError(f"Provenance '{old_name}' not found")
-        if new_name in source.provenances:
-            raise ValueError(f"Provenance '{new_name}' already exists for source")
-
-        source.provenances[new_name] = source.provenances.pop(old_name)
-
-        for info in self._config.inputFiles.values():
-            if info.provenance == old_name:
-                info.provenance = new_name
-
-        for nodes in self._mcf_nodes.values():
-            for node in nodes.nodes:
-                prov = getattr(node, "provenance", None)
-                if prov in {old_name, f'"{old_name}"'}:
-                    node.provenance = f'"{new_name}"'
-
-        return self
-
-    def rename_source(self, old_name: str, new_name: str) -> CustomDataManager:
-        """Rename a source key in the config.
-
-        Args:
-            old_name: The name of the source to rename.
-            new_name: The new name for the source.
-        Raises:
-            ValueError: If the source is not found in the config or MCF files,
-                or if the new name already exists.
-
-        """
-
-        if old_name not in self._config.sources:
-            raise ValueError(f"Source '{old_name}' not found")
-        if new_name in self._config.sources:
-            raise ValueError(f"Source '{new_name}' already exists")
-
-        self._config.sources[new_name] = self._config.sources.pop(old_name)
-
-        return self
-
     def remove_indicator(
         self, indicator_id: str, *, mcf_file_name: str | None = None
     ) -> CustomDataManager:
@@ -728,67 +775,91 @@ class CustomDataManager:
 
         return self
 
-    def remove_by_provenance(self, provenance: str) -> CustomDataManager:
-        """Remove all files and indicators associated with a provenance."""
+    def _require_source_exists(self, source: str, source_link: str) -> None:
+        """Raise ValueError if no Source MCF node with id ``source_link`` exists.
 
-        removed = False
+        Args:
+            source: The bare user-facing source name (used in the error message).
+            source_link: The minted dcid for the source (used for the lookup).
+        """
+        if not any(
+            getattr(n, "typeOf", None) == "dcid:Source" and n.Node == source_link
+            for nodes in self._mcf_nodes.values()
+            for n in nodes.nodes
+        ):
+            raise ValueError(
+                f"Source '{source}' not found. "
+                f"Call add_source(name={source!r}, url=...) before add_provenance()."
+            )
 
-        files_to_remove = [
-            f
-            for f, info in self._config.inputFiles.items()
-            if info.provenance == provenance
-        ]
-        for file_name in files_to_remove:
-            self._config.inputFiles.pop(file_name)
-            self._data.pop(file_name, None)
-            removed = True
+    def _validate_provenances(self) -> None:
+        """Raise ValueError if any inputFile references a provenance with no matching node.
 
-        for nodes in self._mcf_nodes.values():
-            for node in list(nodes.nodes):
-                if getattr(node, "provenance", None) == f'"{provenance}"':
-                    nodes.remove(node.Node)
-                    removed = True
+        Scans all MCF files for ``dcid:Provenance`` nodes and checks that every
+        ``inputFiles`` entry with a ``provenance`` ref has a corresponding node.
+        """
+        known = {
+            n.Node
+            for nodes in self._mcf_nodes.values()
+            for n in nodes.nodes
+            if getattr(n, "typeOf", None) == "dcid:Provenance"
+        }
+        for entry in self._config.inputFiles:
+            if entry.provenance and entry.provenance not in known:
+                bare = entry.provenance.removeprefix("dcid:provenance/")
+                raise ValueError(
+                    f"Input file references unknown provenance '{bare}' "
+                    f"('{entry.provenance}'). "
+                    f"Call add_provenance(name={bare!r}, url=..., source=...) first."
+                )
 
-        if not removed:
-            raise ValueError(f"No data found for provenance '{provenance}'")
+    def _validate_provenance_files_exported(self, exported_mcf: set[str]) -> None:
+        """Raise if an inputFile references a provenance — or its linked Source —
+        defined in an MCF file that is not being exported.
 
-        return self
+        ``export_all`` writes a complete bundle, so every provenance an input file
+        references must be defined in an exported MCF file, and so must the Source it
+        links to via ``sourceLink``. Without this check a forgotten
+        ``mcf_file_names=["provenance.mcf"]`` (or a Source kept in a separate, unexported
+        MCF file) would write a config.json pointing at nodes absent from the bundle —
+        references the DCP importer rejects. Unknown provenances (no node at all) are
+        left to ``_validate_provenances``.
+        """
+        prov_file: dict[str, str] = {}
+        prov_source: dict[str, str | None] = {}
+        source_file: dict[str, str] = {}
+        for fname, nodes in self._mcf_nodes.items():
+            for n in nodes.nodes:
+                node_type = getattr(n, "typeOf", None)
+                if node_type == "dcid:Provenance":
+                    prov_file[n.Node] = fname
+                    prov_source[n.Node] = getattr(n, "sourceLink", None)
+                elif node_type == "dcid:Source":
+                    source_file[n.Node] = fname
 
-    def remove_provenance(self, provenance: str) -> CustomDataManager:
-        """Remove a provenance and any associated data and references."""
+        missing: dict[str, str] = {}
+        for entry in self._config.inputFiles:
+            ref = entry.provenance
+            owning = prov_file.get(ref)
+            if owning is None:
+                continue  # unknown provenance -> _validate_provenances reports it
+            if owning not in exported_mcf:
+                missing.setdefault(owning, ref)
+                continue
+            # The provenance is exported; the Source it links to must be too.
+            link = prov_source.get(ref)
+            if link is not None:
+                src_owner = source_file.get(link)
+                if src_owner is not None and src_owner not in exported_mcf:
+                    missing.setdefault(src_owner, link)
 
-        self.remove_by_provenance(provenance)
-
-        found = False
-        for source in self._config.sources.values():
-            if provenance in source.provenances:
-                del source.provenances[provenance]
-                found = True
-
-        if not found:
-            raise ValueError(f"Provenance '{provenance}' not found in sources")
-
-        return self
-
-    def remove_by_source(self, source: str) -> CustomDataManager:
-        """Remove all data associated with every provenance of a source."""
-
-        if source not in self._config.sources:
-            raise ValueError(f"Source '{source}' not found")
-
-        for prov in list(self._config.sources[source].provenances.keys()):
-            self.remove_by_provenance(prov)
-
-        return self
-
-    def remove_source(self, source: str) -> CustomDataManager:
-        """Remove a source and all its provenances from the config and data."""
-
-        self.remove_by_source(source)
-
-        del self._config.sources[source]
-
-        return self
+        if missing:
+            files = sorted(missing)
+            raise ValueError(
+                f"export_all() would write a config.json referencing source/provenance "
+                f"node(s) defined in MCF file(s) not being exported: {files}. Add them to "
+                f"mcf_file_names (e.g. mcf_file_names={files!r}) so the bundle is complete."
+            )
 
     def export_config(self, dir_path: str | PathLike[str]) -> None:
         """Export the config to a JSON file
@@ -803,6 +874,7 @@ class CustomDataManager:
             ValueError: If the config is not valid
         """
 
+        self._validate_provenances()
         self._config.validate_config()
 
         # Default importName to the export directory name (matching the prep job's
@@ -854,6 +926,7 @@ class CustomDataManager:
             ValueError: If the config is not valid
         """
 
+        self._validate_provenances()
         self._config.validate_config()
 
         return self._config.model_dump(mode="json", exclude_none=True, by_alias=True)
@@ -874,15 +947,18 @@ class CustomDataManager:
     def validate_all_input_files_have_data(self) -> CustomDataManager:
         """Validate that every declared input file has a corresponding data entry.
 
+        Pattern entries (glob-matched files) are skipped; only ``filename`` entries
+        require a registered dataframe.
+
         Raises:
             ValueError: If one or more input files declared in the config do not have
                 associated data registered in this manager.
         """
 
         missing = [
-            file_name
-            for file_name in self._config.inputFiles
-            if file_name not in self._data
+            entry.filename
+            for entry in self._config.inputFiles
+            if entry.filename is not None and entry.filename not in self._data
         ]
         if missing:
             raise ValueError(
@@ -901,30 +977,45 @@ class CustomDataManager:
     ) -> None:
         """Export the config, MCF file, and data to a directory
 
+        ``export_all`` writes a complete bundle and enforces it: if an input file
+        references a provenance whose MCF file is not listed in ``mcf_file_names``,
+        it raises before writing anything (so no partial bundle lands on disk). To
+        export only the config (deferring MCF export), use ``export_config`` directly.
+
         Args:
             dir_path: Path to the directory where the config and data will be exported.
             override: If True, overwrite the files if they exist. Defaults to False.
             mcf_file_names: Name of the MCF file(s) to export (must end in .mcf).
                 Defaults to None, which means no MCF file will be exported.
+                Source and Provenance nodes live in ``provenance.mcf`` by default and
+                must be listed here to be written (e.g.
+                ``mcf_file_names=["provenance.mcf"]``).
             validate_data: If True, raise a ValueError before exporting if any input
                 file declared in the config does not have a corresponding data entry.
                 Defaults to False.
+
+        Raises:
+            ValueError: If an input file references a provenance defined in an MCF
+                file not included in ``mcf_file_names`` (the bundle would be incomplete).
         """
+
+        if isinstance(mcf_file_names, str):
+            mcf_file_names = [mcf_file_names]
 
         if validate_data:
             self.validate_all_input_files_have_data()
 
+        self._validate_provenance_files_exported(set(mcf_file_names or ()))
+
         self.export_config(dir_path)
 
-        self.export_data(dir_path)
+        if self._data:
+            self.export_data(dir_path)
 
-        if mcf_file_names:
-            if isinstance(mcf_file_names, str):
-                mcf_file_names = [mcf_file_names]
-            for mcf_file_name in mcf_file_names:
-                self.export_mfc_file(
-                    dir_path=dir_path, mcf_file_name=mcf_file_name, override=override
-                )
+        for mcf_file_name in mcf_file_names or ():
+            self.export_mfc_file(
+                dir_path=dir_path, mcf_file_name=mcf_file_name, override=override
+            )
 
     def validate_config(self) -> CustomDataManager:
         """Validate the config
@@ -936,6 +1027,7 @@ class CustomDataManager:
             pydantic.ValidationError if the config is not valid
         """
 
+        self._validate_provenances()
         self._config.validate_config()
         return self
 

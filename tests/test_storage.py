@@ -8,7 +8,6 @@ from dcp_tools.custom_data.models.data_files import (
     ColumnMappings,
     ExplicitSchemaFile,
 )
-from dcp_tools.custom_data.models.sources import Source
 from dcp_tools.gcp_utilities.settings import KGSettings
 from dcp_tools.gcp_utilities.storage import (
     delete_bucket_files,
@@ -22,14 +21,15 @@ from dcp_tools.gcp_utilities.storage import (
 
 
 def _minimal_config(key: str = "a.csv") -> Config:
-    input_files = {
-        key: ExplicitSchemaFile(
-            provenance="prov",
-            columnMappings=ColumnMappings(),
-        )
-    }
-    sources = {"src": Source(url="http://s", provenances={"prov": "http://p"})}
-    return Config(inputFiles=input_files, sources=sources)
+    return Config(
+        inputFiles=[
+            ExplicitSchemaFile(
+                filename=key,
+                provenance="prov",
+                columnMappings=ColumnMappings(),
+            )
+        ]
+    )
 
 
 def test_upload_directory_to_gcs(tmp_path):
@@ -313,6 +313,31 @@ def test_get_unregistered_csv_files():
     assert missing == ["extra.csv"]
 
 
+def test_get_unregistered_csv_files_honors_patterns():
+    """Files matched by an inputFile ``pattern`` count as registered, not unregistered."""
+    bucket = Mock()
+    matched = Mock()
+    matched.name = "folder/data_2024.csv"
+    stray = Mock()
+    stray.name = "folder/other.csv"
+    bucket.list_blobs.return_value = [matched, stray]
+    bucket.name = "my-bucket"
+
+    cfg = Config(
+        inputFiles=[
+            ExplicitSchemaFile(
+                pattern="data_*.csv",
+                provenance="prov",
+                columnMappings=ColumnMappings(),
+            )
+        ]
+    )
+
+    # data_2024.csv matches the glob -> registered; only the non-matching file is unregistered.
+    missing = get_unregistered_csv_files(bucket, cfg, gcs_folder_name="folder")
+    assert missing == ["other.csv"]
+
+
 def test_get_unregistered_csv_files_with_prefix_removed():
     bucket = Mock()
     blob_a = Mock()
@@ -336,9 +361,12 @@ def test_get_missing_csv_files():
     bucket.list_blobs.return_value = [blob_a]
 
     cfg = _minimal_config()
-    cfg.inputFiles["extra.csv"] = ExplicitSchemaFile(
-        provenance="prov",
-        columnMappings=ColumnMappings(),
+    cfg.inputFiles.append(
+        ExplicitSchemaFile(
+            filename="extra.csv",
+            provenance="prov",
+            columnMappings=ColumnMappings(),
+        )
     )
 
     missing = get_missing_csv_files(bucket, cfg, gcs_folder_name="folder")
@@ -353,9 +381,12 @@ def test_get_missing_csv_files_with_prefix_added():
     bucket.list_blobs.return_value = [blob_a]
 
     cfg = _minimal_config("sub/a.csv")
-    cfg.inputFiles["sub/b.csv"] = ExplicitSchemaFile(
-        provenance="prov",
-        columnMappings=ColumnMappings(),
+    cfg.inputFiles.append(
+        ExplicitSchemaFile(
+            filename="sub/b.csv",
+            provenance="prov",
+            columnMappings=ColumnMappings(),
+        )
     )
 
     missing = get_missing_csv_files(bucket, cfg, gcs_folder_name="prefix")
@@ -392,9 +423,12 @@ def test_get_missing_csv_files_per_import():
     bucket.name = "my-bucket"
 
     cfg = _minimal_config("a.csv")
-    cfg.inputFiles["b.csv"] = ExplicitSchemaFile(
-        provenance="prov",
-        columnMappings=ColumnMappings(),
+    cfg.inputFiles.append(
+        ExplicitSchemaFile(
+            filename="b.csv",
+            provenance="prov",
+            columnMappings=ColumnMappings(),
+        )
     )
 
     result = get_missing_csv_files(
@@ -412,9 +446,12 @@ def test_registration_checks_fresh_import_empty_prefix():
     bucket.name = "my-bucket"
 
     cfg = _minimal_config("a.csv")
-    cfg.inputFiles["b.csv"] = ExplicitSchemaFile(
-        provenance="prov",
-        columnMappings=ColumnMappings(),
+    cfg.inputFiles.append(
+        ExplicitSchemaFile(
+            filename="b.csv",
+            provenance="prov",
+            columnMappings=ColumnMappings(),
+        )
     )
 
     unregistered = get_unregistered_csv_files(

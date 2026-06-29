@@ -179,10 +179,10 @@ class CustomDataManager:
 
         all_nodes = [n for nodes in self._mcf_nodes.values() for n in nodes.nodes]
         sources_count = sum(
-            1 for n in all_nodes if getattr(n, "typeOf", None) == "dcs:Source"
+            1 for n in all_nodes if getattr(n, "typeOf", None) == "dcid:Source"
         )
         provenances_count = sum(
-            1 for n in all_nodes if getattr(n, "typeOf", None) == "dcs:Provenance"
+            1 for n in all_nodes if getattr(n, "typeOf", None) == "dcid:Provenance"
         )
         variables_count = len(all_nodes) - sources_count - provenances_count
 
@@ -298,7 +298,7 @@ class CustomDataManager:
     ) -> CustomDataManager:
         """Add a Source MCF node.
 
-        Emits a ``dcs:Source`` node to the MCF collection (default: ``provenance.mcf``).
+        Emits a ``dcid:Source`` node to the MCF collection (default: ``provenance.mcf``).
         The node is referenced by ``add_provenance`` via the same bare ``name``.
 
         Args:
@@ -356,7 +356,7 @@ class CustomDataManager:
     ) -> CustomDataManager:
         """Add a Provenance MCF node linked to an existing Source.
 
-        Emits a ``dcs:Provenance`` node to the MCF collection (default: ``provenance.mcf``).
+        Emits a ``dcid:Provenance`` node to the MCF collection (default: ``provenance.mcf``).
         The corresponding Source must already be registered via ``add_source``.
 
         Args:
@@ -783,7 +783,7 @@ class CustomDataManager:
             source_link: The minted dcid for the source (used for the lookup).
         """
         if not any(
-            getattr(n, "typeOf", None) == "dcs:Source" and n.Node == source_link
+            getattr(n, "typeOf", None) == "dcid:Source" and n.Node == source_link
             for nodes in self._mcf_nodes.values()
             for n in nodes.nodes
         ):
@@ -795,14 +795,14 @@ class CustomDataManager:
     def _validate_provenances(self) -> None:
         """Raise ValueError if any inputFile references a provenance with no matching node.
 
-        Scans all MCF files for ``dcs:Provenance`` nodes and checks that every
+        Scans all MCF files for ``dcid:Provenance`` nodes and checks that every
         ``inputFiles`` entry with a ``provenance`` ref has a corresponding node.
         """
         known = {
             n.Node
             for nodes in self._mcf_nodes.values()
             for n in nodes.nodes
-            if getattr(n, "typeOf", None) == "dcs:Provenance"
+            if getattr(n, "typeOf", None) == "dcid:Provenance"
         }
         for entry in self._config.inputFiles:
             if entry.provenance and entry.provenance not in known:
@@ -831,10 +831,10 @@ class CustomDataManager:
         for fname, nodes in self._mcf_nodes.items():
             for n in nodes.nodes:
                 node_type = getattr(n, "typeOf", None)
-                if node_type == "dcs:Provenance":
+                if node_type == "dcid:Provenance":
                     prov_file[n.Node] = fname
                     prov_source[n.Node] = getattr(n, "sourceLink", None)
-                elif node_type == "dcs:Source":
+                elif node_type == "dcid:Source":
                     source_file[n.Node] = fname
 
         missing: dict[str, str] = {}

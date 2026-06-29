@@ -30,10 +30,10 @@ def test_custom_data_manager_add_provenance_and_override():
 
     prov_nodes = manager._mcf_nodes["provenance.mcf"].nodes
     source_node = next(
-        n for n in prov_nodes if getattr(n, "typeOf", None) == "dcs:Source"
+        n for n in prov_nodes if getattr(n, "typeOf", None) == "dcid:Source"
     )
     prov_node = next(
-        n for n in prov_nodes if getattr(n, "typeOf", None) == "dcs:Provenance"
+        n for n in prov_nodes if getattr(n, "typeOf", None) == "dcid:Provenance"
     )
     assert source_node.Node == "dcid:source/new_source"
     assert prov_node.Node == "dcid:provenance/pA"
@@ -50,7 +50,7 @@ def test_custom_data_manager_add_provenance_and_override():
     updated_prov = next(
         n
         for n in manager._mcf_nodes["provenance.mcf"].nodes
-        if getattr(n, "typeOf", None) == "dcs:Provenance"
+        if getattr(n, "typeOf", None) == "dcid:Provenance"
     )
     # url is stored raw; QuotedStr serialization wraps it in quotes at dump time
     assert updated_prov.url == "http://prov2"
@@ -67,7 +67,7 @@ def test_add_source_metadata_lands_on_node():
         license="CC-BY-4.0",
     )
     nodes = manager._mcf_nodes["provenance.mcf"].nodes
-    node = next(n for n in nodes if getattr(n, "typeOf", None) == "dcs:Source")
+    node = next(n for n in nodes if getattr(n, "typeOf", None) == "dcid:Source")
     assert node.Node == "dcid:source/MySource"
     # QuotedStr fields are stored raw; quotes applied at serialization
     assert node.description == "A test source"
@@ -86,7 +86,9 @@ def test_add_provenance_metadata_lands_on_node():
         lastDataRefreshDate="2024-01-01",
     )
     nodes = manager._mcf_nodes["provenance.mcf"].nodes
-    prov_node = next(n for n in nodes if getattr(n, "typeOf", None) == "dcs:Provenance")
+    prov_node = next(
+        n for n in nodes if getattr(n, "typeOf", None) == "dcid:Provenance"
+    )
     # QuotedStr fields are stored raw; quotes applied at serialization
     assert prov_node.description == "Prov desc"
     assert prov_node.lastDataRefreshDate == "2024-01-01"

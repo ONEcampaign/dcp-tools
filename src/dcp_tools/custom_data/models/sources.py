@@ -14,13 +14,13 @@ class SourceMCFNode(MCFNode):
         description: Optional human-readable description.
 
         # Source-specific
-        typeOf: Fixed type indicating this is a Source (``dcs:Source``).
+        typeOf: Fixed type indicating this is a Source (``dcid:Source``).
         url: URL of the data source.
         license: Optional license information.
         isPartOf: Optional DCID of a parent source.
     """
 
-    typeOf: Literal["dcs:Source"] = "dcs:Source"
+    typeOf: Literal["dcid:Source"] = "dcid:Source"
     url: QuotedStr | None = None
     license: QuotedStr | None = None
     isPartOf: Dcid | None = None
@@ -36,7 +36,7 @@ class ProvenanceMCFNode(MCFNode):
         description: Optional human-readable description.
 
         # Provenance-specific
-        typeOf: Fixed type indicating this is a Provenance (``dcs:Provenance``).
+        typeOf: Fixed type indicating this is a Provenance (``dcid:Provenance``).
         url: URL of the provenance dataset.
         sourceLink: DCID of the parent Source node.
         license: Optional license information.
@@ -51,7 +51,7 @@ class ProvenanceMCFNode(MCFNode):
         isPartOf: Optional DCID of a parent provenance.
     """
 
-    typeOf: Literal["dcs:Provenance"] = "dcs:Provenance"
+    typeOf: Literal["dcid:Provenance"] = "dcid:Provenance"
     url: QuotedStr | None = None
     sourceLink: Dcid | None = None
     license: QuotedStr | None = None

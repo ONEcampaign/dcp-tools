@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import json
 from collections.abc import Sequence
 from os import PathLike
 from pathlib import Path
@@ -29,6 +30,7 @@ from dcp_tools.custom_data.models.stat_vars import (
     StatVarGroupMCFNode,
     StatVarMCFNode,
 )
+from dcp_tools.custom_data.models.vertical_specs import VerticalSpec
 from dcp_tools.custom_data.schema_tools import (
     build_stat_var_groups_from_strings,
     csv_metadata_to_nodes,
@@ -38,6 +40,7 @@ from dcp_tools.custom_data.schema_tools import (
 DEFAULT_STATVAR_MCF_NAME: str = "custom_nodes.mcf"
 DEFAULT_GROUP_NAME: str = "custom_groups.mcf"
 DEFAULT_PROVENANCE_MCF_NAME: str = "provenance.mcf"
+DEFAULT_VERTICAL_SPECS_NAME: str = "vertical_specs.json"
 
 
 def _parse_kwargs_into_properties(
@@ -174,6 +177,7 @@ class CustomDataManager:
             }
 
         self._data = {}
+        self._vertical_specs: list[VerticalSpec] = []
 
     def __repr__(self) -> str:
         input_files_count = len(self._config.inputFiles)
@@ -188,6 +192,7 @@ class CustomDataManager:
         variables_count = len(all_nodes) - sources_count - provenances_count
 
         dataframes_count = len(self._data)
+        vertical_specs_count = len(self._vertical_specs)
 
         import_name = self._config.importName
         include_input_subdirs = self._config.includeInputSubdirs
@@ -205,6 +210,7 @@ class CustomDataManager:
             f"\n{sources_count} sources"
             f"\n{provenances_count} provenances"
             f"\n{variables_count} variables"
+            f"\n{vertical_specs_count} vertical specs"
             f"\nflags: importName={import_name}, "
             f"includeInputSubdirs={include_input_subdirs}, "
             f"groupStatVarsByProperty={group_statvars}, "
@@ -313,6 +319,44 @@ class CustomDataManager:
         Plain filename string (no ``.json``-suffix enforcement). Pass ``None`` to unset.
         """
         self._config.verticalSpecsFile = file_name
+        return self
+
+    def add_vertical_spec(
+        self,
+        *,
+        verticals: list[str],
+        population_type: str = "Thing",
+        measured_properties: list[str] | None = None,
+        file_name: str | None = None,
+    ) -> CustomDataManager:
+        """Add a vertical-specs entry guiding StatVar hierarchy generation.
+
+        Appends one spec to the vertical-specs file written by ``export_all`` (or
+        ``export_vertical_specs``) and points the config's ``verticalSpecsFile`` at the
+        file. The importer reads it only when ``groupStatVarsByProperty`` is set.
+
+        The config's ``verticalSpecsFile`` is set to ``file_name`` when given; otherwise
+        it defaults to ``"vertical_specs.json"`` on first use and an existing value
+        (e.g. one set via ``set_verticalSpecsFile``) is left untouched.
+
+        Args:
+            verticals: Vertical (top-level group) names to file matching stat vars under.
+            population_type: Population type the spec applies to. Defaults to ``"Thing"``.
+            measured_properties: Measured properties the spec applies to (optional).
+            file_name: Name of the vertical-specs file to write. When omitted, uses the
+                config's existing ``verticalSpecsFile`` or ``"vertical_specs.json"``.
+        """
+        self._vertical_specs.append(
+            VerticalSpec(
+                populationType=population_type,
+                measuredProperties=measured_properties or [],
+                verticals=verticals,
+            )
+        )
+        if file_name is not None:
+            self._config.verticalSpecsFile = file_name
+        elif self._config.verticalSpecsFile is None:
+            self._config.verticalSpecsFile = DEFAULT_VERTICAL_SPECS_NAME
         return self
 
     def add_source(
@@ -985,6 +1029,30 @@ class CustomDataManager:
         for file, data in self._data.items():
             data.to_csv(Path(dir_path) / file, index=False)
 
+    def export_vertical_specs(self, dir_path: str | PathLike[str]) -> None:
+        """Export the vertical-specs file as ``{"specs": [...]}`` JSON.
+
+        Written to the name in the config's ``verticalSpecsFile`` (falling back to
+        ``"vertical_specs.json"``). ``export_all`` calls this automatically when any
+        spec has been added.
+
+        Args:
+            dir_path: Path to the directory where the file will be exported.
+
+        Raises:
+            ValueError: If no vertical specs have been added.
+        """
+
+        if not self._vertical_specs:
+            raise ValueError("No vertical specs to export")
+
+        file_name = self._config.verticalSpecsFile or DEFAULT_VERTICAL_SPECS_NAME
+        payload = {
+            "specs": [spec.model_dump(mode="json") for spec in self._vertical_specs]
+        }
+        with (Path(dir_path) / file_name).open("w") as f:
+            f.write(json.dumps(payload, indent=4))
+
     def validate_all_input_files_have_data(self) -> CustomDataManager:
         """Validate that every declared input file has a corresponding data entry.
 
@@ -1052,6 +1120,9 @@ class CustomDataManager:
 
         if self._data:
             self.export_data(dir_path)
+
+        if self._vertical_specs:
+            self.export_vertical_specs(dir_path)
 
         for mcf_file_name in mcf_file_names or ():
             self.export_mfc_file(

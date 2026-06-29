@@ -6,7 +6,10 @@ import pandas as pd
 import pytest
 
 from dcp_tools import CustomDataManager
-from dcp_tools.custom_data.data_management import DEFAULT_GROUP_NAME
+from dcp_tools.custom_data.data_management import (
+    DEFAULT_GROUP_NAME,
+    DEFAULT_VERTICAL_SPECS_NAME,
+)
 from dcp_tools.custom_data.models.config_file import Config
 from dcp_tools.custom_data.models.data_files import (
     ColumnMappings,
@@ -407,6 +410,73 @@ def test_set_vertical_specs_file():
 
     manager.set_verticalSpecsFile(None)
     assert manager._config.verticalSpecsFile is None
+
+
+def test_add_vertical_spec_appends_and_wires_config():
+    manager = CustomDataManager()
+    manager.add_vertical_spec(
+        verticals=["PersonCountVertical"],
+        population_type="Person",
+        measured_properties=["count"],
+    )
+
+    # Auto-wires verticalSpecsFile to the default name on first use
+    assert manager._config.verticalSpecsFile == DEFAULT_VERTICAL_SPECS_NAME
+    assert len(manager._vertical_specs) == 1
+    spec = manager._vertical_specs[0]
+    assert spec.populationType == "Person"
+    assert spec.measuredProperties == ["count"]
+    assert spec.verticals == ["PersonCountVertical"]
+
+
+def test_add_vertical_spec_respects_existing_and_explicit_filename():
+    # A filename set beforehand is left untouched by the default path
+    manager = CustomDataManager()
+    manager.set_verticalSpecsFile("custom.json")
+    manager.add_vertical_spec(verticals=["v"])
+    assert manager._config.verticalSpecsFile == "custom.json"
+
+    # An explicit file_name overrides
+    manager.add_vertical_spec(verticals=["v2"], file_name="other.json")
+    assert manager._config.verticalSpecsFile == "other.json"
+
+
+def test_export_vertical_specs_writes_specs_json(tmp_path):
+    manager = CustomDataManager()
+    manager.add_vertical_spec(
+        verticals=["PersonCountVertical"],
+        population_type="Person",
+        measured_properties=["count"],
+    )
+    manager.export_vertical_specs(tmp_path)
+
+    written = json.loads((tmp_path / DEFAULT_VERTICAL_SPECS_NAME).read_text())
+    assert written == {
+        "specs": [
+            {
+                "populationType": "Person",
+                "measuredProperties": ["count"],
+                "verticals": ["PersonCountVertical"],
+            }
+        ]
+    }
+
+
+def test_export_vertical_specs_raises_when_empty(tmp_path):
+    manager = CustomDataManager()
+    with pytest.raises(ValueError):
+        manager.export_vertical_specs(tmp_path)
+
+
+def test_export_all_includes_vertical_specs(tmp_path):
+    manager = CustomDataManager()
+    manager.add_vertical_spec(verticals=["PersonCountVertical"])
+
+    manager.export_all(tmp_path)
+
+    assert (tmp_path / DEFAULT_VERTICAL_SPECS_NAME).exists()
+    config = json.loads((tmp_path / "config.json").read_text())
+    assert config["verticalSpecsFile"] == DEFAULT_VERTICAL_SPECS_NAME
 
 
 def test_add_explicit_schema_file_observation_properties():

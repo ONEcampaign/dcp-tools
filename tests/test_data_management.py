@@ -351,6 +351,8 @@ def _make_cfg(
     custom_namespace: str | None = None,
     custom_svg_prefix: str | None = None,
     sv_blocklist: list[str] | None = None,
+    data_download_url: list[str] | None = None,
+    vertical_specs_file: str | None = None,
 ):
     input_files = [
         ExplicitSchemaFile(
@@ -367,7 +369,121 @@ def _make_cfg(
         customIdNamespace=custom_namespace,
         customSvgPrefix=custom_svg_prefix,
         svHierarchyPropsBlocklist=sv_blocklist,
+        dataDownloadUrl=data_download_url,
+        verticalSpecsFile=vertical_specs_file,
     )
+
+
+def test_set_data_download_url():
+    manager = CustomDataManager()
+    manager.set_dataDownloadUrl(["u1", "u2"])
+    assert manager._config.dataDownloadUrl == ["u1", "u2"]
+
+    manager.set_dataDownloadUrl(None)
+    assert manager._config.dataDownloadUrl is None
+
+
+def test_add_data_download_url_initializes_and_appends():
+    manager = CustomDataManager()
+
+    # Initializes from unset
+    manager.add_dataDownloadUrl("u1")
+    assert manager._config.dataDownloadUrl == ["u1"]
+
+    # Appends to existing list
+    manager.add_dataDownloadUrl("u2")
+    assert manager._config.dataDownloadUrl == ["u1", "u2"]
+
+    # Unset then re-initialize
+    manager.set_dataDownloadUrl(None)
+    manager.add_dataDownloadUrl("u3")
+    assert manager._config.dataDownloadUrl == ["u3"]
+
+
+def test_set_vertical_specs_file():
+    manager = CustomDataManager()
+    manager.set_verticalSpecsFile("vs.json")
+    assert manager._config.verticalSpecsFile == "vs.json"
+
+    manager.set_verticalSpecsFile(None)
+    assert manager._config.verticalSpecsFile is None
+
+
+def test_add_explicit_schema_file_observation_properties():
+    manager = CustomDataManager()
+
+    manager.add_explicit_schema_file(
+        "data.csv",
+        provenance="prov1",
+        columnMappings={"entity": "Country", "date": "Year"},
+        observationProperties={"unit": "USDollar", "customProp": "x"},
+    )
+
+    entry = manager._config.inputFiles[0]
+    assert entry.observationProperties is not None
+    assert entry.observationProperties.unit == "USDollar"
+    assert entry.observationProperties.__pydantic_extra__["customProp"] == "x"
+    # columnMappings coexists
+    assert entry.columnMappings is not None
+
+    # Omitting the kwarg leaves observationProperties absent (None)
+    manager.add_explicit_schema_file(
+        "other.csv",
+        provenance="prov1",
+    )
+    other_entry = manager._config.inputFiles[1]
+    assert other_entry.observationProperties is None
+
+
+def test_merge_data_download_url(tmp_path):
+    d1 = tmp_path / "one"
+    d1.mkdir()
+    cfg1 = _make_cfg("a.csv", "p1", data_download_url=["u1"])
+    (d1 / "config.json").write_text(
+        cfg1.model_dump_json(indent=2, exclude_none=True, by_alias=True)
+    )
+
+    d2 = tmp_path / "two"
+    d2.mkdir()
+    cfg2 = _make_cfg("b.csv", "p2")
+    (d2 / "config.json").write_text(
+        cfg2.model_dump_json(indent=2, exclude_none=True, by_alias=True)
+    )
+
+    manager = CustomDataManager.from_config_files_in_directory(tmp_path)
+    assert manager._config.dataDownloadUrl == ["u1"]
+
+    # Override policy: second config has different urls → takes the new list
+    d3 = tmp_path / "three"
+    d3.mkdir()
+    cfg3 = _make_cfg("c.csv", "p3", data_download_url=["u2"])
+    (d3 / "config.json").write_text(
+        cfg3.model_dump_json(indent=2, exclude_none=True, by_alias=True)
+    )
+
+    manager2 = CustomDataManager.from_config_files_in_directory(
+        tmp_path, policy="override"
+    )
+    assert manager2._config.dataDownloadUrl == ["u2"]
+
+
+def test_merge_vertical_specs_file(tmp_path):
+    d1 = tmp_path / "one"
+    d1.mkdir()
+    cfg1 = _make_cfg("a.csv", "p1", vertical_specs_file="vs.json")
+    (d1 / "config.json").write_text(
+        cfg1.model_dump_json(indent=2, exclude_none=True, by_alias=True)
+    )
+
+    d2 = tmp_path / "two"
+    d2.mkdir()
+    cfg2 = _make_cfg("b.csv", "p2")
+    (d2 / "config.json").write_text(
+        cfg2.model_dump_json(indent=2, exclude_none=True, by_alias=True)
+    )
+
+    manager = CustomDataManager.from_config_files_in_directory(tmp_path)
+    assert manager._config.verticalSpecsFile == "vs.json"
 
 
 def test_merge_configs_from_directory(tmp_path):

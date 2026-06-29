@@ -26,6 +26,10 @@ class Config(BaseModel):
             and column mapping information.
         svHierarchyPropsBlocklist: Array of additional property dcids to exclude from hierarchy generation.
             These are added to the internal blocklist used by Data Commons.
+        dataDownloadUrl: Optional list of URLs the importer fetches input data from.
+            Serialized as a JSON list; passthrough config value (no fetching/validation here).
+        verticalSpecsFile: Optional filename of the vertical-specs JSON file the importer reads
+            when grouping stat vars. Plain filename string; the file itself is not managed here.
     """
 
     importName: str | None = None
@@ -35,6 +39,8 @@ class Config(BaseModel):
     customIdNamespace: str | None = None
     customSvgPrefix: str | None = None
     svHierarchyPropsBlocklist: list[str] | None = None
+    dataDownloadUrl: list[str] | None = None
+    verticalSpecsFile: str | None = None
     inputFiles: list[ExplicitSchemaFile]
 
     # model configuration - populate by name (for the "format" field alias)

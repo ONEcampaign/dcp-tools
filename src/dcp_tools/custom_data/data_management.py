@@ -20,6 +20,7 @@ from dcp_tools.custom_data.models.data_files import (
     ColumnMappings,
     ExplicitSchemaFile,
     MCFFileName,
+    ObservationProperties,
 )
 from dcp_tools.custom_data.models.mcf import MCFNodes
 from dcp_tools.custom_data.models.sources import ProvenanceMCFNode, SourceMCFNode
@@ -195,6 +196,8 @@ class CustomDataManager:
         namespace = self._config.customIdNamespace
         svg_prefix = self._config.customSvgPrefix
         blocklist = self._config.svHierarchyPropsBlocklist
+        data_download_url = self._config.dataDownloadUrl
+        vertical_specs_file = self._config.verticalSpecsFile
 
         return (
             f"<CustomDataManager config: "
@@ -207,7 +210,9 @@ class CustomDataManager:
             f"groupStatVarsByProperty={group_statvars}, "
             f"defaultCustomRootStatVarGroupName={root_group_name}, "
             f"customIdNamespace={namespace}, customSvgPrefix={svg_prefix}, "
-            f"svHierarchyPropsBlocklist={blocklist}>"
+            f"svHierarchyPropsBlocklist={blocklist}, "
+            f"dataDownloadUrl={data_download_url}, "
+            f"verticalSpecsFile={vertical_specs_file}>"
         )
 
     def set_importName(self, name: str | None) -> CustomDataManager:
@@ -282,6 +287,32 @@ class CustomDataManager:
                     seen.add(prop)
                     deduped.append(prop)
             self._config.svHierarchyPropsBlocklist = deduped
+        return self
+
+    def set_dataDownloadUrl(self, urls: list[str] | None) -> CustomDataManager:
+        """Set the data download URLs in the config.
+
+        Replaces any existing list. Pass ``None`` to unset the field (absent from the
+        exported ``config.json``).
+        """
+        self._config.dataDownloadUrl = urls
+        return self
+
+    def add_dataDownloadUrl(self, url: str) -> CustomDataManager:
+        """Append a single data download URL to the config.
+
+        Initializes the list to ``[url]`` when the field is unset.
+        """
+        existing = self._config.dataDownloadUrl or []
+        self._config.dataDownloadUrl = [*existing, url]
+        return self
+
+    def set_verticalSpecsFile(self, file_name: str | None) -> CustomDataManager:
+        """Set the vertical-specs filename in the config.
+
+        Plain filename string (no ``.json``-suffix enforcement). Pass ``None`` to unset.
+        """
+        self._config.verticalSpecsFile = file_name
         return self
 
     def add_source(
@@ -573,6 +604,7 @@ class CustomDataManager:
         provenance: str,
         data: pd.DataFrame | None = None,
         columnMappings: dict[str, str] | None = None,
+        observationProperties: dict[str, str] | None = None,
         ignoreColumns: list[str] | None = None,
         pattern: str | None = None,
         override: bool = False,
@@ -601,6 +633,10 @@ class CustomDataManager:
             columnMappings: Column mappings. Match the headings in the CSV file to the
                 allowed properties. Allowed keys are [entity, date, value, unit,
                 scalingFactor, measurementMethod, observationPeriod].
+            observationProperties: Optional file-level constant observation properties applied
+                to every observation (e.g. ``{"unit": "USDollar"}``). Standard keys are
+                ``unit``/``scalingFactor``/``measurementMethod``/``observationPeriod``; custom
+                keys are preserved verbatim.
             ignoreColumns: List of columns to ignore (optional).
             pattern: Glob pattern matching one or more input files. Mutually exclusive
                 with ``file_name``. Pattern entries carry no local data.
@@ -624,6 +660,11 @@ class CustomDataManager:
             pattern=pattern,
             provenance=provenance,
             columnMappings=ColumnMappings(**(columnMappings or {})),
+            observationProperties=(
+                ObservationProperties(**observationProperties)
+                if observationProperties is not None
+                else None
+            ),
             ignoreColumns=ignoreColumns,
         )
 

@@ -103,3 +103,13 @@ def test_round_trip_config_snapshot(tmp_path):
     got = config_file.model_dump_json(indent=4, exclude_none=True, by_alias=True)
     expected = json.dumps(data, indent=4)
     assert json.loads(got) == json.loads(expected)
+
+
+def test_round_trip_config_all_fields_snapshot(tmp_path):
+    data = json.loads((GOLDEN_DIR / "config_all_fields.json").read_text())
+    config_file = tmp_path / "c.json"
+    config_file.write_text(json.dumps(data))
+
+    loaded = Config.from_json(str(config_file))
+    got = loaded.model_dump_json(indent=4, exclude_none=True, by_alias=True)
+    assert json.loads(got) == data

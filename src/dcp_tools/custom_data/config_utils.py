@@ -31,6 +31,7 @@ def _merge_simple_attrs(existing: Config, new: Config, policy: DuplicatePolicy) 
         "defaultCustomRootStatVarGroupName",
         "customIdNamespace",
         "customSvgPrefix",
+        "verticalSpecsFile",
     ):
         _merge_attribute(existing, new, attr, policy)
 
@@ -38,6 +39,13 @@ def _merge_simple_attrs(existing: Config, new: Config, policy: DuplicatePolicy) 
         existing=existing,
         new=new,
         attribute="svHierarchyPropsBlocklist",
+        policy=policy,
+    )
+
+    _merge_sequence_attribute(
+        existing=existing,
+        new=new,
+        attribute="dataDownloadUrl",
         policy=policy,
     )
 

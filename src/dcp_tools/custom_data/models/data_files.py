@@ -78,6 +78,29 @@ class ColumnMappings(BaseModel):
     model_config = ConfigDict(extra="forbid")
 
 
+class ObservationProperties(BaseModel):
+    """File-level constant observation properties for an explicit-schema input file.
+
+    Applied as constants to every observation in the file (the only working route to a
+    constant ``unit``/``scalingFactor``/``measurementMethod``/``observationPeriod``). Keys
+    are emitted verbatim with no ``dcid:`` aliasing; the DCP importer reads the four standard
+    keys directly and passes any custom keys through unchanged.
+
+    Attributes:
+        unit: Unit applied to every observation.
+        scalingFactor: Scaling factor applied to every observation.
+        measurementMethod: Measurement method applied to every observation.
+        observationPeriod: Observation period applied to every observation.
+    """
+
+    unit: str | None = None
+    scalingFactor: str | None = None
+    measurementMethod: str | None = None
+    observationPeriod: str | None = None
+
+    model_config = ConfigDict(extra="allow")
+
+
 class ExplicitSchemaFile(BaseModel):
     """Representation of an input file using the explicit (variable-per-row) schema.
 
@@ -95,6 +118,8 @@ class ExplicitSchemaFile(BaseModel):
         ignoreColumns: List of columns to ignore.
         columnMappings: If headings in the CSV file do not use the default names,
             the equivalent names for each column.
+        observationProperties: File-level constant observation properties applied to every
+            observation (constants such as unit or measurementMethod). Optional.
         data_format: Format of the data (variable per row).
             This attribute is represented as "format" in the JSON.
     """
@@ -104,6 +129,7 @@ class ExplicitSchemaFile(BaseModel):
     provenance: str
     ignoreColumns: list[str] | None = None
     columnMappings: ColumnMappings
+    observationProperties: ObservationProperties | None = None
     data_format: Literal["variablePerRow"] = Field(
         default="variablePerRow", alias="format"
     )

@@ -74,7 +74,10 @@ def test_mint_dcid_three_way_rule():
     """Covers each branch of the canonical minting rule."""
     # Bare name -> dcid:<prefix>/<name> (the real source/provenance callers)
     assert mint_dcid(prefix="source", name="CustomSource") == "dcid:source/CustomSource"
-    assert mint_dcid(prefix="provenance", name="CustomProv") == "dcid:provenance/CustomProv"
+    assert (
+        mint_dcid(prefix="provenance", name="CustomProv")
+        == "dcid:provenance/CustomProv"
+    )
     # Already dcid:-prefixed -> returned verbatim (escape hatch)
     assert mint_dcid(prefix="source", name="dcid:bio/y") == "dcid:bio/y"
     # Contains "/" but no dcid: -> prepended with dcid:

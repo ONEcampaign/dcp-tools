@@ -1,3 +1,4 @@
+import pytest
 from pydantic import BaseModel
 
 from dcp_tools.custom_data.models.common import (
@@ -5,6 +6,7 @@ from dcp_tools.custom_data.models.common import (
     _ensure_quoted,
     mcf_quoted_str,
     mcf_str,
+    mint_dcid,
     parse_str_or_list,
 )
 
@@ -66,3 +68,26 @@ def test_str_or_list_str_annotation_serialization():
 def test_parse_str_or_list_honours_quotes():
     assert parse_str_or_list('"A, B"') == "A, B"
     assert parse_str_or_list('"A, B", C') == ["A, B", "C"]
+
+
+def test_mint_dcid_three_way_rule():
+    """Covers each branch of the canonical minting rule."""
+    # Bare name -> dcid:<prefix>/<name> (the real source/provenance callers)
+    assert mint_dcid(prefix="source", name="CustomSource") == "dcid:source/CustomSource"
+    assert mint_dcid(prefix="provenance", name="CustomProv") == "dcid:provenance/CustomProv"
+    # Already dcid:-prefixed -> returned verbatim (escape hatch)
+    assert mint_dcid(prefix="source", name="dcid:bio/y") == "dcid:bio/y"
+    # Contains "/" but no dcid: -> prepended with dcid:
+    assert mint_dcid(prefix="source", name="source/Foo") == "dcid:source/Foo"
+
+
+def test_mint_dcid_rejects_empty_or_whitespace_names():
+    """Empty or whitespace-bearing names violate the strict contract."""
+    with pytest.raises(ValueError):
+        mint_dcid(prefix="source", name="")
+    with pytest.raises(ValueError):
+        mint_dcid(prefix="source", name="has space")
+    with pytest.raises(ValueError):
+        mint_dcid(prefix="source", name="  leading")
+    with pytest.raises(ValueError):
+        mint_dcid(prefix="source", name="trailing\t")

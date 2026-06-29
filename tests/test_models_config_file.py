@@ -1,7 +1,13 @@
+import json
+
 import pytest
 
 from dcp_tools.custom_data.models.config_file import Config
-from dcp_tools.custom_data.models.data_files import ColumnMappings, ExplicitSchemaFile
+from dcp_tools.custom_data.models.data_files import (
+    ColumnMappings,
+    ExplicitSchemaFile,
+    ObservationProperties,
+)
 
 
 def test_config_validators_raise_on_invalid_input_files():
@@ -82,3 +88,77 @@ def test_config_round_trips_import_name(tmp_path):
     loaded = Config.from_json(str(config))
     assert loaded.importName == "OECD_wage_data"
     assert loaded.model_dump(exclude_none=True)["importName"] == "OECD_wage_data"
+
+
+def test_observation_properties_preserves_custom_keys():
+    """ObservationProperties with a custom key round-trips with the key intact."""
+    op = ObservationProperties(unit="USD", customKey="v")
+    dumped = op.model_dump(exclude_none=True, by_alias=True)
+    assert dumped == {"unit": "USD", "customKey": "v"}
+
+    # JSON load→dump also preserves the custom key
+    raw = json.dumps({"unit": "USD", "customKey": "v"})
+    reloaded = ObservationProperties.model_validate_json(raw)
+    assert reloaded.model_dump(exclude_none=True, by_alias=True) == {
+        "unit": "USD",
+        "customKey": "v",
+    }
+
+
+def test_observation_properties_exclude_none_drops_unset_standard_fields():
+    """Unset standard fields are absent from the serialised output."""
+    op = ObservationProperties(unit="USDollar")
+    dumped = op.model_dump(exclude_none=True, by_alias=True)
+    assert dumped == {"unit": "USDollar"}
+    assert "scalingFactor" not in dumped
+    assert "measurementMethod" not in dumped
+    assert "observationPeriod" not in dumped
+
+
+def test_config_accepts_data_download_url_and_vertical_specs_file(tmp_path):
+    """Config.from_json accepts both new top-level fields (no extra='forbid' rejection)."""
+    config_data = {
+        "importName": "test_import",
+        "dataDownloadUrl": ["https://example.org/data.csv"],
+        "verticalSpecsFile": "vert.json",
+        "inputFiles": [
+            {
+                "filename": "data.csv",
+                "provenance": "p1",
+                "columnMappings": {},
+                "format": "variablePerRow",
+            }
+        ],
+    }
+    config_file = tmp_path / "config.json"
+    config_file.write_text(json.dumps(config_data))
+
+    loaded = Config.from_json(str(config_file))
+    assert loaded.dataDownloadUrl == ["https://example.org/data.csv"]
+    assert loaded.verticalSpecsFile == "vert.json"
+
+    # Both fields survive a round-trip through model_dump
+    dumped = loaded.model_dump(exclude_none=True, by_alias=True)
+    assert dumped["dataDownloadUrl"] == ["https://example.org/data.csv"]
+    assert dumped["verticalSpecsFile"] == "vert.json"
+
+
+def test_explicit_schema_file_observation_properties_roundtrip():
+    """observationProperties coexists with columnMappings; custom keys survive dump+reload."""
+    ef = ExplicitSchemaFile(
+        filename="data.csv",
+        provenance="prov1",
+        columnMappings=ColumnMappings(entity="Country", date="Year"),
+        observationProperties=ObservationProperties(unit="USD", customProp="x"),
+    )
+    dumped = ef.model_dump(exclude_none=True, by_alias=True)
+    assert "observationProperties" in dumped
+    assert dumped["observationProperties"]["unit"] == "USD"
+    assert dumped["observationProperties"]["customProp"] == "x"
+    assert "columnMappings" in dumped
+
+    # Reload from the dumped dict
+    reloaded = ExplicitSchemaFile.model_validate(dumped)
+    assert reloaded.observationProperties is not None
+    assert reloaded.observationProperties.unit == "USD"
+    assert reloaded.observationProperties.__pydantic_extra__["customProp"] == "x"

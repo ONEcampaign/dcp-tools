@@ -1,0 +1,27 @@
+{
+    "importName": "test_import_all_fields",
+    "includeInputSubdirs": true,
+    "groupStatVarsByProperty": false,
+    "dataDownloadUrl": [
+        "https://example.org/data/file1.csv",
+        "https://example.org/data/file2.csv"
+    ],
+    "verticalSpecsFile": "vertical_specs.json",
+    "inputFiles": [
+        {
+            "filename": "a.csv",
+            "provenance": "dcid:provenance/provA",
+            "columnMappings": {
+                "dcid:observationAbout": "Country",
+                "dcid:observationDate": "Year",
+                "dcid:value": "Val"
+            },
+            "observationProperties": {
+                "unit": "USDollar",
+                "measurementMethod": "dcAggregate/Census",
+                "customProp": "customValue"
+            },
+            "format": "variablePerRow"
+        }
+    ]
+}

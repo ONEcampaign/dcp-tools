@@ -23,7 +23,7 @@ def add_parser(subparsers: argparse._SubParsersAction) -> None:
     parser.add_argument(
         "--imports",
         type=str,
-        help="Optional comma-separated list of imports to load, defaults to all",
+        help="Comma-separated list of imports to load, defaults to all imports",
     )
     parser.set_defaults(func=run)
 

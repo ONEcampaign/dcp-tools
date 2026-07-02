@@ -43,7 +43,9 @@ def test_run_data_load_job_no_imports() -> None:
             project_id="test_proj",
             location="test_region",
         )
-        patch_client.return_value.start_job.assert_called_once_with(imports=None)
+        patch_client.return_value.start_job.assert_called_once_with(
+            imports="ALL_IMPORTS"
+        )
 
 
 def test_run_data_load_job_wraps_errors() -> None:

@@ -51,6 +51,6 @@ def run_data_load(settings: KGSettings, imports: str | None = None) -> None:
 
     Args:
         settings (KGSettings): The settings for the Knowledge Graph.
-        imports (str | None): Which imports to load. Default is None, which loads all imports.
+        imports (str | None): Comma-separated list of imports to load. Defaults to all imports.
     """
     run_data_load_job(settings=settings, imports=imports)

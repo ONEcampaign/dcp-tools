@@ -6,12 +6,14 @@ from dcp_tools.gcp_utilities.settings import KGSettings
 from dcp_tools.logger import logger
 
 
-def run_data_load_job(settings: KGSettings, *, imports: str | None = None) -> None:
+def run_data_load_job(
+    settings: KGSettings, *, imports: str | None = "ALL_IMPORTS"
+) -> None:
     """Trigger a Cloud Run job to load data.
 
     Args:
         settings (KGSettings): Settings for the job.
-        imports (str | None): Comma-separated list of imports to load. Default is None, which loads all imports.
+        imports (str | None): Comma-separated list of imports to load. Defaults to "ALL_IMPORTS".
     """
     logger.info(f"Starting data load job '{settings.load_job_name}'")
     try:

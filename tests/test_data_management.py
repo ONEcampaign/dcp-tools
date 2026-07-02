@@ -15,6 +15,7 @@ from dcp_tools.custom_data.models.data_files import (
     ColumnMappings,
     ExplicitSchemaFile,
 )
+from dcp_tools.custom_data.models.schema_nodes import PropertyMCFNode
 
 
 def test_custom_data_manager_add_provenance_and_override():

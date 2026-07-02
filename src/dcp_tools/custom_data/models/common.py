@@ -1,5 +1,5 @@
 import csv
-from typing import Annotated, Any
+from typing import Annotated, Any, overload
 
 from pydantic import BeforeValidator, PlainSerializer, PlainValidator, StringConstraints
 
@@ -144,6 +144,51 @@ TopicDcidOrListTopicDcid = Annotated[
     PlainSerializer(mcf_str, return_type=TopicDcid | None, when_used="always"),
 ]
 """Accepts a string or list and serialises to a comma-separated string."""
+
+
+@overload
+def ensure_dcid(value: str) -> str: ...
+
+
+@overload
+def ensure_dcid(value: list[str]) -> list[str]: ...
+
+
+def ensure_dcid(value: str | list[str]) -> str | list[str]:
+    """Normalize a node/typeOf/ref token (or list) to a bare dcid.
+
+    Schema nodes (Class, Property, units, measurement methods) and their refs use bare
+    dcids (``dcid:MyClass``), not slug-namespaced ones (``dcid:source/<name>``). Use this
+    for ``Node``/``typeOf``/``subClassOf`` and the Property ref fields
+    (``domainIncludes``/``rangeIncludes``/``subPropertyOf``); use ``mint_dcid`` for
+    slug-namespaced refs (sources, provenances).
+
+    A list is mapped element-wise (so ``DcidOrListDcid`` fields accept bare lists).
+
+    Rules (per element):
+        Already ``dcid:``-prefixed -> returned verbatim.
+        Bare token                 -> prefixed with ``dcid:`` (e.g. ``'MyClass'`` ->
+                                       ``'dcid:MyClass'``).
+        Empty or whitespace-bearing -> ``ValueError`` (mirrors ``mint_dcid``).
+
+    Args:
+        value: A bare token, an already ``dcid:``-prefixed string, or a list of either.
+
+    Returns:
+        A ``dcid:``-prefixed string, or a list of them when given a list.
+
+    Raises:
+        ValueError: If any element is empty or contains a whitespace character.
+    """
+    if isinstance(value, list):
+        return [ensure_dcid(v) for v in value]
+    if not value or any(c.isspace() for c in value):
+        raise ValueError(
+            f"ensure_dcid: value must be a non-empty token with no whitespace; got {value!r}"
+        )
+    if value.startswith("dcid:"):
+        return value
+    return f"dcid:{value}"
 
 
 def mint_dcid(*, prefix: str, name: str) -> str:

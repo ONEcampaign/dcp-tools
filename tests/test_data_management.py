@@ -816,3 +816,182 @@ def test_column_mappings_accepts_dcid_keys_on_input():
     # Short-key input must also still work
     cm2 = ColumnMappings.model_validate({"entity": "Country"})
     assert cm2.entity == "Country"
+
+
+# --- Schema node builder tests ---
+
+
+def test_add_entity_type_lands_node():
+    """add_entity_type normalizes bare Node to dcid: and sets typeOf."""
+    manager = CustomDataManager()
+    manager.add_entity_type(Node="MyClass", name="My Class")
+    nodes = manager._mcf_nodes["custom_nodes.mcf"].nodes
+    node = next(n for n in nodes if getattr(n, "typeOf", None) == "dcid:Class")
+    assert node.Node == "dcid:MyClass"
+    assert node.typeOf == "dcid:Class"
+
+
+def test_add_entity_type_dcid_prefixed_node_verbatim():
+    """An already dcid:-prefixed Node is passed through verbatim."""
+    manager = CustomDataManager()
+    manager.add_entity_type(Node="dcid:Already", name="x")
+    nodes = manager._mcf_nodes["custom_nodes.mcf"].nodes
+    node = nodes[0]
+    assert node.Node == "dcid:Already"
+
+
+def test_add_event_type_default_subclassof():
+    """add_event_type defaults subClassOf to dcid:Event."""
+    manager = CustomDataManager()
+    manager.add_event_type(Node="Quake", name="Q")
+    nodes = manager._mcf_nodes["custom_nodes.mcf"].nodes
+    node = nodes[0]
+    assert node.typeOf == "dcid:Class"
+    assert node.subClassOf == "dcid:Event"
+
+
+def test_add_event_type_subclassof_override():
+    """A bare subClassOf override is normalized to dcid:."""
+    manager = CustomDataManager()
+    manager.add_event_type(Node="Quake", name="Q", subClassOf="DisasterEvent")
+    node = manager._mcf_nodes["custom_nodes.mcf"].nodes[0]
+    assert node.subClassOf == "dcid:DisasterEvent"
+
+
+def test_add_property_lands_node():
+    """add_property emits a Property node with dcid:Property typeOf."""
+    manager = CustomDataManager()
+    manager.add_property(
+        Node="myProp",
+        name="My Prop",
+        domainIncludes="dcid:Person",
+        rangeIncludes="dcid:Number",
+    )
+    node = manager._mcf_nodes["custom_nodes.mcf"].nodes[0]
+    assert node.Node == "dcid:myProp"
+    assert node.typeOf == "dcid:Property"
+    assert node.domainIncludes == "dcid:Person"
+    assert node.rangeIncludes == "dcid:Number"
+
+
+def test_add_property_normalizes_bare_refs():
+    """Bare domainIncludes/rangeIncludes/subPropertyOf refs are normalized to dcid:."""
+    manager = CustomDataManager()
+    manager.add_property(
+        Node="myProp",
+        name="x",
+        domainIncludes="Person",
+        rangeIncludes=["Number", "dcid:Already"],
+        subPropertyOf="baseProp",
+    )
+    node = manager._mcf_nodes["custom_nodes.mcf"].nodes[0]
+    assert node.domainIncludes == "dcid:Person"
+    assert node.rangeIncludes == ["dcid:Number", "dcid:Already"]
+    assert node.subPropertyOf == "dcid:baseProp"
+
+
+def test_add_unit_lands_node_and_typeof_override():
+    """add_unit normalizes bare typeOf override and stores shortDisplayName."""
+    manager = CustomDataManager()
+    manager.add_unit(
+        Node="USD",
+        name="US Dollar",
+        shortDisplayName="$",
+        typeOf="CurrencyUnitOfMeasure",
+    )
+    node = manager._mcf_nodes["custom_nodes.mcf"].nodes[0]
+    assert node.typeOf == "dcid:CurrencyUnitOfMeasure"
+    assert node.shortDisplayName == "$"
+
+
+def test_add_measurement_method_lands_node_and_typeof_override():
+    """add_measurement_method normalizes bare typeOf and allows absent name."""
+    manager = CustomDataManager()
+    manager.add_measurement_method(Node="MyCensus", typeOf="CensusSurveyEnum")
+    node = manager._mcf_nodes["custom_nodes.mcf"].nodes[0]
+    assert node.typeOf == "dcid:CensusSurveyEnum"
+    assert node.name is None
+
+
+def test_included_in_expands_to_provenance_and_source():
+    """includedIn expands to both the provenance dcid and its linked source dcid."""
+    manager = CustomDataManager()
+    manager.add_source(name="src", url="http://s")
+    manager.add_provenance(name="prov", url="http://p", source="src")
+    manager.add_entity_type(Node="T", name="T", includedIn="prov")
+
+    entity_node = manager._mcf_nodes["custom_nodes.mcf"].nodes[0]
+    assert entity_node.includedIn == ["dcid:provenance/prov", "dcid:source/src"]
+    assert (
+        entity_node.model_dump()["includedIn"]
+        == "dcid:provenance/prov, dcid:source/src"
+    )
+
+
+def test_included_in_accepts_list_of_provenances():
+    """A list of provenance names expands all four dcids in order."""
+    manager = CustomDataManager()
+    manager.add_source(name="srcA", url="http://a")
+    manager.add_source(name="srcB", url="http://b")
+    manager.add_provenance(name="provA", url="http://pa", source="srcA")
+    manager.add_provenance(name="provB", url="http://pb", source="srcB")
+    manager.add_entity_type(Node="T", name="T", includedIn=["provA", "provB"])
+
+    node = manager._mcf_nodes["custom_nodes.mcf"].nodes[0]
+    assert node.includedIn == [
+        "dcid:provenance/provA",
+        "dcid:source/srcA",
+        "dcid:provenance/provB",
+        "dcid:source/srcB",
+    ]
+
+
+def test_included_in_dedups_shared_source():
+    """Two provenances sharing a source emit that source exactly once."""
+    manager = CustomDataManager()
+    manager.add_source(name="src", url="http://s")
+    manager.add_provenance(name="provA", url="http://pa", source="src")
+    manager.add_provenance(name="provB", url="http://pb", source="src")
+    manager.add_entity_type(Node="T", name="T", includedIn=["provA", "provB"])
+
+    node = manager._mcf_nodes["custom_nodes.mcf"].nodes[0]
+    # provA is processed first: emits provenance/provA then source/src.
+    # provB is processed second: emits provenance/provB; source/src already seen → skipped.
+    assert node.includedIn == [
+        "dcid:provenance/provA",
+        "dcid:source/src",
+        "dcid:provenance/provB",
+    ]
+
+
+def test_included_in_raises_for_missing_provenance():
+    """includedIn referencing an unregistered provenance raises ValueError."""
+    manager = CustomDataManager()
+    with pytest.raises(ValueError, match="ghost"):
+        manager.add_event_type(Node="E", name="E", includedIn="ghost")
+
+
+def test_add_entity_type_override():
+    """Duplicate Node without override raises; with override=True replaces."""
+    manager = CustomDataManager()
+    manager.add_entity_type(Node="T", name="First")
+    with pytest.raises(ValueError):
+        manager.add_entity_type(Node="T", name="Second")
+    manager.add_entity_type(Node="T", name="Updated", override=True)
+    node = manager._mcf_nodes["custom_nodes.mcf"].nodes[0]
+    assert node.name == "Updated"
+
+
+def test_add_unit_custom_mcf_file_name():
+    """add_unit with mcf_file_name lands the node in the specified file."""
+    manager = CustomDataManager()
+    manager.add_unit(Node="MyUnit", name="My Unit", mcf_file_name="units.mcf")
+    assert "units.mcf" in manager._mcf_nodes
+    assert "custom_nodes.mcf" not in manager._mcf_nodes or not any(
+        n.Node == "dcid:MyUnit"
+        for n in manager._mcf_nodes.get(
+            "custom_nodes.mcf", type("", (), {"nodes": []})()
+        ).nodes
+    )
+    node = manager._mcf_nodes["units.mcf"].nodes[0]
+    assert node.Node == "dcid:MyUnit"

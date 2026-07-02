@@ -7,6 +7,11 @@
   model classes are gone. Loading a legacy `variablePerColumn` config now raises `ValueError`.
   Migrate by using `add_explicit_schema_file` with `columnMappings`; see
   [Data Commons custom data docs](https://docs.datacommons.org/custom_dc/custom_data.html).
+- **Breaking:** re-pointed the data load flow at the DCP v1.1.0 prep job. `run_data_load`
+  now triggers the preprocessing job. The `redeploy` command and `redeploy_service` are removed.
+  Load-job settings are renamed: `CLOUD_RUN_JOB_NAME` → `LOAD_JOB_NAME`,
+  `CLOUD_JOB_REGION` → `LOAD_JOB_REGION`, plus a new optional `LOAD_JOB_SERVICE_ACCOUNT`.
+  New `--imports` flag on `dataload` loads specific named imports.
 
 ## v0.1.0 (in development)
 - Initial release of the `dcp-tools` package for external preview and testing

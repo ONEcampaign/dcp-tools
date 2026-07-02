@@ -7,7 +7,6 @@ from pathlib import Path
 
 from dcp_tools.cli.common import load_settings_from_args
 from dcp_tools.gcp_utilities.pipeline import (
-    redeploy_service,
     run_data_load,
     upload_to_cloud_storage,
 )
@@ -37,18 +36,6 @@ def add_parser(subparsers: argparse._SubParsersAction) -> None:
         default=False,
         help="Delete remote blobs that no longer have a local counterpart after uploading",
     )
-    parser.add_argument(
-        "--load-timeout",
-        type=int,
-        default=6000,
-        help="Timeout for the data load job (default: %(default)s)",
-    )
-    parser.add_argument(
-        "--deploy-timeout",
-        type=int,
-        default=600,
-        help="Timeout for the service redeploy (default: %(default)s)",
-    )
     parser.set_defaults(func=run)
 
 
@@ -56,6 +43,5 @@ def run(args: argparse.Namespace) -> int:
     """Execute the ``pipeline`` command."""
     settings = load_settings_from_args(args)
     upload_to_cloud_storage(settings=settings, directory=args.directory, sync=args.sync)
-    run_data_load(settings=settings, timeout=args.load_timeout)
-    redeploy_service(settings=settings, timeout=args.deploy_timeout)
+    run_data_load(settings=settings)
     return 0

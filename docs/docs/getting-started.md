@@ -108,8 +108,7 @@ manager.export_all("path/to/output/folder")
 ## Loading data
 
 You can programmatically push the data and config to a Google Cloud
-Storage Bucket, trigger the data load job, and redeploy your Data Commons
-instance.
+Storage Bucket and trigger the data load job.
 
 First, specify all the configuration settings needed to add files to the storage bucket. For convenience these
 can be specified in a `.env` file (read more about the configuration settings [here](./loading-data.md)).
@@ -122,18 +121,15 @@ settings = get_kg_settings(source="env", env_file="customDC.env")
 ```
 
 
-Now we can load data and configuration files to the storage bucket, run the data load job on GCP,
-and redeploy the custom Data Commons instance.
+Now we can load data and configuration files to the storage bucket and run the data load job on GCP.
 
 ```python
 from dcp_tools.gcp_utilities import (
     upload_to_cloud_storage,
     run_data_load,
-    redeploy_service,
 )
 
 upload_to_cloud_storage(settings=settings, directory="path/to/folder/with/data_and_config")
 run_data_load(settings=settings)
-redeploy_service(settings=settings)
 
 ```

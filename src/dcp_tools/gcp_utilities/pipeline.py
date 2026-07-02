@@ -8,15 +8,8 @@ https://colab.research.google.com/github/datacommonsorg/tools/blob/master/notebo
 from os import PathLike
 from pathlib import Path
 
-from dcp_tools.gcp_utilities.clients import (
-    get_gcs_client,
-    get_jobs_client,
-    get_services_client,
-)
-from dcp_tools.gcp_utilities.jobs import (
-    redeploy_cloud_run_service,
-    run_data_load_job,
-)
+from dcp_tools.gcp_utilities.clients import get_gcs_client
+from dcp_tools.gcp_utilities.jobs import run_data_load_job
 from dcp_tools.gcp_utilities.settings import KGSettings
 from dcp_tools.gcp_utilities.storage import (
     sync_directory_to_gcs,
@@ -53,26 +46,11 @@ def upload_to_cloud_storage(
     )
 
 
-def run_data_load(settings: KGSettings, timeout: int = 6000) -> None:
+def run_data_load(settings: KGSettings, imports: str | None = None) -> None:
     """Run the data load job.
 
     Args:
         settings (KGSettings): The settings for the Knowledge Graph.
-        timeout (int): The timeout for the job. Default is 6000 seconds.
+        imports (str | None): Comma-separated list of imports to load. Defaults to all imports.
     """
-    jobs_client = get_jobs_client(credentials=settings.gcp_credentials)
-    run_data_load_job(settings=settings, client=jobs_client, timeout=timeout)
-
-
-def redeploy_service(settings: KGSettings, timeout: int = 600) -> None:
-    """Redeploy the Data Commons service.
-
-    Args:
-        settings (KGSettings): The settings for the Knowledge Graph.
-        timeout (int): The timeout for the service. Default is 600 seconds.
-
-    """
-    services_client = get_services_client(credentials=settings.gcp_credentials)
-    redeploy_cloud_run_service(
-        settings=settings, client=services_client, timeout=timeout
-    )
+    run_data_load_job(settings=settings, imports=imports)

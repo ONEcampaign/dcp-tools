@@ -21,10 +21,9 @@ def add_parser(subparsers: argparse._SubParsersAction) -> None:
         "--env-file", type=Path, help="Optional .env file containing KG settings"
     )
     parser.add_argument(
-        "--timeout",
-        type=int,
-        default=6000,
-        help="Timeout for the job in seconds (default: %(default)s)",
+        "--imports",
+        type=str,
+        help="Comma-separated list of imports to load, defaults to all imports",
     )
     parser.set_defaults(func=run)
 
@@ -32,5 +31,5 @@ def add_parser(subparsers: argparse._SubParsersAction) -> None:
 def run(args: argparse.Namespace) -> int:
     """Execute the ``dataload`` command."""
     settings = load_settings_from_args(args)
-    run_data_load(settings=settings, timeout=args.timeout)
+    run_data_load(settings=settings, imports=args.imports)
     return 0

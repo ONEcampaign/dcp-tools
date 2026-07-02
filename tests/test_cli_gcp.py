@@ -29,22 +29,22 @@ def test_dataload_command_invokes_pipeline() -> None:
         patch("dcp_tools.cli.data_load.run_data_load") as run,
     ):
         get.return_value = Mock()
-        exit_code = main(["dataload", "--timeout", "5", "--env-file", "e"])
+        exit_code = main(["dataload", "--env-file", "e"])
         assert exit_code == 0
         get.assert_called_once_with(env_file=Path("e"))
-        run.assert_called_once_with(settings=get.return_value, timeout=5)
+        run.assert_called_once_with(settings=get.return_value, imports=None)
 
 
-def test_redeploy_command_invokes_pipeline() -> None:
+def test_dataload_command_invokes_pipeline_with_imports() -> None:
     with (
         patch("dcp_tools.cli.common.get_kg_settings") as get,
-        patch("dcp_tools.cli.redeploy.redeploy_service") as run,
+        patch("dcp_tools.cli.data_load.run_data_load") as run,
     ):
         get.return_value = Mock()
-        exit_code = main(["redeploy", "--timeout", "9"])
+        exit_code = main(["dataload", "--env-file", "e", "--imports", "test_import"])
         assert exit_code == 0
-        get.assert_called_once_with(env_file=None)
-        run.assert_called_once_with(settings=get.return_value, timeout=9)
+        get.assert_called_once_with(env_file=Path("e"))
+        run.assert_called_once_with(settings=get.return_value, imports="test_import")
 
 
 def test_pipeline_command_runs_all(tmp_path: Path) -> None:
@@ -53,7 +53,6 @@ def test_pipeline_command_runs_all(tmp_path: Path) -> None:
         patch("dcp_tools.cli.common.get_kg_settings") as get,
         patch("dcp_tools.cli.data_load_pipeline.upload_to_cloud_storage") as upload,
         patch("dcp_tools.cli.data_load_pipeline.run_data_load") as load,
-        patch("dcp_tools.cli.data_load_pipeline.redeploy_service") as red,
     ):
         get.return_value = Mock()
         exit_code = main(
@@ -63,10 +62,6 @@ def test_pipeline_command_runs_all(tmp_path: Path) -> None:
                 "s.json",
                 "--directory",
                 str(directory),
-                "--load-timeout",
-                "7",
-                "--deploy-timeout",
-                "3",
             ]
         )
         assert exit_code == 0
@@ -74,8 +69,7 @@ def test_pipeline_command_runs_all(tmp_path: Path) -> None:
         upload.assert_called_once_with(
             settings=get.return_value, directory=directory, sync=False
         )
-        load.assert_called_once_with(settings=get.return_value, timeout=7)
-        red.assert_called_once_with(settings=get.return_value, timeout=3)
+        load.assert_called_once_with(settings=get.return_value)
 
 
 def test_build_client_with_credentials_uses_service_account_info() -> None:

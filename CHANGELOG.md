@@ -2,6 +2,12 @@
 
 ## [Unreleased]
 
+### Added
+- `imports` arg on the `run_data_load` function and `--imports` flag on the `dataload`
+  CLI command. This triggers a load of specific imports rather than all imports.
+- Optional `LOAD_JOB_SERVICE_ACCOUNT` setting that sets which service account the load
+  job impersonates. When unset, the caller's credentials are used.
+
 ### Changed
 - **Renamed the package from `bblocks-datacommons-tools` to `dcp-tools`.** The import
   path is now `dcp_tools` (was `bblocks.datacommons_tools`). Installing the old
@@ -10,11 +16,19 @@
 - Minimum supported Python is now 3.13 (was 3.11).
 - Packaging now follows the `bblocks-projects` copier template (ruff lint preset, `ty`
   type checking, pre-commit hooks, PyPI trusted publishing).
+- Re-pointed the data load flow at the DCP prep job, using the `IngestionJobClient`.
+- Renamed load job settings: `CLOUD_RUN_JOB_NAME` -> `LOAD_JOB_NAME` and
+  `CLOUD_JOB_REGION` -> `LOAD_JOB_REGION`.
 
 ### Removed
 - `add_implicit_schema_file` method on `CustomDataManager`.
 - `add_variable_to_config` method on `CustomDataManager`.
 - `ImplicitSchemaFile`, `ObservationProperties`, and `Variable` model classes.
+- The `redeploy` CLI command and the `redeploy_service` and
+  `redeploy_cloud_run_service` functions. The service restart is now owned by the
+  ingestion workflow.
+- Settings which are no longer used: `CLOUD_SQL_DB_NAME`, `CLOUD_SQL_REGION`,
+  `CLOUD_SERVICE_REGION`, `CLOUD_RUN_SERVICE_NAME`, and `DATACOMMONS_SERVICE_IMAGE`. 
 
 ### Changed
 - `Config.inputFiles` is now `Dict[str, ExplicitSchemaFile]` — the implicit
@@ -23,10 +37,13 @@
   instead of a generic Pydantic `ValidationError`.
 - `ExplicitSchemaFile` now rejects unknown keys (`extra="forbid"`).
 
-**Migration:** replace `add_implicit_schema_file` calls with `add_explicit_schema_file` and
-supply a `columnMappings` argument. See the
-[Data Commons custom data documentation](https://docs.datacommons.org/custom_dc/custom_data.html)
-for the explicit-schema format.
+**Migration:**
+- Replace `add_implicit_schema_file` calls with `add_explicit_schema_file` and supply a
+  `columnMappings` argument. See the [Data Commons custom data documentation](https://docs.datacommons.org/custom_dc/custom_data.html) for the
+  explicit-schema format.
+- Drop any `redeploy` calls, and update your settings: rename
+  `CLOUD_RUN_JOB_NAME` → `LOAD_JOB_NAME` and `CLOUD_JOB_REGION` → `LOAD_JOB_REGION`, add
+  `LOAD_JOB_SERVICE_ACCOUNT` if the job runs under an impersonated service account.
 
 ## [0.1.1] - 2026-02-19
 

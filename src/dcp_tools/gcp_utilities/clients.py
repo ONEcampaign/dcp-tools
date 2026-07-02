@@ -1,7 +1,6 @@
 from collections.abc import Callable
 from typing import Any
 
-from google.cloud.run_v2 import JobsClient, ServicesClient
 from google.cloud.storage import Client
 
 
@@ -22,13 +21,3 @@ def _build_client[ClientType](
 def get_gcs_client(credentials: dict | None) -> Client:
     """Initialize the Google Cloud Storage client."""
     return _build_client(Client, credentials=credentials)
-
-
-def get_jobs_client(credentials: dict | None) -> JobsClient:
-    """Initialize the Google Cloud Run Jobs client."""
-    return _build_client(JobsClient, credentials=credentials)
-
-
-def get_services_client(credentials: dict | None) -> ServicesClient:
-    """Initialize the Google Cloud Run Services client."""
-    return _build_client(ServicesClient, credentials=credentials)

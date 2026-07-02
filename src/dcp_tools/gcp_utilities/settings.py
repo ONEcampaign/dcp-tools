@@ -10,8 +10,6 @@ from typing import Literal
 from pydantic import Field, Json, field_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
-_DEFAULT_IMAGE = "gcr.io/datcom-ci/datacommons-services:latest"
-
 
 class KGSettings(BaseSettings):
     """Configuration constants for the project.
@@ -24,35 +22,25 @@ class KGSettings(BaseSettings):
         gcs_bucket_name: Google Cloud Storage bucket name.
         gcs_input_folder_path: Google Cloud Storage input folder path.
         gcs_output_folder_path: Google Cloud Storage output folder path.
-        cloud_sql_db_name: Cloud SQL database name.
-        cloud_sql_region: Cloud SQL region.
-        cloud_job_region: Cloud job region.
-        cloud_service_region: Cloud service region.
-        cloud_run_job_name: Cloud Run job name.
-        cloud_run_service_name: Cloud Run service name.
-
+        load_job_region: Cloud Run load job region.
+        load_job_name: Cloud Run load job name.
+        load_job_service_account: Cloud Run service account email to impersonate, optional.
     """
 
     local_path: Path = Field(alias="LOCAL_PATH")
     gcp_project_id: str = Field(alias="GCP_PROJECT_ID")
     gcp_credentials: Json[dict] | None = Field(default=None, alias="GCP_CREDENTIALS")
 
-    # cloud storage
+    # Cloud storage
     gcs_bucket_name: str = Field(alias="GCS_BUCKET_NAME")
     gcs_input_folder_path: str = Field(alias="GCS_INPUT_FOLDER_PATH")
     gcs_output_folder_path: str = Field(alias="GCS_OUTPUT_FOLDER_PATH")
-    # Cloud sql
-    cloud_sql_db_name: str = Field(alias="CLOUD_SQL_DB_NAME")
-    cloud_sql_region: str = Field(alias="CLOUD_SQL_REGION")
-    # Cloud job
-    cloud_job_region: str = Field(alias="CLOUD_JOB_REGION")
-    cloud_service_region: str = Field(alias="CLOUD_SERVICE_REGION")
-    # Cloud run
-    cloud_run_job_name: str = Field(alias="CLOUD_RUN_JOB_NAME")
-    cloud_run_service_name: str = Field(alias="CLOUD_RUN_SERVICE_NAME")
 
-    datacommons_service_image: str = Field(
-        default=_DEFAULT_IMAGE, alias="DATACOMMONS_SERVICE_IMAGE"
+    # Cloud run
+    load_job_region: str = Field(alias="LOAD_JOB_REGION")
+    load_job_name: str = Field(alias="LOAD_JOB_NAME")
+    load_job_service_account: str | None = Field(
+        alias="LOAD_JOB_SERVICE_ACCOUNT", default=None
     )
 
     @field_validator("gcs_input_folder_path", "gcs_output_folder_path")
@@ -70,22 +58,6 @@ class KGSettings(BaseSettings):
         """Get the full GCS path for data."""
         return f"gs://{self.gcs_bucket_name}/{self.gcs_output_folder_path}"
 
-    @property
-    def load_job_path(self) -> str:
-        """Get the path to the load job."""
-        return (
-            f"projects/{self.gcp_project_id}/locations/"
-            f"{self.cloud_job_region}/jobs/{self.cloud_run_job_name}"
-        )
-
-    @property
-    def dc_service_path(self) -> str:
-        """Get the path to the Data Commons service."""
-        return (
-            f"projects/{self.gcp_project_id}/locations/{self.cloud_service_region}/"
-            f"services/{self.cloud_run_service_name}"
-        )
-
     model_config = SettingsConfigDict(
         env_file=".env", env_file_encoding="utf-8", case_sensitive=False
     )
@@ -100,7 +72,7 @@ def get_kg_settings(
     """Return an instance of KGSettings.
 
     Settings are the key configuration values needed to run the pipeline. They include
-    information about the GCP project, the GCS bucket, the Cloud SQL database, and the Cloud Run job.
+    information about the GCP project, the GCS bucket, and the Cloud Run job.
 
     Args:
         source (str): Source of the settings. Can be "env" or "json".

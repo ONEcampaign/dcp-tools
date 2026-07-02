@@ -870,6 +870,7 @@ def test_add_property_lands_node():
     node = manager._mcf_nodes["custom_nodes.mcf"].nodes[0]
     assert node.Node == "dcid:myProp"
     assert node.typeOf == "dcid:Property"
+    assert isinstance(node, PropertyMCFNode)
     assert node.domainIncludes == "dcid:Person"
     assert node.rangeIncludes == "dcid:Number"
 

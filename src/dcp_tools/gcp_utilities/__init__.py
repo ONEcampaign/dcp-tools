@@ -1,5 +1,4 @@
 from dcp_tools.gcp_utilities.pipeline import (
-    redeploy_service,
     run_data_load,
     upload_to_cloud_storage,
 )
@@ -20,7 +19,6 @@ __all__ = [
     "get_missing_csv_files",
     "get_unregistered_csv_files",
     "list_bucket_files",
-    "redeploy_service",
     "run_data_load",
     "upload_to_cloud_storage",
 ]

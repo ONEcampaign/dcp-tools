@@ -24,7 +24,7 @@ Use this package when you want to:
 
 - Manage `config.json` files programmatically.
 - Define statistical variables, entities or groups using MCF files.
-- Programmatically upload CSVs, MCF files, and the `config.json` file to Cloud Storage, trigger the load job and redeploy your custom Data Commons service with code.
+- Programmatically upload CSVs, MCF files, and the `config.json` file to Cloud Storage, and trigger the data load job with code.
 
 In short, `dcp-tools` removes much of the manual work involved in setting up and maintaining a custom Data Commons Knowledge Graph.
 
@@ -149,8 +149,7 @@ the MCF file defining it (`provenance.mcf` by default) must be listed in
 
 ### 6. (Optionally) load to the Knowledge Graph
 You can also programmatically push the data and config to a Google Cloud
-Storage Bucket, trigger the data load job, and redeploy your Data Commons
-instance.
+Storage Bucket and trigger the data load job.
 
 To do this, you'll need to load information about your
 project, Storage Bucket, etc. You can use `.env` or `.json` files,
@@ -164,7 +163,6 @@ First, load the settings using `get_kg_settings`. In this example, we will load 
 from dcp_tools.gcp_utilities import (
     upload_to_cloud_storage,
     run_data_load,
-    redeploy_service,
     get_kg_settings,
 )
 
@@ -180,12 +178,6 @@ upload_to_cloud_storage(settings=settings, directory="path/to/output/folder")
 Third, we'll run the data load job on Google Cloud Platform.
 ```python
 run_data_load(settings=settings)
-```
-
-Last, we need to redeploy the Custom Data Commons instance.
-
-```python
-redeploy_service(settings=settings)
 ```
 
 ---

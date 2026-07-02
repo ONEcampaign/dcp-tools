@@ -30,7 +30,7 @@ knowledge graph up and running quickly.
 - Build and edit `config.json` files programmatically
 - Generate MCF files from simple metadata
 - Upload CSV, MCF, and config files to Google Cloud Storage
-- Trigger the data load job and redeploy your custom instance
+- Trigger the data load job
 - Use as a Python module or from the command line
 
 Ready to get started using `dcp-tools`?<br> 

@@ -15,7 +15,7 @@ from dcp_tools.custom_data.config_utils import (
     merge_configs,
     merge_configs_from_directory,
 )
-from dcp_tools.custom_data.models.common import mint_dcid
+from dcp_tools.custom_data.models.common import ensure_dcid, mint_dcid
 from dcp_tools.custom_data.models.config_file import Config
 from dcp_tools.custom_data.models.data_files import (
     ColumnMappings,
@@ -23,7 +23,14 @@ from dcp_tools.custom_data.models.data_files import (
     MCFFileName,
     ObservationProperties,
 )
-from dcp_tools.custom_data.models.mcf import MCFNodes
+from dcp_tools.custom_data.models.mcf import MCFNode, MCFNodes
+from dcp_tools.custom_data.models.schema_nodes import (
+    EntityTypeMCFNode,
+    EventTypeMCFNode,
+    MeasurementMethodMCFNode,
+    PropertyMCFNode,
+    UnitOfMeasureMCFNode,
+)
 from dcp_tools.custom_data.models.sources import ProvenanceMCFNode, SourceMCFNode
 from dcp_tools.custom_data.models.stat_vars import (
     StatType,
@@ -95,6 +102,23 @@ class CustomDataManager:
     >>>    description="Variable Description",
     >>>    ...
     >>>    )
+
+    Schema nodes (MCF):
+
+    To add custom schema nodes (entity types, event types, properties, units, and
+    measurement methods), use the five typed builders. All five accept bare or
+    ``dcid:``-prefixed ``Node`` tokens. Note: ``add_measurement_method`` is the only
+    builder where ``name`` is optional — only ``Node`` is required.
+    >>> dc_manager.add_entity_type(Node="MyClass", name="My Class")
+    >>> dc_manager.add_event_type(Node="MyEvent", name="My Event")
+    >>> dc_manager.add_property(
+    >>>     Node="myProp",
+    >>>     name="My Property",
+    >>>     domainIncludes="Person",
+    >>>     rangeIncludes="Number",
+    >>> )
+    >>> dc_manager.add_unit(Node="USD", name="US Dollar", shortDisplayName="$")
+    >>> dc_manager.add_measurement_method(Node="MyCensus")
 
     You can also add variables for export to an MCF file using a CSV file. The CSV file should
     contain the variables you want to add.
@@ -575,6 +599,265 @@ class CustomDataManager:
         self._mcf_nodes.setdefault(name, MCFNodes()).add(node, override=override)
         return self
 
+    def add_entity_type(
+        self,
+        *,
+        Node: str,
+        name: str,
+        description: str | None = None,
+        includedIn: str | list[str] | None = None,
+        additional_properties: dict[str, str] | None = None,
+        override: bool = False,
+        mcf_file_name: MCFFileName | str = DEFAULT_STATVAR_MCF_NAME,
+    ) -> CustomDataManager:
+        """Add a custom entity-type (Class) MCF node.
+
+        Emits a ``dcid:Class`` node to the MCF collection (default: ``custom_nodes.mcf``).
+
+        Args:
+            Node: Identifier token for the Class. Bare tokens are normalized to
+                ``dcid:<token>`` (e.g. ``"MyClass"`` → ``"dcid:MyClass"``); already
+                ``dcid:``-prefixed values are passed through verbatim. Names must be
+                valid dcid tokens (no whitespace).
+            name: Human-readable name for the entity type.
+            description: Optional human-readable description. (Optional)
+            includedIn: Bare provenance name (or list of names) the entity type is
+                defined in. **Important:** this takes the bare provenance name (not a
+                dcid, unlike the other ref params). The provenance must already be
+                registered via ``add_provenance``. The builder emits ``includedIn`` for
+                **both** the provenance and its linked Source (one bare name → two
+                dcids out). (Optional)
+            additional_properties: Additional MCF properties, passed as a dictionary
+                with the target property as key. (Optional)
+            override: If True, overwrite the existing node if it exists. Defaults to False.
+            mcf_file_name: Name of the MCF file (must end in .mcf).
+                Defaults to ``"custom_nodes.mcf"``.
+
+        Returns:
+            CustomDataManager object
+
+        Raises:
+            ValueError: If Node contains whitespace, if a node with the same id already
+                exists and ``override`` is False, if the file name is invalid, or if any
+                provenance referenced by ``includedIn`` has not been registered.
+        """
+        Node = ensure_dcid(Node)
+        if includedIn is not None:
+            includedIn = self._expand_included_in(includedIn)
+        props = _parse_kwargs_into_properties(locals())
+        node = EntityTypeMCFNode(**props)
+        mcf_name = validate_mcf_file_name(mcf_file_name)
+        self._mcf_nodes.setdefault(mcf_name, MCFNodes()).add(node, override=override)
+        return self
+
+    def add_event_type(
+        self,
+        *,
+        Node: str,
+        name: str,
+        description: str | None = None,
+        subClassOf: str = "dcid:Event",
+        includedIn: str | list[str] | None = None,
+        additional_properties: dict[str, str] | None = None,
+        override: bool = False,
+        mcf_file_name: MCFFileName | str = DEFAULT_STATVAR_MCF_NAME,
+    ) -> CustomDataManager:
+        """Add a custom event-type (Class) MCF node.
+
+        Emits a ``dcid:Class`` node with ``subClassOf`` defaulting to ``dcid:Event``
+        (default: ``custom_nodes.mcf``).
+
+        Args:
+            Node: Identifier token for the event type. Bare tokens are normalized to
+                ``dcid:<token>``; already ``dcid:``-prefixed values are passed through
+                verbatim. Names must be valid dcid tokens (no whitespace).
+            name: Human-readable name for the event type.
+            description: Optional human-readable description. (Optional)
+            subClassOf: Parent class DCID. Bare tokens are normalized to ``dcid:<token>``.
+                Defaults to ``"dcid:Event"``. (Optional)
+            includedIn: Bare provenance name (or list of names) the event type is
+                defined in. **Important:** this takes the bare provenance name (not a
+                dcid, unlike the other ref params). The provenance must already be
+                registered via ``add_provenance``. The builder emits ``includedIn`` for
+                **both** the provenance and its linked Source (one bare name → two
+                dcids out). (Optional)
+            additional_properties: Additional MCF properties, passed as a dictionary
+                with the target property as key. (Optional)
+            override: If True, overwrite the existing node if it exists. Defaults to False.
+            mcf_file_name: Name of the MCF file (must end in .mcf).
+                Defaults to ``"custom_nodes.mcf"``.
+
+        Returns:
+            CustomDataManager object
+
+        Raises:
+            ValueError: If Node contains whitespace, if a node with the same id already
+                exists and ``override`` is False, if the file name is invalid, or if any
+                provenance referenced by ``includedIn`` has not been registered.
+        """
+        Node = ensure_dcid(Node)
+        subClassOf = ensure_dcid(subClassOf)
+        if includedIn is not None:
+            includedIn = self._expand_included_in(includedIn)
+        props = _parse_kwargs_into_properties(locals())
+        node = EventTypeMCFNode(**props)
+        mcf_name = validate_mcf_file_name(mcf_file_name)
+        self._mcf_nodes.setdefault(mcf_name, MCFNodes()).add(node, override=override)
+        return self
+
+    def add_property(
+        self,
+        *,
+        Node: str,
+        name: str,
+        domainIncludes: str | list[str] | None = None,
+        rangeIncludes: str | list[str] | None = None,
+        subPropertyOf: str | list[str] | None = None,
+        description: str | None = None,
+        additional_properties: dict[str, str] | None = None,
+        override: bool = False,
+        mcf_file_name: MCFFileName | str = DEFAULT_STATVAR_MCF_NAME,
+    ) -> CustomDataManager:
+        """Add a custom Property MCF node.
+
+        Emits a ``dcid:Property`` node to the MCF collection (default: ``custom_nodes.mcf``).
+
+        Args:
+            Node: Identifier token for the property. Bare tokens are normalized to
+                ``dcid:<token>``; already ``dcid:``-prefixed values are passed through
+                verbatim. Names must be valid dcid tokens (no whitespace).
+            name: Human-readable name for the property.
+            domainIncludes: DCID(s) of classes the property applies to. Bare tokens or
+                lists are normalized to ``dcid:`` (same as ``Node``); already
+                ``dcid:``-prefixed values are passed through verbatim. (Optional)
+            rangeIncludes: DCID(s) of classes that are the value type. Bare tokens or
+                lists are normalized to ``dcid:`` (same as ``Node``); already
+                ``dcid:``-prefixed values are passed through verbatim. (Optional)
+            subPropertyOf: DCID(s) of parent properties. Bare tokens or lists are
+                normalized to ``dcid:`` (same as ``Node``); already ``dcid:``-prefixed
+                values are passed through verbatim. (Optional)
+            description: Optional human-readable description. (Optional)
+            additional_properties: Additional MCF properties, passed as a dictionary
+                with the target property as key. (Optional)
+            override: If True, overwrite the existing node if it exists. Defaults to False.
+            mcf_file_name: Name of the MCF file (must end in .mcf).
+                Defaults to ``"custom_nodes.mcf"``.
+
+        Returns:
+            CustomDataManager object
+
+        Raises:
+            ValueError: If Node contains whitespace, if a node with the same id already
+                exists and ``override`` is False, or if the file name is invalid.
+        """
+        Node = ensure_dcid(Node)
+        if domainIncludes is not None:
+            domainIncludes = ensure_dcid(domainIncludes)
+        if rangeIncludes is not None:
+            rangeIncludes = ensure_dcid(rangeIncludes)
+        if subPropertyOf is not None:
+            subPropertyOf = ensure_dcid(subPropertyOf)
+        props = _parse_kwargs_into_properties(locals())
+        node = PropertyMCFNode(**props)
+        mcf_name = validate_mcf_file_name(mcf_file_name)
+        self._mcf_nodes.setdefault(mcf_name, MCFNodes()).add(node, override=override)
+        return self
+
+    def add_unit(
+        self,
+        *,
+        Node: str,
+        name: str,
+        shortDisplayName: str | None = None,
+        description: str | None = None,
+        typeOf: str = "dcid:UnitOfMeasure",
+        additional_properties: dict[str, str] | None = None,
+        override: bool = False,
+        mcf_file_name: MCFFileName | str = DEFAULT_STATVAR_MCF_NAME,
+    ) -> CustomDataManager:
+        """Add a custom unit-of-measure MCF node.
+
+        Emits a ``dcid:UnitOfMeasure`` node (or the overridden ``typeOf``) to the MCF
+        collection (default: ``custom_nodes.mcf``).
+
+        Args:
+            Node: Identifier token for the unit. Bare tokens are normalized to
+                ``dcid:<token>``; already ``dcid:``-prefixed values are passed through
+                verbatim. Names must be valid dcid tokens (no whitespace).
+            name: Human-readable name for the unit.
+            shortDisplayName: Optional short display name (e.g. ``"$"``). (Optional)
+            description: Optional human-readable description. (Optional)
+            typeOf: Type DCID. Bare tokens are normalized to ``dcid:<token>``. Defaults to
+                ``"dcid:UnitOfMeasure"``; override for sub-types such as
+                ``"dcid:CurrencyUnitOfMeasure"``. (Optional)
+            additional_properties: Additional MCF properties, passed as a dictionary
+                with the target property as key. (Optional)
+            override: If True, overwrite the existing node if it exists. Defaults to False.
+            mcf_file_name: Name of the MCF file (must end in .mcf).
+                Defaults to ``"custom_nodes.mcf"``.
+
+        Returns:
+            CustomDataManager object
+
+        Raises:
+            ValueError: If Node contains whitespace, if a node with the same id already
+                exists and ``override`` is False, or if the file name is invalid.
+        """
+        Node = ensure_dcid(Node)
+        typeOf = ensure_dcid(typeOf)
+        props = _parse_kwargs_into_properties(locals())
+        node = UnitOfMeasureMCFNode(**props)
+        mcf_name = validate_mcf_file_name(mcf_file_name)
+        self._mcf_nodes.setdefault(mcf_name, MCFNodes()).add(node, override=override)
+        return self
+
+    def add_measurement_method(
+        self,
+        *,
+        Node: str,
+        name: str | None = None,
+        description: str | None = None,
+        typeOf: str = "dcid:MeasurementMethodEnum",
+        additional_properties: dict[str, str] | None = None,
+        override: bool = False,
+        mcf_file_name: MCFFileName | str = DEFAULT_STATVAR_MCF_NAME,
+    ) -> CustomDataManager:
+        """Add a custom measurement-method MCF node.
+
+        Emits a ``dcid:MeasurementMethodEnum`` node (or the overridden ``typeOf``) to the
+        MCF collection (default: ``custom_nodes.mcf``). Unlike the other four builders,
+        ``name`` is optional here — only ``Node`` is required.
+
+        Args:
+            Node: Identifier token for the measurement method. Bare tokens are normalized
+                to ``dcid:<token>``; already ``dcid:``-prefixed values are passed through
+                verbatim. Names must be valid dcid tokens (no whitespace).
+            name: Optional human-readable name. (Optional)
+            description: Optional human-readable description. (Optional)
+            typeOf: Measurement-method enum type DCID. Bare tokens are normalized to
+                ``dcid:<token>``. Defaults to ``"dcid:MeasurementMethodEnum"``; override
+                for sub-types such as ``"dcid:CensusSurveyEnum"``. (Optional)
+            additional_properties: Additional MCF properties, passed as a dictionary
+                with the target property as key. (Optional)
+            override: If True, overwrite the existing node if it exists. Defaults to False.
+            mcf_file_name: Name of the MCF file (must end in .mcf).
+                Defaults to ``"custom_nodes.mcf"``.
+
+        Returns:
+            CustomDataManager object
+
+        Raises:
+            ValueError: If Node contains whitespace, if a node with the same id already
+                exists and ``override`` is False, or if the file name is invalid.
+        """
+        Node = ensure_dcid(Node)
+        typeOf = ensure_dcid(typeOf)
+        props = _parse_kwargs_into_properties(locals())
+        node = MeasurementMethodMCFNode(**props)
+        mcf_name = validate_mcf_file_name(mcf_file_name)
+        self._mcf_nodes.setdefault(mcf_name, MCFNodes()).add(node, override=override)
+        return self
+
     def add_variables_to_mcf_from_csv(
         self,
         csv_file_path: str | Path,
@@ -859,6 +1142,59 @@ class CustomDataManager:
             raise ValueError(f"Indicator '{indicator_id}' not found")
 
         return self
+
+    def _require_provenance_exists(
+        self, provenance: str, provenance_link: str
+    ) -> MCFNode:
+        """Return the Provenance MCF node with id ``provenance_link``, or raise ValueError.
+
+        Args:
+            provenance: The bare user-facing provenance ref (used in the error message).
+            provenance_link: The minted dcid for the provenance (used for the lookup).
+        """
+        for nodes in self._mcf_nodes.values():
+            for n in nodes.nodes:
+                if (
+                    getattr(n, "typeOf", None) == "dcid:Provenance"
+                    and n.Node == provenance_link
+                ):
+                    return n
+        raise ValueError(
+            f"Provenance '{provenance}' not found. "
+            f"Call add_provenance(name={provenance!r}, url=..., source=...) "
+            f"before referencing it in includedIn."
+        )
+
+    def _expand_included_in(self, included_in: str | list[str]) -> list[str]:
+        """Expand provenance reference(s) into includedIn dcids.
+
+        For each reference: mint to ``dcid:provenance/<name>``, require the Provenance node
+        to exist, and emit includedIn for BOTH the provenance and its linked Source
+        (``sourceLink``). Order is preserved and duplicate dcids are collapsed (so two
+        provenances sharing a source emit that source once).
+
+        Args:
+            included_in: A bare provenance name or list of names. Each name is minted to
+                ``dcid:provenance/<name>``; the referenced Provenance node must already
+                exist (added via ``add_provenance``).
+
+        Returns:
+            Ordered list of unique dcid strings (provenances + their sources).
+
+        Raises:
+            ValueError: If any referenced provenance has not been registered.
+        """
+        refs = [included_in] if isinstance(included_in, str) else list(included_in)
+        expanded: list[str] = []
+        seen: set[str] = set()
+        for ref in refs:
+            prov_link = mint_dcid(prefix="provenance", name=ref)
+            prov_node = self._require_provenance_exists(ref, prov_link)
+            for dcid in (prov_link, getattr(prov_node, "sourceLink", None)):
+                if dcid is not None and dcid not in seen:
+                    seen.add(dcid)
+                    expanded.append(dcid)
+        return expanded
 
     def _require_source_exists(self, source: str, source_link: str) -> None:
         """Raise ValueError if no Source MCF node with id ``source_link`` exists.

@@ -4,6 +4,7 @@ from pydantic import BaseModel
 from dcp_tools.custom_data.models.common import (
     StrOrListStr,
     _ensure_quoted,
+    ensure_dcid,
     mcf_quoted_str,
     mcf_str,
     mint_dcid,
@@ -68,6 +69,29 @@ def test_str_or_list_str_annotation_serialization():
 def test_parse_str_or_list_honours_quotes():
     assert parse_str_or_list('"A, B"') == "A, B"
     assert parse_str_or_list('"A, B", C') == ["A, B", "C"]
+
+
+def test_ensure_dcid_prefixes_bare_token():
+    assert ensure_dcid("MyClass") == "dcid:MyClass"
+
+
+def test_ensure_dcid_passes_prefixed_verbatim():
+    assert ensure_dcid("dcid:bio/Foo") == "dcid:bio/Foo"
+
+
+def test_ensure_dcid_rejects_empty_or_whitespace():
+    with pytest.raises(ValueError):
+        ensure_dcid("")
+    with pytest.raises(ValueError):
+        ensure_dcid("has space")
+    with pytest.raises(ValueError):
+        ensure_dcid("  leading")
+    with pytest.raises(ValueError):
+        ensure_dcid("trailing\t")
+
+
+def test_ensure_dcid_maps_over_list():
+    assert ensure_dcid(["Person", "dcid:Number"]) == ["dcid:Person", "dcid:Number"]
 
 
 def test_mint_dcid_three_way_rule():

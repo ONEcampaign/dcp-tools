@@ -1,6 +1,8 @@
 import json
 from pathlib import Path
 
+import pytest
+
 from dcp_tools.custom_data.data_management import CustomDataManager
 from dcp_tools.custom_data.models.config_file import Config
 from dcp_tools.custom_data.models.mcf import MCFNode
@@ -37,12 +39,12 @@ def test_config_json_snapshot(tmp_path):
     manager.add_explicit_schema_file(
         "a.csv",
         provenance="provA",
-        columnMappings={"entity": "Country", "date": "Year", "value": "Val"},
+        columnMappings={"observationAbout": "Country", "date": "Year", "value": "Val"},
     )
     manager.add_explicit_schema_file(
         "b.csv",
         provenance="provB",
-        columnMappings={"entity": "Country", "date": "Year", "value": "Val"},
+        columnMappings={"observationAbout": "Country", "date": "Year", "value": "Val"},
     )
 
     # export
@@ -50,6 +52,29 @@ def test_config_json_snapshot(tmp_path):
     got = json.loads(Path(tmp_path / "config.json").read_text())
     expected = json.loads((GOLDEN_DIR / "config.json").read_text())
     assert "sources" not in got
+    assert got == expected
+
+
+def test_config_json_snapshot_multi_entity(tmp_path):
+    manager = CustomDataManager()
+    manager.set_importName("test_import_multi_entity")
+    manager.add_source(name="S1", url="http://source1")
+    manager.add_provenance(name="provC", url="http://provc", source="S1")
+    manager.add_explicit_schema_file(
+        "c.csv",
+        provenance="provC",
+        columnMappings={
+            "dcid:observationDate": "Year",
+            "dcid:value": "Val",
+            "dcid:variableMeasured": "Var",
+            "custom:originCountry": "Provider",
+            "custom:destinationCountry": "Recipient",
+        },
+    )
+    manager.export_config(str(tmp_path))
+
+    got = json.loads(Path(tmp_path / "config.json").read_text())
+    expected = json.loads((GOLDEN_DIR / "config_multi_entity.json").read_text())
     assert got == expected
 
 
@@ -82,6 +107,22 @@ def test_full_mcf_export(tmp_path):
     assert got == expected
 
 
+def test_mcf_export_multi_entity(tmp_path):
+    manager = CustomDataManager()
+    manager.add_variable_to_mcf(
+        Node="dcid:var/one",
+        name="Test Var",
+        description="Test var",
+        observationProperties=["dcid:originCountry", "dcid:destinationCountry"],
+    )
+
+    manager.export_mfc_file(str(tmp_path), mcf_file_name="custom_nodes.mcf")
+
+    got = (tmp_path / "custom_nodes.mcf").read_text()
+    expected = (GOLDEN_DIR / "custom_nodes_multi_entity.mcf").read_text()
+    assert got == expected
+
+
 def test_csv_to_mcf_snapshot():
 
     nodes = csv_metadata_to_nodes(GOLDEN_DIR / "sample.csv", ignore_columns=None)
@@ -90,26 +131,15 @@ def test_csv_to_mcf_snapshot():
     assert got == expected
 
 
-def test_round_trip_config_snapshot(tmp_path):
-
-    # manually build dict
-    data = json.loads((GOLDEN_DIR / "config.json").read_text())
-    # write and read
-    config_file = tmp_path / "c.json"
-    config_file.write_text(json.dumps(data))
-
-    config_file = Config.from_json(str(config_file))
-
-    got = config_file.model_dump_json(indent=4, exclude_none=True, by_alias=True)
-    expected = json.dumps(data, indent=4)
-    assert json.loads(got) == json.loads(expected)
-
-
-def test_round_trip_config_all_fields_snapshot(tmp_path):
-    data = json.loads((GOLDEN_DIR / "config_all_fields.json").read_text())
-    config_file = tmp_path / "c.json"
+@pytest.mark.parametrize(
+    "golden_file", ["config.json", "config_all_fields.json", "config_multi_entity.json"]
+)
+def test_round_trip_config(tmp_path, golden_file):
+    data = json.loads((GOLDEN_DIR / golden_file).read_text())
+    config_file = tmp_path / "config.json"
     config_file.write_text(json.dumps(data))
 
     loaded = Config.from_json(str(config_file))
+
     got = loaded.model_dump_json(indent=4, exclude_none=True, by_alias=True)
     assert json.loads(got) == data

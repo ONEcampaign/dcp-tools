@@ -1,0 +1,7 @@
+Node: dcid:var/one
+name: "Test Var"
+typeOf: dcid:StatisticalVariable
+description: "Test var"
+statType: dcid:measuredValue
+observationProperties: dcid:originCountry, dcid:destinationCountry
+

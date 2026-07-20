@@ -38,7 +38,7 @@ def _explicit_manager(file_name="exp.csv", *, with_data=True):
         file_name=file_name,
         provenance="p1",
         data=df if with_data else None,
-        columnMappings={"entity": "entity", "date": "Year", "value": "Value"},
+        columnMappings={"observationAbout": "entity", "date": "Year", "value": "Value"},
     )
     return mgr, df
 
@@ -57,7 +57,9 @@ def _make_explicit_cfg(
         ExplicitSchemaFile(
             filename=key,
             provenance=prov,
-            columnMappings=ColumnMappings(entity="Country", date="Year", value="Val"),
+            columnMappings=ColumnMappings(
+                observationAbout="Country", date="Year", value="Val"
+            ),
         )
     ]
     return Config(
@@ -81,7 +83,7 @@ def test_add_explicit_schema_file_registers_in_config_and_data():
     entry = next(e for e in manager._config.inputFiles if e.filename == "exp.csv")
     assert isinstance(entry, ExplicitSchemaFile)
     assert entry.provenance == "dcid:provenance/p1"
-    assert entry.columnMappings.entity == "entity"
+    assert entry.columnMappings.observationAbout == "entity"
     assert entry.columnMappings.date == "Year"
     assert entry.columnMappings.value == "Value"
     assert entry.data_format == "variablePerRow"
@@ -106,7 +108,7 @@ def test_add_explicit_schema_file_override_and_duplicate_error():
         file_name="exp.csv",
         provenance="p1",
         data=df_new,
-        columnMappings={"entity": "entity", "date": "Year", "value": "Value"},
+        columnMappings={"observationAbout": "entity", "date": "Year", "value": "Value"},
         override=True,
     )
     pd.testing.assert_frame_equal(manager._data["exp.csv"], df_new)
@@ -154,7 +156,7 @@ def test_export_config_round_trip_explicit(tmp_path):
     entry = next(e for e in loaded.inputFiles if e.filename == "exp.csv")
     mappings = entry.columnMappings
     assert mappings.model_dump(exclude_none=True) == {
-        "entity": "entity",
+        "observationAbout": "entity",
         "date": "Year",
         "value": "Value",
     }
@@ -225,7 +227,7 @@ def test_config_build_and_from_json_round_trip_explicit(tmp_path):
                 filename="a.csv",
                 provenance="p",
                 columnMappings=ColumnMappings(
-                    entity="Country", date="Year", value="Val"
+                    observationAbout="Country", date="Year", value="Val"
                 ),
             )
         ],
@@ -298,7 +300,7 @@ def test_get_unregistered_and_missing_csv_files_explicit():
                 filename="a.csv",
                 provenance="p",
                 columnMappings=ColumnMappings(
-                    entity="Country", date="Year", value="Val"
+                    observationAbout="Country", date="Year", value="Val"
                 ),
             )
         ],
@@ -321,7 +323,9 @@ def test_get_unregistered_and_missing_csv_files_explicit():
         ExplicitSchemaFile(
             filename="extra.csv",
             provenance="p",
-            columnMappings=ColumnMappings(entity="Country", date="Year", value="Val"),
+            columnMappings=ColumnMappings(
+                observationAbout="Country", date="Year", value="Val"
+            ),
         )
     )
 

@@ -148,7 +148,7 @@ def test_explicit_schema_file_observation_properties_roundtrip():
     ef = ExplicitSchemaFile(
         filename="data.csv",
         provenance="prov1",
-        columnMappings=ColumnMappings(entity="Country", date="Year"),
+        columnMappings=ColumnMappings(observationAbout="Country", date="Year"),
         observationProperties=ObservationProperties(unit="USD", customProp="x"),
     )
     dumped = ef.model_dump(exclude_none=True, by_alias=True)

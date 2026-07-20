@@ -1,0 +1,17 @@
+{
+    "importName": "test_import_multi_entity",
+    "inputFiles": [
+        {
+            "filename": "c.csv",
+            "provenance": "dcid:provenance/provC",
+            "columnMappings": {
+                "dcid:variableMeasured": "Var",
+                "dcid:observationDate": "Year",
+                "dcid:value": "Val",
+                "custom:originCountry": "Provider",
+                "custom:destinationCountry": "Recipient"
+            },
+            "format": "variablePerRow"
+        }
+    ]
+}

@@ -50,6 +50,7 @@ class StatVarMCFNode(MCFNode):
         measurementQualifier: Optional qualifier describing measurement specifics.
         measurementDenominator: Optional denominator for ratio-type statistical measures.
         footnote: Optional footnotes providing additional context or information.
+        observationProperties: Optional observation properties for multi-entity data.
     """
 
     statType: StatType | None = StatType.MEASURED_VALUE
@@ -62,6 +63,7 @@ class StatVarMCFNode(MCFNode):
     measurementQualifier: Dcid | None = None
     measurementDenominator: Dcid | None = None
     footnote: QuotedStrListOrStr | None = None
+    observationProperties: DcidOrListDcid | None = None
 
 
 class StatVarGroupMCFNode(MCFNode):

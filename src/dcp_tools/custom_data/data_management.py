@@ -130,8 +130,28 @@ class CustomDataManager:
     >>>    file_name="input_file.csv",
     >>>    provenance="Provenance Name",
     >>>    data=df,
-    >>>    columnMappings={"entity": "Country", "date": "Year", "value": "Value"}
+    >>>    columnMappings={"observationAbout": "Country", "date": "Year", "value": "Value"}
     >>>    )
+
+    For multi-entity observations, map each dimension with a ``custom:<name>`` key, and declare the
+    matching ``dcid:<name>`` properties on the StatVar:
+    >>> dc_manager.add_explicit_schema_file(
+    >>>    file_name="input_file.csv",
+    >>>    provenance="Provenance Name",
+    >>>    data=df,
+    >>>    columnMappings={
+    >>>        "variable": "Var",
+    >>>        "date": "Year",
+    >>>        "value": "Value",
+    >>>        "custom:originCountry": "Provider",
+    >>>        "custom:destinationCountry": "Recipient",
+    >>>    },
+    >>> )
+    >>> dc_manager.add_variable_to_mcf(
+    >>>    Node="dcid:var/StatVar",
+    >>>    name="Variable Name",
+    >>>    observationProperties=["dcid:originCountry", "dcid:destinationCountry"],
+    >>> )
 
     It isn't a requirement to add the data at the same time as the input file. You can add the data
     later using the add_data method. This is useful when you want to edit the config file
@@ -521,6 +541,7 @@ class CustomDataManager:
         measuredProperty: str | None = None,
         measurementQualifier: str | None = None,
         measurementDenominator: str | None = None,
+        observationProperties: list[str] | None = None,
         additional_properties: dict[str, str] | None = None,
         override: bool = False,
         mcf_file_name: MCFFileName | str = DEFAULT_STATVAR_MCF_NAME,
@@ -540,6 +561,8 @@ class CustomDataManager:
             measuredProperty: Measured property of the variable (Optional)
             measurementQualifier: Measurement qualifier of the variable (Optional)
             measurementDenominator: Measurement denominator of the variable (Optional)
+            observationProperties: For multi-entity data, the list of dcid:-prefixed properties
+                that apply to observations, one per custom dimension (Optional)
             additional_properties: Additional properties for the variable,
                 passed as a dictionary with the target property as key.(Optional)
             override: If True, overwrite the existing node if it exists. Defaults to False.
@@ -958,8 +981,9 @@ class CustomDataManager:
                 use it verbatim. Names must be valid dcid tokens (no whitespace).
             data: Data to register (optional; only valid with ``file_name``).
             columnMappings: Column mappings. Match the headings in the CSV file to the
-                allowed properties. Allowed keys are [entity, date, value, unit,
-                scalingFactor, measurementMethod, observationPeriod].
+                allowed properties. Allowed keys are [variable, observationAbout, date, value, unit,
+                scalingFactor, measurementMethod, observationPeriod, custom:<name>].
+                Use custom:<name> keys to map each entity dimension for multi-entity observations.
             observationProperties: Optional file-level constant observation properties applied
                 to every observation (e.g. ``{"unit": "USDollar"}``). Standard keys are
                 ``unit``/``scalingFactor``/``measurementMethod``/``observationPeriod``; custom
@@ -986,7 +1010,7 @@ class CustomDataManager:
             filename=file_name,
             pattern=pattern,
             provenance=provenance,
-            columnMappings=ColumnMappings(**(columnMappings or {})),
+            columnMappings=ColumnMappings.model_validate(columnMappings or {}),
             observationProperties=(
                 ObservationProperties(**observationProperties)
                 if observationProperties is not None

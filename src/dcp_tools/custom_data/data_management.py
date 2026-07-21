@@ -19,7 +19,7 @@ from dcp_tools.custom_data.models.common import ensure_dcid, mint_dcid
 from dcp_tools.custom_data.models.config_file import Config
 from dcp_tools.custom_data.models.data_files import (
     ColumnMappings,
-    ExplicitSchemaFile,
+    InputFile,
     MCFFileName,
     ObservationProperties,
 )
@@ -94,10 +94,10 @@ class CustomDataManager:
     >>>     source="ONE Data",
     >>> )
 
-    To add a variable for export to an MCF file (using the explicit schema), use the
-    add_variable_to_mcf method
+    To add a variable for export to an MCF file, use the add_variable_to_mcf method.
+    Unlike the schema-node builders below, ``Node`` here must be ``dcid:``-prefixed:
     >>> dc_manager.add_variable_to_mcf(
-    >>>    Node="StatVar",
+    >>>    Node="dcid:StatVar",
     >>>    name="Variable Name",
     >>>    description="Variable Description",
     >>>    ...
@@ -124,9 +124,8 @@ class CustomDataManager:
     contain the variables you want to add.
     >>> dc_manager.add_variables_to_mcf_from_csv(file_path="path/to/file.csv")
 
-    To add an input file and data to the config, using the explicit (per row) schema,
-    use the add_explicit_schema_file method
-    >>> dc_manager.add_explicit_schema_file(
+    To add an input file and data to the config, use the add_input_file method
+    >>> dc_manager.add_input_file(
     >>>    file_name="input_file.csv",
     >>>    provenance="Provenance Name",
     >>>    data=df,
@@ -135,7 +134,7 @@ class CustomDataManager:
 
     For multi-entity observations, map each dimension with a ``custom:<name>`` key, and declare the
     matching ``dcid:<name>`` properties on the StatVar:
-    >>> dc_manager.add_explicit_schema_file(
+    >>> dc_manager.add_input_file(
     >>>    file_name="input_file.csv",
     >>>    provenance="Provenance Name",
     >>>    data=df,
@@ -176,7 +175,7 @@ class CustomDataManager:
     >>> dc_manager.export_all("path/to/folder")
 
     To export the MCF file, use the export_mcf_file method
-    >>> dc_manager.export_mfc_file("path/to/folder", file_name="custom_nodes.mcf")
+    >>> dc_manager.export_mcf_file("path/to/folder", mcf_file_name="custom_nodes.mcf")
 
     To export only the config, use the export_config method
     >>> dc_manager.export_config("path/to/config")
@@ -947,7 +946,7 @@ class CustomDataManager:
                 "Use a different name or set override as `True`."
             )
 
-    def add_explicit_schema_file(
+    def add_input_file(
         self,
         file_name: str | None = None,
         *,
@@ -966,8 +965,8 @@ class CustomDataManager:
         optional in cases where a user wants to edit the config file without the
         accompanying data. The data can be registered later using the add_data method.
 
-        This method is for the explicit schema approach (variable per row). Read more about
-        the explicit (variable-per-row) schema format here:
+        Data must be in variable-per-row form (one observation per row). Read more about
+        the input file format here:
         https://docs.datacommons.org/custom_dc/custom_data.html
 
         Exactly one of ``file_name`` or ``pattern`` must be provided. Pattern entries are
@@ -1006,7 +1005,7 @@ class CustomDataManager:
         if pattern is not None and data is not None:
             raise ValueError("'data' cannot be provided together with 'pattern'.")
 
-        entry = ExplicitSchemaFile(
+        entry = InputFile(
             filename=file_name,
             pattern=pattern,
             provenance=provenance,
@@ -1065,7 +1064,7 @@ class CustomDataManager:
             raise ValueError(
                 f"File '{file_name}' not found in the config file. Please register the "
                 "file in the config file before adding data, using the "
-                "add_explicit_schema_file method."
+                "add_input_file method."
             )
 
         self._data_override_check(file_name=file_name, override=override)
@@ -1115,9 +1114,8 @@ class CustomDataManager:
             nodes = self._mcf_nodes.get(name)
             if not nodes:
                 continue
-            for idx, node in enumerate(nodes.nodes):
-                if node.Node == old_name:
-                    nodes.nodes[idx].Node = new_name
+            if any(node.Node == old_name for node in nodes.nodes):
+                nodes.rename(old_name, new_name)
 
         return self
 
@@ -1333,7 +1331,7 @@ class CustomDataManager:
         with output_path.open("w") as f:
             f.write(config.model_dump_json(indent=4, exclude_none=True, by_alias=True))
 
-    def export_mfc_file(
+    def export_mcf_file(
         self,
         dir_path: str | PathLike[str],
         mcf_file_name: str = DEFAULT_STATVAR_MCF_NAME,
@@ -1485,7 +1483,7 @@ class CustomDataManager:
             self.export_vertical_specs(dir_path)
 
         for mcf_file_name in mcf_file_names or ():
-            self.export_mfc_file(
+            self.export_mcf_file(
                 dir_path=dir_path, mcf_file_name=mcf_file_name, override=override
             )
 

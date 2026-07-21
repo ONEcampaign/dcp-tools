@@ -6,7 +6,7 @@ import pytest
 from dcp_tools.custom_data.models.config_file import Config
 from dcp_tools.custom_data.models.data_files import (
     ColumnMappings,
-    ExplicitSchemaFile,
+    InputFile,
 )
 from dcp_tools.gcp_utilities.settings import KGSettings
 from dcp_tools.gcp_utilities.storage import (
@@ -23,7 +23,7 @@ from dcp_tools.gcp_utilities.storage import (
 def _minimal_config(key: str = "a.csv") -> Config:
     return Config(
         inputFiles=[
-            ExplicitSchemaFile(
+            InputFile(
                 filename=key,
                 provenance="prov",
                 columnMappings=ColumnMappings(),
@@ -325,7 +325,7 @@ def test_get_unregistered_csv_files_honors_patterns():
 
     cfg = Config(
         inputFiles=[
-            ExplicitSchemaFile(
+            InputFile(
                 pattern="data_*.csv",
                 provenance="prov",
                 columnMappings=ColumnMappings(),
@@ -362,7 +362,7 @@ def test_get_missing_csv_files():
 
     cfg = _minimal_config()
     cfg.inputFiles.append(
-        ExplicitSchemaFile(
+        InputFile(
             filename="extra.csv",
             provenance="prov",
             columnMappings=ColumnMappings(),
@@ -382,7 +382,7 @@ def test_get_missing_csv_files_with_prefix_added():
 
     cfg = _minimal_config("sub/a.csv")
     cfg.inputFiles.append(
-        ExplicitSchemaFile(
+        InputFile(
             filename="sub/b.csv",
             provenance="prov",
             columnMappings=ColumnMappings(),
@@ -424,7 +424,7 @@ def test_get_missing_csv_files_per_import():
 
     cfg = _minimal_config("a.csv")
     cfg.inputFiles.append(
-        ExplicitSchemaFile(
+        InputFile(
             filename="b.csv",
             provenance="prov",
             columnMappings=ColumnMappings(),
@@ -447,7 +447,7 @@ def test_registration_checks_fresh_import_empty_prefix():
 
     cfg = _minimal_config("a.csv")
     cfg.inputFiles.append(
-        ExplicitSchemaFile(
+        InputFile(
             filename="b.csv",
             provenance="prov",
             columnMappings=ColumnMappings(),

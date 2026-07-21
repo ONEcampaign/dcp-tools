@@ -22,17 +22,32 @@
 - Re-pointed the data load flow at the DCP prep job, using the `IngestionJobClient`.
 - Renamed load job settings: `CLOUD_RUN_JOB_NAME` -> `LOAD_JOB_NAME` and
   `CLOUD_JOB_REGION` -> `LOAD_JOB_REGION`.
-- `Config.inputFiles` is now `Dict[str, ExplicitSchemaFile]` — the implicit
-  (`variablePerColumn`) path is no longer supported. Loading a legacy config that contains
+- `Config.inputFiles` is now `list[InputFile]` (was a dict keyed by file name). Only the
+  variable-per-row format is supported: loading a legacy config that contains
   `"format": "variablePerColumn"` now raises a clear `ValueError` with a migration message
   instead of a generic Pydantic `ValidationError`.
-- `ExplicitSchemaFile` now rejects unknown keys (`extra="forbid"`).
+- `InputFile` now rejects unknown keys (`extra="forbid"`).
+- **Renamed `export_mfc_file` to `export_mcf_file`**, correcting a transposition in the
+  method name. The old spelling is gone; update any calls.
+- **Renamed the input-file API now that there is a single import format.** The
+  `ExplicitSchemaFile` model is now `InputFile`, and `CustomDataManager.add_explicit_schema_file`
+  is now `add_input_file`. The "explicit schema" name only made sense as a contrast with the
+  removed implicit (`variablePerColumn`) schema. Signatures, field names, and the serialized
+  `config.json` are unchanged.
 - Single-entity StatVars don't emit `observationProperties` by default.
+
+### Fixed
+- `rename_variable` left the `MCFNodes` lookup index keyed by the old name, so
+  `remove_indicator` raised "not found" for the renamed node and still resolved the old
+  name. The rename now goes through a new `MCFNodes.rename`, which keeps the index in step.
 
 ### Removed
 - `add_implicit_schema_file` method on `CustomDataManager`.
 - `add_variable_to_config` method on `CustomDataManager`.
-- `ImplicitSchemaFile`, `ObservationProperties`, and `Variable` model classes.
+- `ImplicitSchemaFile` and `Variable` model classes. `ObservationProperties` is retained but
+  repurposed: it is no longer nested under a variable definition, and now carries the
+  file-level constant observation properties on `InputFile`. It also accepts custom keys
+  (`extra="allow"`, was `extra="forbid"`); the four standard fields are unchanged.
 - The `redeploy` CLI command and the `redeploy_service` and
   `redeploy_cloud_run_service` functions. The service restart is now owned by the
   ingestion workflow.
@@ -42,13 +57,16 @@
   `custom:<name>` for multi-entity dimensions.
 
 **Migration:**
-- Replace `add_implicit_schema_file` calls with `add_explicit_schema_file` and supply a
-  `columnMappings` argument. See the [Data Commons custom data documentation](https://docs.datacommons.org/custom_dc/custom_data.html) for the
-  explicit-schema format.
+- Replace `add_implicit_schema_file` calls with `add_input_file` and supply a
+  `columnMappings` argument. Data must be in the variable-per-row format (one observation
+  per row). See the [Data Commons custom data documentation](https://docs.datacommons.org/custom_dc/custom_data.html).
 - Drop any `redeploy` calls, and update your settings: rename
   `CLOUD_RUN_JOB_NAME` → `LOAD_JOB_NAME` and `CLOUD_JOB_REGION` → `LOAD_JOB_REGION`, add
   `LOAD_JOB_SERVICE_ACCOUNT` if the job runs under an impersonated service account.
 - Replace `entity` on `ColumnMappings` with `observationAbout`.
+- Rename `ExplicitSchemaFile` → `InputFile` and `add_explicit_schema_file` → `add_input_file`.
+  Names only; arguments and behaviour are unchanged.
+- Rename `export_mfc_file` → `export_mcf_file`.
 
 ## [0.1.1] - 2026-02-19
 

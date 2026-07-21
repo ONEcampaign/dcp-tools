@@ -188,6 +188,26 @@ class MCFNodes(BaseModel):
 
         return self
 
+    def rename(self, old_id: str, new_id: str) -> MCFNodes:
+        """Renames a node in place, keeping the lookup index consistent.
+
+        Args:
+            old_id: The current ID of the node.
+            new_id: The ID to give it.
+
+        Raises:
+            ValueError: If no node has ``old_id``, or if ``new_id`` is already taken.
+        """
+        idx = self._expect_present(old_id)
+        if new_id in self._pos:
+            raise ValueError(f"Node '{new_id}' already exists.")
+
+        self.nodes[idx].Node = new_id
+        self._pos.pop(old_id)
+        self._pos[new_id] = idx
+
+        return self
+
     def export_to_mcf_file(
         self, file_path: str | PathLike, *, override: bool = True
     ) -> MCFNodes:

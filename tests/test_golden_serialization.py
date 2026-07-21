@@ -36,12 +36,12 @@ def test_config_json_snapshot(tmp_path):
     manager.add_provenance(name="provA", url="http://prova", source="S1")
     manager.add_provenance(name="provB", url="http://provb", source="S1")
 
-    manager.add_explicit_schema_file(
+    manager.add_input_file(
         "a.csv",
         provenance="provA",
         columnMappings={"observationAbout": "Country", "date": "Year", "value": "Val"},
     )
-    manager.add_explicit_schema_file(
+    manager.add_input_file(
         "b.csv",
         provenance="provB",
         columnMappings={"observationAbout": "Country", "date": "Year", "value": "Val"},
@@ -60,7 +60,7 @@ def test_config_json_snapshot_multi_entity(tmp_path):
     manager.set_importName("test_import_multi_entity")
     manager.add_source(name="S1", url="http://source1")
     manager.add_provenance(name="provC", url="http://provc", source="S1")
-    manager.add_explicit_schema_file(
+    manager.add_input_file(
         "c.csv",
         provenance="provC",
         columnMappings={
@@ -84,7 +84,7 @@ def test_provenance_mcf_snapshot(tmp_path):
     manager.add_provenance(name="provA", url="http://prova", source="S1")
     manager.add_provenance(name="provB", url="http://provb", source="S1")
 
-    manager.export_mfc_file(str(tmp_path), mcf_file_name="provenance.mcf")
+    manager.export_mcf_file(str(tmp_path), mcf_file_name="provenance.mcf")
     got = (tmp_path / "provenance.mcf").read_text()
     expected = (GOLDEN_DIR / "provenance.mcf").read_text()
     assert got == expected
@@ -101,7 +101,7 @@ def test_full_mcf_export(tmp_path):
         description="Test var",
         memberOf="dcid:one/g/group1",
     )
-    mgr.export_mfc_file(str(tmp_path), mcf_file_name="custom_nodes.mcf")
+    mgr.export_mcf_file(str(tmp_path), mcf_file_name="custom_nodes.mcf")
     got = (tmp_path / "custom_nodes.mcf").read_text()
     expected = (GOLDEN_DIR / "custom_nodes.mcf").read_text()
     assert got == expected
@@ -116,7 +116,7 @@ def test_mcf_export_multi_entity(tmp_path):
         observationProperties=["dcid:originCountry", "dcid:destinationCountry"],
     )
 
-    manager.export_mfc_file(str(tmp_path), mcf_file_name="custom_nodes.mcf")
+    manager.export_mcf_file(str(tmp_path), mcf_file_name="custom_nodes.mcf")
 
     got = (tmp_path / "custom_nodes.mcf").read_text()
     expected = (GOLDEN_DIR / "custom_nodes_multi_entity.mcf").read_text()

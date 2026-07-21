@@ -1,10 +1,8 @@
-"""Characterization tests for the explicit-schema path.
+"""Characterization tests for the custom-data input-file path.
 
-These tests pin the CURRENT observable behavior of the explicit-schema path
-using explicit-schema fixtures only (ExplicitSchemaFile / add_explicit_schema_file
-/ ColumnMappings). They must pass against current HEAD and remain green after the
-implicit-schema path is removed (since they never reference ImplicitSchemaFile,
-ObservationProperties, Variable, or add_variable_to_config).
+These tests pin the CURRENT observable behavior of registering, exporting,
+and serializing input files (InputFile / add_input_file / ColumnMappings)
+through CustomDataManager and the config/data-file utilities.
 """
 
 from unittest.mock import Mock
@@ -16,7 +14,7 @@ from dcp_tools import CustomDataManager
 from dcp_tools.custom_data.models.config_file import Config
 from dcp_tools.custom_data.models.data_files import (
     ColumnMappings,
-    ExplicitSchemaFile,
+    InputFile,
 )
 from dcp_tools.gcp_utilities.storage import (
     get_missing_csv_files,
@@ -28,13 +26,13 @@ from dcp_tools.gcp_utilities.storage import (
 # ---------------------------------------------------------------------------
 
 
-def _explicit_manager(file_name="exp.csv", *, with_data=True):
-    """Manager with one source + one explicit-schema file (optionally with data)."""
+def _manager(file_name="input.csv", *, with_data=True):
+    """Manager with one source + one input file (optionally with data)."""
     mgr = CustomDataManager()
     mgr.add_source(name="s1", url="http://src")
     mgr.add_provenance(name="p1", url="http://prov", source="s1")
     df = pd.DataFrame({"entity": ["e1"], "Year": [2020], "Value": [100]})
-    mgr.add_explicit_schema_file(
+    mgr.add_input_file(
         file_name=file_name,
         provenance="p1",
         data=df if with_data else None,
@@ -43,7 +41,7 @@ def _explicit_manager(file_name="exp.csv", *, with_data=True):
     return mgr, df
 
 
-def _make_explicit_cfg(
+def _make_cfg(
     key: str,
     prov: str,
     *,
@@ -52,9 +50,9 @@ def _make_explicit_cfg(
     custom_svg_prefix=None,
     sv_blocklist=None,
 ):
-    """Build a minimal Config with one ExplicitSchemaFile."""
+    """Build a minimal Config with one InputFile."""
     input_files = [
-        ExplicitSchemaFile(
+        InputFile(
             filename=key,
             provenance=prov,
             columnMappings=ColumnMappings(
@@ -76,74 +74,74 @@ def _make_explicit_cfg(
 # ---------------------------------------------------------------------------
 
 
-def test_add_explicit_schema_file_registers_in_config_and_data():
-    """add_explicit_schema_file registers file in config and data store."""
-    manager, df = _explicit_manager()
+def test_add_input_file_registers_in_config_and_data():
+    """add_input_file registers file in config and data store."""
+    manager, df = _manager()
 
-    entry = next(e for e in manager._config.inputFiles if e.filename == "exp.csv")
-    assert isinstance(entry, ExplicitSchemaFile)
+    entry = next(e for e in manager._config.inputFiles if e.filename == "input.csv")
+    assert isinstance(entry, InputFile)
     assert entry.provenance == "dcid:provenance/p1"
     assert entry.columnMappings.observationAbout == "entity"
     assert entry.columnMappings.date == "Year"
     assert entry.columnMappings.value == "Value"
     assert entry.data_format == "variablePerRow"
 
-    assert "exp.csv" in manager._data
-    pd.testing.assert_frame_equal(manager._data["exp.csv"], df)
+    assert "input.csv" in manager._data
+    pd.testing.assert_frame_equal(manager._data["input.csv"], df)
 
 
-def test_add_explicit_schema_file_override_and_duplicate_error():
+def test_add_input_file_override_and_duplicate_error():
     """Re-adding the same file_name without override raises ValueError;
     with override=True the data is replaced."""
-    manager, _ = _explicit_manager()
+    manager, _ = _manager()
 
     df_new = pd.DataFrame({"entity": ["e2"], "Year": [2021], "Value": [200]})
 
     # Duplicate without override must raise
     with pytest.raises(ValueError):
-        manager.add_explicit_schema_file("exp.csv", provenance="p1")
+        manager.add_input_file("input.csv", provenance="p1")
 
     # Override succeeds and replaces stored data
-    manager.add_explicit_schema_file(
-        file_name="exp.csv",
+    manager.add_input_file(
+        file_name="input.csv",
         provenance="p1",
         data=df_new,
         columnMappings={"observationAbout": "entity", "date": "Year", "value": "Value"},
         override=True,
     )
-    pd.testing.assert_frame_equal(manager._data["exp.csv"], df_new)
+    pd.testing.assert_frame_equal(manager._data["input.csv"], df_new)
 
 
 def test_add_data_standalone_success_and_error():
     """Standalone add_data: success path, duplicate error, override, unregistered error."""
-    manager, _ = _explicit_manager(with_data=False)
+    manager, _ = _manager(with_data=False)
 
     # Data was not supplied at registration time
-    assert "exp.csv" not in manager._data
+    assert "input.csv" not in manager._data
 
     df = pd.DataFrame({"entity": ["e1"], "Year": [2020], "Value": [100]})
 
     # First add_data call succeeds
-    manager.add_data(df, "exp.csv")
-    pd.testing.assert_frame_equal(manager._data["exp.csv"], df)
+    manager.add_data(df, "input.csv")
+    pd.testing.assert_frame_equal(manager._data["input.csv"], df)
 
     # Second call without override raises
     with pytest.raises(ValueError):
-        manager.add_data(df, "exp.csv")
+        manager.add_data(df, "input.csv")
 
     # Override succeeds
     df2 = pd.DataFrame({"entity": ["e2"], "Year": [2021], "Value": [200]})
-    manager.add_data(df2, "exp.csv", override=True)
-    pd.testing.assert_frame_equal(manager._data["exp.csv"], df2)
+    manager.add_data(df2, "input.csv", override=True)
+    pd.testing.assert_frame_equal(manager._data["input.csv"], df2)
 
     # Unregistered file raises
     with pytest.raises(ValueError):
         manager.add_data(df, "unregistered.csv")
 
 
-def test_export_config_round_trip_explicit(tmp_path):
+def test_export_config_round_trip(tmp_path):
     """export_config writes config.json; Config.from_json reloads it correctly."""
-    manager, _ = _explicit_manager()
+    manager, _ = _manager()
 
     manager.export_config(tmp_path)
 
@@ -153,7 +151,7 @@ def test_export_config_round_trip_explicit(tmp_path):
     loaded = Config.from_json(str(config_file))
     assert isinstance(loaded, Config)
 
-    entry = next(e for e in loaded.inputFiles if e.filename == "exp.csv")
+    entry = next(e for e in loaded.inputFiles if e.filename == "input.csv")
     mappings = entry.columnMappings
     assert mappings.model_dump(exclude_none=True) == {
         "observationAbout": "entity",
@@ -163,21 +161,21 @@ def test_export_config_round_trip_explicit(tmp_path):
     assert entry.data_format == "variablePerRow"
 
 
-def test_config_to_dict_explicit_shape():
-    """config_to_dict returns the expected serialized shape for the explicit path.
+def test_config_to_dict_shape():
+    """config_to_dict returns the expected serialized shape for an InputFile entry.
 
-    Pins the key names and values for the explicit path. The keys use the
-    DC-import aliases: 'format' for the data format and the 'dcid:' predicate
-    forms for columnMappings.
+    Pins the key names and values. The keys use the DC-import aliases:
+    'format' for the data format and the 'dcid:' predicate forms for
+    columnMappings.
     """
-    manager, _ = _explicit_manager()
+    manager, _ = _manager()
 
     d = manager.config_to_dict()
     entries = d["inputFiles"]
-    entry = next(e for e in entries if e.get("filename") == "exp.csv")
+    entry = next(e for e in entries if e.get("filename") == "input.csv")
 
     expected = {
-        "filename": "exp.csv",
+        "filename": "input.csv",
         "provenance": "dcid:provenance/p1",
         "format": "variablePerRow",
         "columnMappings": {
@@ -189,12 +187,12 @@ def test_config_to_dict_explicit_shape():
     assert entry == expected
 
 
-def test_export_mcf_file_explicit_path(tmp_path):
+def test_export_mcf_file(tmp_path):
     """variable added via add_variable_to_mcf appears in exported MCF."""
-    manager, _ = _explicit_manager()
+    manager, _ = _manager()
     manager.add_variable_to_mcf(Node="dcid:vX", name="VX")
 
-    manager.export_mfc_file(tmp_path, mcf_file_name="custom_nodes.mcf")
+    manager.export_mcf_file(tmp_path, mcf_file_name="custom_nodes.mcf")
 
     mcf_file = tmp_path / "custom_nodes.mcf"
     assert mcf_file.exists()
@@ -206,24 +204,24 @@ def test_export_mcf_file_explicit_path(tmp_path):
 # ---------------------------------------------------------------------------
 
 
-def test_explicit_schema_file_default_format():
-    """ExplicitSchemaFile defaults data_format to 'variablePerRow';
+def test_input_file_default_format():
+    """InputFile defaults data_format to 'variablePerRow';
     by_alias serialization uses key 'format'."""
-    ef = ExplicitSchemaFile(
+    entry = InputFile(
         filename="a.csv",
         provenance="p",
         columnMappings=ColumnMappings(),
     )
 
-    assert ef.data_format == "variablePerRow"
-    assert ef.model_dump(by_alias=True)["format"] == "variablePerRow"
+    assert entry.data_format == "variablePerRow"
+    assert entry.model_dump(by_alias=True)["format"] == "variablePerRow"
 
 
-def test_config_build_and_from_json_round_trip_explicit(tmp_path):
-    """An explicit-only Config survives a serialize → deserialize cycle."""
+def test_config_build_and_from_json_round_trip(tmp_path):
+    """A Config with one InputFile survives a serialize → deserialize cycle."""
     cfg = Config(
         inputFiles=[
-            ExplicitSchemaFile(
+            InputFile(
                 filename="a.csv",
                 provenance="p",
                 columnMappings=ColumnMappings(
@@ -240,11 +238,11 @@ def test_config_build_and_from_json_round_trip_explicit(tmp_path):
     assert loaded.model_dump() == cfg.model_dump()
 
 
-def test_merge_configs_from_directory_explicit(tmp_path):
-    """from_config_files_in_directory merges two explicit-only configs correctly."""
+def test_merge_configs_from_directory(tmp_path):
+    """from_config_files_in_directory merges two configs correctly."""
     d1 = tmp_path / "one"
     d1.mkdir()
-    cfg1 = _make_explicit_cfg(
+    cfg1 = _make_cfg(
         "a.csv",
         "p1",
         custom_namespace="ns",
@@ -256,7 +254,7 @@ def test_merge_configs_from_directory_explicit(tmp_path):
 
     d2 = tmp_path / "two"
     d2.mkdir()
-    cfg2 = _make_explicit_cfg(
+    cfg2 = _make_cfg(
         "b.csv",
         "p2",
         custom_svg_prefix="ns/custom/",
@@ -271,18 +269,18 @@ def test_merge_configs_from_directory_explicit(tmp_path):
     assert filenames == {"a.csv", "b.csv"}
 
 
-def test_merge_configs_from_directory_explicit_duplicate_error(tmp_path):
+def test_merge_configs_from_directory_duplicate_error(tmp_path):
     """from_config_files_in_directory raises ValueError on duplicate keys."""
     d1 = tmp_path / "one"
     d1.mkdir()
-    cfg1 = _make_explicit_cfg("a.csv", "p1")
+    cfg1 = _make_cfg("a.csv", "p1")
     (d1 / "config.json").write_text(
         cfg1.model_dump_json(indent=2, exclude_none=True, by_alias=True)
     )
 
     d2 = tmp_path / "two"
     d2.mkdir()
-    cfg2 = _make_explicit_cfg("a.csv", "p2")
+    cfg2 = _make_cfg("a.csv", "p2")
     (d2 / "config.json").write_text(
         cfg2.model_dump_json(indent=2, exclude_none=True, by_alias=True)
     )
@@ -291,12 +289,12 @@ def test_merge_configs_from_directory_explicit_duplicate_error(tmp_path):
         CustomDataManager.from_config_files_in_directory(tmp_path)
 
 
-def test_get_unregistered_and_missing_csv_files_explicit():
+def test_get_unregistered_and_missing_csv_files():
     """get_unregistered_csv_files and get_missing_csv_files work with
-    an explicit-only Config (depend only on inputFiles, schema-agnostic)."""
+    a Config that has one InputFile (they depend only on inputFiles)."""
     cfg = Config(
         inputFiles=[
-            ExplicitSchemaFile(
+            InputFile(
                 filename="a.csv",
                 provenance="p",
                 columnMappings=ColumnMappings(
@@ -320,7 +318,7 @@ def test_get_unregistered_and_missing_csv_files_explicit():
 
     # --- get_missing_csv_files ---
     cfg.inputFiles.append(
-        ExplicitSchemaFile(
+        InputFile(
             filename="extra.csv",
             provenance="p",
             columnMappings=ColumnMappings(

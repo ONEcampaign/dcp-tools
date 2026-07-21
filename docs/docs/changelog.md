@@ -75,6 +75,11 @@
   `ValueError`, and a blank value leaves that node's `memberOf` unset. A group path holding a
   whitespace-only segment, such as a stray tab between two slashes, also used to mint a group
   with an empty name; those segments are now dropped.
+- **Breaking:** a Topic node's `Node` now has to carry the `dcid:` prefix. The old check
+  looked for a `topic/` segment anywhere in the string and never required the prefix, so
+  `topic/x` validated and was written to the MCF unprefixed. Add `dcid:` to the `Node` column
+  of any topic CSV. Data Commons rejects unprefixed node ids on load, so those files were not
+  loading correctly to begin with.
 - **Breaking:** re-pointed the data load flow at the DCP prep job, using the
   `IngestionJobClient`. `run_data_load` now triggers the prep job. The `redeploy`
   CLI command and the `redeploy_service`

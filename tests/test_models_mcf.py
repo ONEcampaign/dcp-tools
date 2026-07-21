@@ -1,4 +1,5 @@
 import pytest
+from pydantic import ValidationError
 
 from dcp_tools.custom_data.models.mcf import MCFNode, MCFNodes
 
@@ -92,6 +93,17 @@ def test_mcfnodes_load_from_file_without_name(tmp_path):
     assert first.Node == "dcid:NoName"
     assert getattr(first, "name", None) is None
     assert first.typeOf == "dcid:TypeA"
+
+
+def test_mcfnode_typeof_normalizes_bare_token():
+    """typeOf is DcidOrListDcid; a bare token is minted to dcid:<token> (regression for #126)."""
+    node = MCFNode(Node="dcid:TestNode", typeOf="TypeA")
+    assert node.typeOf == "dcid:TypeA"
+
+
+def test_mcfnode_typeof_rejects_whitespace_bearing_token():
+    with pytest.raises(ValidationError):
+        MCFNode(Node="dcid:TestNode", typeOf="has space")
 
 
 def test_mcfnodes_add_override_and_remove():

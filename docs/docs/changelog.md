@@ -25,6 +25,20 @@
   while working everywhere else. Its `populationType`, `measuredProperty`,
   `measurementQualifier` and `measurementDenominator` arguments had the same gap and
   now accept bare tokens too.
+- Fixed `DcidOrListDcid`, which used a `PlainValidator` that replaced the wrapped `Dcid`
+  schema rather than running before it, so the `dcid:` prefix check never ran. Any
+  string, prefixed or not, passed through and landed in the MCF verbatim. This affected
+  `typeOf` on every MCF node, `relevantVariable`, `observationProperties` and `member` on
+  StatVar nodes, and `includedIn`, `subClassOf`, `domainIncludes`, `rangeIncludes` and
+  `subPropertyOf` on the schema-node builders. These fields now normalize a bare token to
+  `dcid:<token>` and reject anything empty or whitespace-bearing, and a non-string value
+  now raises rather than being accepted silently. Breaking for anyone
+  passing a bare token to one of these fields today and relying on it staying bare. The
+  group/peer-group/topic variants have the same gap and are not fixed here, since
+  `memberOf`'s use as a scratch field in `build_stat_var_groups_from_strings` needs
+  sorting out first. That leaves `StatVarMCFNode.memberOf` and
+  `TopicMCFNode.relevantVariable` unguarded, the latter because its type unions the fixed
+  and unfixed variants. `StatVarMCFNode.relevantVariable` is fixed. Tracked separately.
 - **Breaking:** re-pointed the data load flow at the DCP v1.1.0 prep job. `run_data_load`
   now triggers the preprocessing job. The `redeploy` command and `redeploy_service` are removed.
   Load-job settings are renamed: `CLOUD_RUN_JOB_NAME` → `LOAD_JOB_NAME`,

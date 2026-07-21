@@ -1,7 +1,8 @@
 import pytest
-from pydantic import BaseModel
+from pydantic import BaseModel, ValidationError
 
 from dcp_tools.custom_data.models.common import (
+    DcidOrListDcid,
     StrOrListStr,
     _ensure_quoted,
     ensure_dcid,
@@ -118,3 +119,68 @@ def test_mint_dcid_rejects_empty_or_whitespace_names():
         mint_dcid(prefix="source", name="  leading")
     with pytest.raises(ValueError):
         mint_dcid(prefix="source", name="trailing\t")
+
+
+# --- DcidOrListDcid and friends (regression test for #126) ---
+#
+# PlainValidator used to replace the inner Dcid/GroupDcid/PeerGroupDcid/TopicDcid schema
+# outright, so its dcid:/slug pattern never ran and any string passed through unvalidated.
+# These exercise the BeforeValidator fix directly against the type aliases (not just a
+# specific model field), matching the Dummy(BaseModel) pattern used for StrOrListStr above.
+
+
+def test_dcid_or_list_dcid_mints_bare_scalar_and_list():
+    class Dummy(BaseModel):
+        field: DcidOrListDcid
+
+    assert Dummy(field="MyClass").field == "dcid:MyClass"
+    assert Dummy(field=["One", "Two"]).field == ["dcid:One", "dcid:Two"]
+    # comma-delimited string is split first, then each element minted
+    assert Dummy(field="One, Two").field == ["dcid:One", "dcid:Two"]
+    # already dcid:-prefixed values pass through verbatim
+    assert Dummy(field="dcid:bio/Foo").field == "dcid:bio/Foo"
+
+
+def test_dcid_or_list_dcid_rejects_whitespace_bearing_token():
+    class Dummy(BaseModel):
+        field: DcidOrListDcid
+
+    with pytest.raises(ValidationError):
+        Dummy(field="has space")
+    with pytest.raises(ValidationError):
+        Dummy(field=["ok", "has space"])
+
+
+def test_dcid_or_list_dcid_repairs_space_after_dcid_prefix():
+    """ "dcid: Foo" is repaired to "dcid:Foo", the same as a plain Dcid field, rather
+    than rejected by ensure_dcid's own no-whitespace rule. Preserves the one case where
+    the old, unvalidated PlainValidator didn't raise on this input either (see #126)."""
+
+    class Dummy(BaseModel):
+        field: DcidOrListDcid
+
+    assert Dummy(field="dcid: Foo").field == "dcid:Foo"
+
+
+def test_dcid_or_list_dcid_rejects_non_string_input():
+    """A non-string value raises ValidationError, not a raw TypeError out of ensure_dcid.
+
+    Before #126 a value like 123 was silently accepted, because PlainValidator never
+    reached ensure_dcid. The guard keeps the failure a pydantic error for the caller.
+    """
+
+    class Dummy(BaseModel):
+        field: DcidOrListDcid
+
+    with pytest.raises(ValidationError):
+        Dummy(field=123)
+    with pytest.raises(ValidationError):
+        Dummy(field=["dcid:ok", 5])
+    with pytest.raises(ValidationError):
+        Dummy(field={"a": "b"})
+
+
+# GroupDcidOrListGroupDcid, PeerGroupDcidOrListPeerGroupDcid and TopicDcidOrListTopicDcid
+# still use PlainValidator (their slug pattern still bypassed) — see the docstring on
+# GroupDcidOrListGroupDcid in models/common.py for why, and the follow-up issue tracking
+# it separately from #126.

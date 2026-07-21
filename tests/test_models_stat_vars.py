@@ -1,6 +1,11 @@
 import pandas as pd
+import pytest
+from pydantic import ValidationError
 
-from dcp_tools.custom_data.models.stat_vars import StatVarMCFNode
+from dcp_tools.custom_data.models.stat_vars import (
+    StatVarMCFNode,
+    StatVarPeerGroupMCFNode,
+)
 from dcp_tools.custom_data.schema_tools import _rows_to_stat_var_nodes
 
 
@@ -80,3 +85,66 @@ def test_rows_to_stat_var_nodes_parses_spreadsheet_lists_no_quotes():
     nodes = _rows_to_stat_var_nodes(df)
     mcf = nodes.nodes[0].mcf
     assert "memberOf: dcid:oneId, dcid:twoId" in mcf
+
+
+# --- observationProperties / relevantVariable normalize bare tokens (regression for #126) ---
+#
+# Both are DcidOrListDcid. Before the fix, PlainValidator bypassed the dcid: pattern
+# entirely, so a bare token like "originCountry" landed in the MCF unprefixed.
+
+
+def test_observation_properties_normalizes_bare_scalar_and_list():
+    sv = StatVarMCFNode(
+        Node="dcid:n1", name="Var", observationProperties="originCountry"
+    )
+    assert sv.observationProperties == "dcid:originCountry"
+
+    sv_list = StatVarMCFNode(
+        Node="dcid:n1",
+        name="Var",
+        observationProperties=["originCountry", "destinationCountry"],
+    )
+    assert sv_list.observationProperties == [
+        "dcid:originCountry",
+        "dcid:destinationCountry",
+    ]
+    assert (
+        "observationProperties: dcid:originCountry, dcid:destinationCountry"
+        in sv_list.mcf
+    )
+
+
+def test_observation_properties_rejects_whitespace_bearing_token():
+    with pytest.raises(ValidationError):
+        StatVarMCFNode(Node="dcid:n1", name="Var", observationProperties="has space")
+
+
+def test_relevant_variable_normalizes_bare_scalar_and_list():
+    sv = StatVarMCFNode(Node="dcid:n1", name="Var", relevantVariable="otherVar")
+    assert sv.relevantVariable == "dcid:otherVar"
+
+    sv_list = StatVarMCFNode(
+        Node="dcid:n1", name="Var", relevantVariable=["one", "two"]
+    )
+    assert sv_list.relevantVariable == ["dcid:one", "dcid:two"]
+
+
+def test_relevant_variable_rejects_whitespace_bearing_token():
+    with pytest.raises(ValidationError):
+        StatVarMCFNode(Node="dcid:n1", name="Var", relevantVariable="has space")
+
+
+# --- member on StatVarPeerGroupMCFNode is DcidOrListDcid, same normalization ---
+
+
+def test_peer_group_member_normalizes_bare_scalar_and_list():
+    node = StatVarPeerGroupMCFNode(
+        Node="dcid:svpg/x", name="Peers", member=["varOne", "varTwo"]
+    )
+    assert node.member == ["dcid:varOne", "dcid:varTwo"]
+    assert "member: dcid:varOne, dcid:varTwo" in node.mcf
+
+
+def test_peer_group_member_rejects_whitespace_bearing_token():
+    with pytest.raises(ValidationError):
+        StatVarPeerGroupMCFNode(Node="dcid:svpg/x", name="Peers", member="has space")

@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+from enum import Enum
 from os import PathLike
 from pathlib import Path
 from typing import Any
@@ -39,12 +40,24 @@ class MCFNode(BaseModel):
     subClassOf: StrOrListStr | None = None
 
     # Allow extra fields since MCF can have arbitrary properties and this
-    # class is not comprehensive of all possible MCF properties.
-    model_config = ConfigDict(extra="allow")
+    # class is not comprehensive of all possible MCF properties. Assignments are
+    # validated too, so patterns like Dcid/GroupDcid are enforced on `MCFNodes.rename`
+    # (which assigns `.Node`), not just on construction.
+    model_config = ConfigDict(extra="allow", validate_assignment=True)
 
     @classmethod
     def _clean_value(cls, value: Any) -> Any:
-        """Recursively remove line breaks and trailing spaces from strings."""
+        """Recursively remove line breaks and trailing spaces from strings.
+
+        Enum members (e.g. StatType) are returned untouched. They are not plain
+        strings even when their base class is str: `value.replace(...)` on a
+        StrEnum member returns a plain `str`, which would silently degrade the
+        enum to its value. That only matters under validate_assignment, where this
+        also runs on assignment (see `__setattr__` below) over an
+        already-constructed value.
+        """
+        if isinstance(value, Enum):
+            return value
         if isinstance(value, str):
             return value.replace("\n", "").replace("\r", "").rstrip()
         if isinstance(value, list):
@@ -59,6 +72,18 @@ class MCFNode(BaseModel):
         if isinstance(data, dict):
             return {k: cls._clean_value(v) for k, v in data.items()}
         return data
+
+    def __setattr__(self, name: str, value: Any) -> None:
+        """Clean the value before it is assigned, as construction cleans it.
+
+        Under `validate_assignment`, `_strip_whitespace` reruns on every assignment,
+        but its cleaned output is applied only to the *other*, already-set fields and
+        is discarded for the field actually being assigned. Cleaning here instead
+        covers both declared fields and the `extra="allow"` keys that carry arbitrary
+        MCF properties, neither of which a wildcard field validator would reach in
+        full.
+        """
+        super().__setattr__(name, self._clean_value(value))
 
     @property
     def mcf(self) -> str:

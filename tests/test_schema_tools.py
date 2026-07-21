@@ -1,11 +1,13 @@
+import pytest
+
 from dcp_tools.custom_data.models.mcf import MCFNodes
 from dcp_tools.custom_data.models.stat_vars import (
     StatVarGroupMCFNode,
     StatVarMCFNode,
 )
 from dcp_tools.custom_data.schema_tools import (
-    build_stat_var_groups_from_strings,
     csv_metadata_to_nodes,
+    resolve_group_paths,
     to_camelCase,
 )
 
@@ -35,13 +37,6 @@ def test_csv_metadata_to_nodes(tmp_path):
         assert hasattr(node, "searchDescription")
 
 
-def make_sv(member_of: str) -> StatVarMCFNode:
-    """Helper to create a StatVarMCFNode with a given memberOf path."""
-    return StatVarMCFNode(
-        Node="dcid:dummy", name="TestVar", description="", memberOf=member_of
-    )
-
-
 def get_group_nodes(nodes: MCFNodes) -> list[StatVarGroupMCFNode]:
     """Extract all StatVarGroupMCFNode instances from MCFNodes."""
     return [n for n in nodes.nodes if isinstance(n, StatVarGroupMCFNode)]
@@ -53,30 +48,21 @@ def get_statvar_nodes(nodes: MCFNodes) -> list[StatVarMCFNode]:
 
 
 def test_single_level_group():
-    sv = make_sv("Category")
-    nodes = MCFNodes(nodes=[sv])
+    resolved, groups = resolve_group_paths(["Category"], group_namespace="example.org")
 
-    result = build_stat_var_groups_from_strings(nodes, groups_namespace="example.org")
-    groups = get_group_nodes(result)
     assert len(groups) == 1, (
         "Should create exactly one group node for single-level path"
     )
-
     group = groups[0]
     assert group.Node == "dcid:example.org/g/category"
     assert group.name == "Category"
     assert group.specializationOf == "dcid:dc/g/Root"
 
-    statvars = get_statvar_nodes(result)
-    assert statvars[0].memberOf == group.Node
+    assert resolved["Category"] == group.Node
 
 
 def test_multi_level_group():
-    sv = make_sv("A/B/C")
-    nodes = MCFNodes(nodes=[sv])
-
-    result = build_stat_var_groups_from_strings(nodes, groups_namespace="ns")
-    groups = get_group_nodes(result)
+    resolved, groups = resolve_group_paths(["A/B/C"], group_namespace="ns")
 
     assert len(groups) == 3
     slug_map = {g.Node.split("/")[-1]: g for g in groups}
@@ -86,24 +72,153 @@ def test_multi_level_group():
     assert slug_map["B"].specializationOf == "dcid:ns/g/A"
     assert slug_map["C"].specializationOf == "dcid:ns/g/B"
 
-    # Check StatVar points to deepest
-    statvars = get_statvar_nodes(result)
-    assert statvars[0].memberOf == "dcid:ns/g/C"
+    # Check the path resolves to the deepest group
+    assert resolved["A/B/C"] == "dcid:ns/g/C"
 
 
 def test_duplicate_paths_do_not_create_duplicates():
-    sv1 = make_sv("X/Y")
-    sv2 = make_sv("X/Y/Z")
-    nodes = MCFNodes(nodes=[sv1, sv2])
+    resolved, groups = resolve_group_paths(["X/Y", "X/Y/Z"], group_namespace="ns2")
 
-    result = build_stat_var_groups_from_strings(nodes, groups_namespace="ns2")
-    groups = get_group_nodes(result)
     # Expect three unique group nodes: X, Y, Z
     assert len(groups) == 3
     slugs = sorted(g.Node for g in groups)
     assert "dcid:ns2/g/X" in slugs
     assert "dcid:ns2/g/Y" in slugs
     assert "dcid:ns2/g/Z" in slugs
+
+    assert resolved["X/Y"] == "dcid:ns2/g/Y"
+    assert resolved["X/Y/Z"] == "dcid:ns2/g/Z"
+
+
+def test_csv_metadata_to_nodes_parse_groups(tmp_path):
+    """
+    Full-pipeline check: StatVars keep CSV order, group nodes come after in
+    first-seen order, and each StatVar's memberOf is rewritten to the resolved
+    group dcid.
+    """
+    content = (
+        "Node,name,typeOf,memberOf\n"
+        "dcid:n1,Name1,dcid:StatisticalVariable,Economic/Employment\n"
+        "dcid:n2,Name2,dcid:StatisticalVariable,Economic/Health\n"
+    )
+    csv_path = tmp_path / "test.csv"
+    csv_path.write_text(content)
+
+    nodes = csv_metadata_to_nodes(
+        str(csv_path), parse_groups=True, group_namespace="ns"
+    )
+
+    assert [n.Node for n in nodes.nodes] == [
+        "dcid:n1",
+        "dcid:n2",
+        "dcid:ns/g/economic",
+        "dcid:ns/g/employment",
+        "dcid:ns/g/health",
+    ]
+
+    statvars = get_statvar_nodes(nodes)
+    assert statvars[0].memberOf == "dcid:ns/g/employment"
+    assert statvars[1].memberOf == "dcid:ns/g/health"
+
+
+def test_resolve_group_paths_cleans_raw_path():
+    """Covers the path-cleaning contract in the docstring: a leading '-' is
+    stripped, '/' and whitespace are stripped from both ends, and empty segments
+    (from doubled or edge slashes) are dropped."""
+    resolved, groups = resolve_group_paths(
+        ["-Economic// Employment / "], group_namespace="ns"
+    )
+
+    assert len(groups) == 2
+    slugs = [g.Node for g in groups]
+    assert slugs == ["dcid:ns/g/economic", "dcid:ns/g/employment"]
+    assert resolved["-Economic// Employment / "] == "dcid:ns/g/employment"
+
+
+def test_resolve_group_paths_omits_path_with_no_segments():
+    """A path that cleans down to nothing (e.g. just '-' or '/') mints no group
+    and is omitted from the resolved mapping."""
+    resolved, groups = resolve_group_paths(["-", "/"], group_namespace="ns")
+
+    assert resolved == {}
+    assert groups == []
+
+
+def test_csv_metadata_to_nodes_parse_groups_without_memberof_column_raises(tmp_path):
+    """parse_groups=True with no `memberOf` column is a clear ValueError, not a crash."""
+    content = "Node,name,typeOf\ndcid:n1,Name1,dcid:StatisticalVariable\n"
+    csv_path = tmp_path / "test.csv"
+    csv_path.write_text(content)
+
+    with pytest.raises(ValueError, match="memberOf"):
+        csv_metadata_to_nodes(str(csv_path), parse_groups=True, group_namespace="ns")
+
+
+def test_csv_metadata_to_nodes_parse_groups_leaves_missing_memberof_unset(tmp_path):
+    """A row with a missing memberOf is left unset rather than crashing."""
+    content = (
+        "Node,name,typeOf,memberOf\n"
+        "dcid:n1,Name1,dcid:StatisticalVariable,Economic/Employment\n"
+        "dcid:n2,Name2,dcid:StatisticalVariable,\n"
+    )
+    csv_path = tmp_path / "test.csv"
+    csv_path.write_text(content)
+
+    nodes = csv_metadata_to_nodes(
+        str(csv_path), parse_groups=True, group_namespace="ns"
+    )
+    statvars = get_statvar_nodes(nodes)
+
+    assert statvars[0].memberOf == "dcid:ns/g/employment"
+    assert statvars[1].memberOf is None
+
+
+def test_csv_metadata_to_nodes_parse_groups_leaves_segmentless_memberof_unset(tmp_path):
+    """A memberOf that cleans down to nothing ('-', '/') leaves the node ungrouped,
+    the same as a blank cell.
+
+    Keeping the raw value instead would hand '-' to a memberOf that now enforces the
+    group pattern, aborting the whole call over a row that carries no group at all.
+    """
+    content = (
+        "Node,name,typeOf,memberOf\n"
+        "dcid:n1,Name1,dcid:StatisticalVariable,-\n"
+        "dcid:n2,Name2,dcid:StatisticalVariable,/\n"
+        "dcid:n3,Name3,dcid:StatisticalVariable,Economic/Employment\n"
+    )
+    csv_path = tmp_path / "test.csv"
+    csv_path.write_text(content)
+
+    nodes = csv_metadata_to_nodes(
+        str(csv_path), parse_groups=True, group_namespace="ns"
+    )
+    statvars = get_statvar_nodes(nodes)
+
+    assert statvars[0].memberOf is None
+    assert statvars[1].memberOf is None
+    assert statvars[2].memberOf == "dcid:ns/g/employment"
+
+
+def test_csv_metadata_to_nodes_parse_groups_remove_works_on_group_node(tmp_path):
+    """Regression test: csv_metadata_to_nodes used to append group nodes directly to
+    `nodes.nodes`, bypassing `MCFNodes.add` and leaving `_pos` stale. `.remove()` (which
+    looks the node up via `_pos`) on a group node from a parse_groups=True result must
+    work — the same class of index bug #126 fixed in `rename_variable`."""
+    content = (
+        "Node,name,typeOf,memberOf\n"
+        "dcid:n1,Name1,dcid:StatisticalVariable,Economic/Employment\n"
+    )
+    csv_path = tmp_path / "test.csv"
+    csv_path.write_text(content)
+
+    nodes = csv_metadata_to_nodes(
+        str(csv_path), parse_groups=True, group_namespace="ns"
+    )
+
+    nodes.remove("dcid:ns/g/employment")
+    assert [n.Node for n in nodes.nodes] == ["dcid:n1", "dcid:ns/g/economic"]
+    # The index was kept consistent, not merely the list.
+    assert nodes._expect_present("dcid:ns/g/economic") == 1
 
 
 def test_to_camelcase_multi_word():

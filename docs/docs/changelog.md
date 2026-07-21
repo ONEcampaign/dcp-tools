@@ -33,12 +33,27 @@
   `subPropertyOf` on the schema-node builders. These fields now normalize a bare token to
   `dcid:<token>` and reject anything empty or whitespace-bearing, and a non-string value
   now raises rather than being accepted silently. Breaking for anyone
-  passing a bare token to one of these fields today and relying on it staying bare. The
-  group/peer-group/topic variants have the same gap and are not fixed here, since
-  `memberOf`'s use as a scratch field in `build_stat_var_groups_from_strings` needs
-  sorting out first. That leaves `StatVarMCFNode.memberOf` and
-  `TopicMCFNode.relevantVariable` unguarded, the latter because its type unions the fixed
-  and unfixed variants. `StatVarMCFNode.relevantVariable` is fixed. Tracked separately.
+  passing a bare token to one of these fields today and relying on it staying bare.
+- **Breaking:** `memberOf` on a StatVar now has to be a real group dcid. It had the same
+  bypass, so any string reached the MCF verbatim; it now requires a `g/` segment, so
+  `one/g/economy` is minted to `dcid:one/g/economy` and `dcid:economy` is rejected. Check the
+  `memberOf` values in your StatVar CSVs and `add_variable_to_mcf` calls.
+- **Breaking:** `relevantVariable` on a Topic node is now plain `DcidOrListDcid`. Its type used
+  to combine the fixed variant with two unfixed ones, so a value the fixed one rejected still
+  got through the others. It accepts the same StatVar, group and topic dcids as before, and
+  now rejects the malformed values that used to slip past.
+- **Breaking:** MCF nodes now validate on assignment, not only on construction. Setting a
+  field to an invalid value, for example `node.memberOf = "garbage"` or renaming a node to a
+  token with no `dcid:` prefix, raises instead of quietly writing it to the MCF file.
+- **Breaking:** `build_stat_var_groups_from_strings` is replaced by `resolve_group_paths`. It
+  used `memberOf` to hold an unresolved group path such as `"Economic/Employment"` until it
+  was overwritten, which is what blocked validating the field. Group paths are now resolved
+  before the nodes are built. If you call it directly, use
+  `csv_metadata_to_nodes(..., parse_groups=True, group_namespace=...)` instead.
+  `add_variables_to_mcf_from_csv` is unchanged.
+- Fixed `add_variables_to_mcf_from_csv(parse_groups=True)` raising `AttributeError` when the
+  CSV had no `memberOf` column or a row left it blank. The missing column now raises a clear
+  `ValueError`, and a blank value leaves that node's `memberOf` unset.
 - **Breaking:** re-pointed the data load flow at the DCP v1.1.0 prep job. `run_data_load`
   now triggers the preprocessing job. The `redeploy` command and `redeploy_service` are removed.
   Load-job settings are renamed: `CLOUD_RUN_JOB_NAME` → `LOAD_JOB_NAME`,

@@ -30,6 +30,23 @@ def test_statvarnode_strips_whitespace_and_linebreaks():
     assert sv.searchDescription == ["First line", "Second line"]
 
 
+def test_statvarnode_omits_observation_properties_by_default():
+    sv = StatVarMCFNode(
+        Node="dcid:n1",
+        name="Var",
+    )
+    assert "observationProperties" not in sv.mcf
+
+
+def test_statvarnode_serializes_observation_properties_multi_entity():
+    sv = StatVarMCFNode(
+        Node="dcid:n1",
+        name="Var",
+        observationProperties=["dcid:source", "dcid:destination"],
+    )
+    assert "observationProperties: dcid:source, dcid:destination" in sv.mcf
+
+
 def test_rows_to_stat_var_nodes_parses_comma_separated():
     df = pd.DataFrame(
         {"Node": ["dcid:n3"], "name": ["Var"], "searchDescription": ["A, B"]}

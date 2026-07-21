@@ -145,6 +145,9 @@ TopicDcidOrListTopicDcid = Annotated[
 ]
 """Accepts a string or list and serialises to a comma-separated string."""
 
+CustomDimensionName = Annotated[str, StringConstraints(pattern=r"^\S+$")]
+"""A custom dimension key, becomes `custom:<name>` and `dcid:<name>` downstream."""
+
 
 @overload
 def ensure_dcid(value: str) -> str: ...

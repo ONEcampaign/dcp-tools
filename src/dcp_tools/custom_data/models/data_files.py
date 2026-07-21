@@ -1,16 +1,18 @@
-from typing import Annotated, Literal
+from typing import Annotated, Any, Literal
 
 from pydantic import (
     AliasChoices,
     BaseModel,
     ConfigDict,
     Field,
+    SerializerFunctionWrapHandler,
     StringConstraints,
     field_validator,
+    model_serializer,
     model_validator,
 )
 
-from dcp_tools.custom_data.models.common import mint_dcid
+from dcp_tools.custom_data.models.common import CustomDimensionName, mint_dcid
 
 
 class MCFFileName(BaseModel):
@@ -29,24 +31,20 @@ class ColumnMappings(BaseModel):
 
     Attributes:
         variable: Variable name.
-        entity: Entity name.
         date: Date of the observation.
         value: Value of the observation.
         unit: Unit of the observation.
         scalingFactor: Scaling factor for the data.
         measurementMethod: Measurement method used for the data.
         observationPeriod: Observation period of the data.
+        observationAbout: Entity column for single-entity data.
+        customDimensions: Entity columns for multi-entity data.
     """
 
     variable: str | None = Field(
         default=None,
         validation_alias=AliasChoices("variable", "dcid:variableMeasured"),
         serialization_alias="dcid:variableMeasured",
-    )
-    entity: str | None = Field(
-        default=None,
-        validation_alias=AliasChoices("entity", "dcid:observationAbout"),
-        serialization_alias="dcid:observationAbout",
     )
     date: str | None = Field(
         default=None,
@@ -74,8 +72,41 @@ class ColumnMappings(BaseModel):
         validation_alias=AliasChoices("observationPeriod", "dcid:observationPeriod"),
         serialization_alias="dcid:observationPeriod",
     )
+    observationAbout: str | None = Field(
+        default=None,
+        validation_alias=AliasChoices("observationAbout", "dcid:observationAbout"),
+        serialization_alias="dcid:observationAbout",
+    )
+    customDimensions: dict[CustomDimensionName, str] = Field(
+        default_factory=dict,
+    )
 
     model_config = ConfigDict(extra="forbid")
+
+    @model_serializer(mode="wrap")
+    def _serialize(self, handler: SerializerFunctionWrapHandler) -> dict[str, str]:
+        data = handler(self)
+        for name, column in (data.pop("customDimensions", None) or {}).items():
+            data[f"custom:{name}"] = column
+        return data
+
+    @model_validator(mode="before")
+    @classmethod
+    def _collect_custom_dimensions(cls, data: Any) -> Any:
+        if isinstance(data, dict):
+            dims = {
+                k[len("custom:") :]: v
+                for k, v in data.items()
+                if isinstance(k, str) and k.startswith("custom:")
+            }
+            if dims:
+                data = {
+                    k: v
+                    for k, v in data.items()
+                    if not (isinstance(k, str) and k.startswith("custom:"))
+                }
+                data["customDimensions"] = dims
+        return data
 
 
 class ObservationProperties(BaseModel):

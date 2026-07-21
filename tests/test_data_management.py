@@ -179,7 +179,7 @@ def test_add_explicit_schema_file_registration_and_override(tmp_path):
         file_name="exp.csv",
         provenance="p1",
         data=df3,
-        columnMappings={"entity": "entity", "date": "Year", "value": "Value"},
+        columnMappings={"observationAbout": "entity", "date": "Year", "value": "Value"},
     )
     assert any(e.filename == "exp.csv" for e in manager._config.inputFiles)
     assert "exp.csv" in manager._data
@@ -245,7 +245,7 @@ def test_export_methods(tmp_path):
         file_name="data.csv",
         provenance="p1",
         data=df,
-        columnMappings={"entity": "A"},
+        columnMappings={"observationAbout": "A"},
     )
     manager.add_variable_to_mcf(Node="dcid:vX", name="VX")
 
@@ -312,7 +312,7 @@ def test_custom_data_manager_repr():
         file_name="f.csv",
         provenance="p1",
         data=df,
-        columnMappings={"entity": "A"},
+        columnMappings={"observationAbout": "A"},
     )
     manager.add_variable_to_mcf(Node="dcid:vX", name="VX")
     r = repr(manager)
@@ -333,7 +333,7 @@ def test_remove_indicator():
         file_name="a.csv",
         provenance="p1",
         data=df,
-        columnMappings={"entity": "A"},
+        columnMappings={"observationAbout": "A"},
     )
     manager.add_variable_to_mcf(Node="dcid:sv1", name="Var", provenance="p1")
 
@@ -486,7 +486,7 @@ def test_add_explicit_schema_file_observation_properties():
     manager.add_explicit_schema_file(
         "data.csv",
         provenance="prov1",
-        columnMappings={"entity": "Country", "date": "Year"},
+        columnMappings={"observationAbout": "Country", "date": "Year"},
         observationProperties={"unit": "USDollar", "customProp": "x"},
     )
 
@@ -763,42 +763,43 @@ def test_column_mappings_emit_dcid_keys():
     """Verify ColumnMappings emits dcid: prefixed keys on serialization."""
     cm = ColumnMappings(
         variable="Var",
-        entity="Country",
         date="Year",
         value="Val",
-        unit="USD",
-        scalingFactor="1000",
-        measurementMethod="Census",
-        observationPeriod="P1Y",
+        unit="Unit_column",
+        scalingFactor="Scale_column",
+        measurementMethod="Method_column",
+        observationPeriod="Period_column",
+        customDimensions={
+            "sourceCountry": "Source",
+            "destinationCountry": "Destination",
+        },
     )
-    result = cm.model_dump(by_alias=True)
-    print()
-    print(result)
 
-    # All 7 aliased fields must emit dcid: keys
-    assert result["dcid:variableMeasured"] == "Var"
-    assert result["dcid:observationAbout"] == "Country"
-    assert result["dcid:observationDate"] == "Year"
-    assert result["dcid:value"] == "Val"
-    assert result["dcid:unit"] == "USD"
-    assert result["dcid:measurementMethod"] == "Census"
-    assert result["dcid:observationPeriod"] == "P1Y"
+    result = cm.model_dump(by_alias=True, exclude_none=True)
 
-    # scalingFactor stays short on both sides
-    assert "scalingFactor" in result
-    assert "dcid:scalingFactor" not in result
+    assert result == {
+        "dcid:variableMeasured": "Var",
+        "dcid:observationDate": "Year",
+        "dcid:value": "Val",
+        "dcid:unit": "Unit_column",
+        "scalingFactor": "Scale_column",
+        "dcid:measurementMethod": "Method_column",
+        "dcid:observationPeriod": "Period_column",
+        "custom:sourceCountry": "Source",
+        "custom:destinationCountry": "Destination",
+    }
 
-    # Short keys must NOT appear for aliased fields
-    for short_key in [
-        "variable",
-        "entity",
-        "date",
-        "value",
-        "unit",
-        "measurementMethod",
-        "observationPeriod",
-    ]:
-        assert short_key not in result
+
+def test_column_mappings_dump_respects_exclude_none_flag():
+    cm = ColumnMappings(variable="Var", customDimensions={"sourceCountry": "Source"})
+    assert cm.model_dump(exclude_none=True) == {
+        "variable": "Var",
+        "custom:sourceCountry": "Source",
+    }
+
+    full_dump = cm.model_dump()
+    assert "date" in full_dump
+    assert full_dump["date"] is None
 
 
 def test_column_mappings_accepts_dcid_keys_on_input():
@@ -810,13 +811,40 @@ def test_column_mappings_accepts_dcid_keys_on_input():
             "dcid:value": "Val",
         }
     )
-    assert cm.entity == "Country"
+    assert cm.observationAbout == "Country"
     assert cm.date == "Year"
     assert cm.value == "Val"
 
     # Short-key input must also still work
-    cm2 = ColumnMappings.model_validate({"entity": "Country"})
-    assert cm2.entity == "Country"
+    cm2 = ColumnMappings.model_validate({"observationAbout": "Country"})
+    assert cm2.observationAbout == "Country"
+
+
+def test_column_mappings_round_trip_preserves_custom_prefix():
+    mappings_dict = {
+        "dcid:variableMeasured": "statvar",
+        "dcid:observationDate": "year",
+        "dcid:value": "amount",
+        "custom:sourceCountry": "provider",
+        "custom:destinationCountry": "recipient",
+    }
+    result = ColumnMappings.model_validate(mappings_dict).model_dump(
+        by_alias=True, exclude_none=True
+    )
+    assert result == mappings_dict
+
+
+@pytest.mark.parametrize(
+    "dimension_name", ["source country", "", None, " sourceCountry"]
+)
+def test_column_mappings_rejects_malformed_custom_dimension_names(dimension_name):
+    with pytest.raises(ValueError):
+        ColumnMappings(
+            variable="Var",
+            date="Year",
+            value="Val",
+            customDimensions={dimension_name: "Source"},
+        )
 
 
 # --- Schema node builder tests ---

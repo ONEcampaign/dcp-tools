@@ -201,7 +201,7 @@ manager.set_svHierarchyPropsBlocklist([
 
 ## Validating and exporting files
 
-To ensure that your `config.json` is correctly strucured, you can validate it using the `validate_config` method:
+To ensure that your `config.json` is correctly structured, you can validate it using the `validate_config` method:
 
 ```python
 manager.validate_config()

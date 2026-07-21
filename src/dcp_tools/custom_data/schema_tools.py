@@ -210,7 +210,7 @@ def validate_mcf_file_name(file_name: str | MCFFileName) -> str:
     return file_name.file_name
 
 
-def csv_metadata_to_mfc_file(
+def csv_metadata_to_mcf_file(
     csv_path: str | PathLike[str],
     mcf_path: str | PathLike[str],
     node_type: NodeTypes | str,

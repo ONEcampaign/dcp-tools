@@ -55,7 +55,7 @@ introduction to the package, and to learn how to use it.
 
 ### 1. Create a CustomDataManager object. 
 
-The CustomDataManager object will handle generating the `config.json` file, as well as (optionally) taking Pandas DataFrames and exporting them as CSVs (in the right format) for loading to the Knowlede Graph.
+The CustomDataManager object will handle generating the `config.json` file, as well as (optionally) taking Pandas DataFrames and exporting them as CSVs (in the right format) for loading to the Knowledge Graph.
 
 In this example, we assume a `config.json` does not yet exist.
 

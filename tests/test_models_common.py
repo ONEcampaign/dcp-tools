@@ -3,6 +3,7 @@ from pydantic import BaseModel, ValidationError
 
 from dcp_tools.custom_data.models.common import (
     DcidOrListDcid,
+    GroupDcidOrListGroupDcid,
     StrOrListStr,
     _ensure_quoted,
     ensure_dcid,
@@ -180,7 +181,36 @@ def test_dcid_or_list_dcid_rejects_non_string_input():
         Dummy(field={"a": "b"})
 
 
+# --- GroupDcidOrListGroupDcid (regression test for #131) ---
+#
 # GroupDcidOrListGroupDcid, PeerGroupDcidOrListPeerGroupDcid and TopicDcidOrListTopicDcid
-# still use PlainValidator (their slug pattern still bypassed) — see the docstring on
-# GroupDcidOrListGroupDcid in models/common.py for why, and the follow-up issue tracking
-# it separately from #126.
+# used to still use PlainValidator (their slug pattern bypassed), tracked separately from
+# #126. #131 switched all three to the same BeforeValidator as DcidOrListDcid, once
+# StatVarMCFNode.memberOf no longer used the field as a scratch value for an unresolved
+# raw group path (see resolve_group_paths in schema_tools.py). PeerGroupDcidOrListPeerGroupDcid
+# and TopicDcidOrListTopicDcid were then deleted, along with the TopicDcid they wrapped: no
+# field references them (TopicMCFNode.relevantVariable collapsed to plain DcidOrListDcid — see
+# test_models_topics.py).
+
+
+def test_group_dcid_or_list_group_dcid_mints_and_enforces_slug_pattern():
+    """Same BeforeValidator as DcidOrListDcid, plus the GroupDcid slug pattern
+    (the resolved dcid must contain 'g/')."""
+
+    class Dummy(BaseModel):
+        field: GroupDcidOrListGroupDcid
+
+    assert Dummy(field="g/MyGroup").field == "dcid:g/MyGroup"
+    assert Dummy(field=["g/One", "g/Two"]).field == ["dcid:g/One", "dcid:g/Two"]
+    # already dcid:-prefixed values pass through verbatim
+    assert Dummy(field="dcid:ns/g/Foo").field == "dcid:ns/g/Foo"
+
+
+def test_group_dcid_or_list_group_dcid_rejects_non_group_token():
+    """A minted dcid with no 'g/' segment fails the GroupDcid pattern."""
+
+    class Dummy(BaseModel):
+        field: GroupDcidOrListGroupDcid
+
+    with pytest.raises(ValidationError):
+        Dummy(field="NotAGroup")

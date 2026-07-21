@@ -37,6 +37,17 @@
   removed implicit (`variablePerColumn`) schema. Signatures, field names, and the serialized
   `config.json` are unchanged.
 - Single-entity StatVars don't emit `observationProperties` by default.
+- **Replaced `build_stat_var_groups_from_strings` with `resolve_group_paths`.** The old
+  function took an `MCFNodes` container and used `StatVarMCFNode.memberOf` as a scratch
+  field, holding a raw path such as `"Economic/Employment"` until it was overwritten with
+  the resolved group dcid. That is why `memberOf` could not be validated. `resolve_group_paths`
+  works on the path strings alone and returns the resolved dcid per path plus the
+  `StatVarGroupMCFNode` objects, so a node is never constructed with an invalid `memberOf`.
+  `csv_metadata_to_nodes` gained `parse_groups` and `group_namespace` and does the resolution
+  between reading the CSV and building the nodes. `CustomDataManager.add_variables_to_mcf_from_csv`
+  is unchanged.
+- `rename_variable` normalizes a bare `old_name`/`new_name` to `dcid:<token>`, the same rule
+  `add_variable_to_mcf` applies to `Node`.
 
 ### Fixed
 - `rename_variable` left the `MCFNodes` lookup index keyed by the old name, so
@@ -61,13 +72,30 @@
   already applied at the builder level) and reject anything empty or whitespace-bearing.
   A non-string value now raises `ValidationError` rather than being accepted silently.
   This is a behaviour change for anyone passing a bare token to one of these fields today
-  and relying on it staying bare. The group/peer-group/topic variants
-  (`GroupDcidOrListGroupDcid` and friends) have the same gap and are not fixed here.
-  `memberOf`'s use as a scratch field in `build_stat_var_groups_from_strings` needs sorting
-  out first, and it is tracked separately. Two fields therefore stay unguarded:
-  `StatVarMCFNode.memberOf`, and `TopicMCFNode.relevantVariable`, whose type is a union of
-  the fixed and unfixed variants, so a value the fixed branch rejects still validates
-  through an unfixed one. `StatVarMCFNode.relevantVariable` is unaffected and is fixed.
+  and relying on it staying bare.
+- `GroupDcidOrListGroupDcid` had the same `PlainValidator` bypass, so `StatVarMCFNode.memberOf`
+  accepted any string and wrote it to the MCF verbatim. It now enforces the `GroupDcid`
+  pattern, which requires a `g/` segment, so `memberOf="dcid:myGroup"` now raises and
+  `memberOf="one/g/economy"` is minted to `dcid:one/g/economy`. `TopicMCFNode.relevantVariable`
+  was a union of the fixed type with two unfixed ones, so a value the fixed branch rejected
+  still validated through a permissive branch. Its type is now plain `DcidOrListDcid`, which
+  accepts exactly the same values the union was meant to allow, group and topic dcids included.
+- `MCFNode` now validates on assignment (`validate_assignment=True`). Restoring the patterns
+  above would otherwise guard construction only, and the value that reaches the MCF file is
+  often written by assignment, so `node.memberOf = "garbage"` and `MCFNodes.rename` could
+  still put an invalid dcid in the output. Both now raise. Assigned values are also cleaned
+  of line breaks and trailing spaces the way constructed ones are, for declared fields and
+  for the extra keys that carry arbitrary MCF properties.
+- `csv_metadata_to_nodes` returned an `MCFNodes` whose lookup index did not include the
+  StatVarGroup nodes it appended, so a later `remove` or `rename` of a group node on the
+  returned container raised "not found".
+- `add_variables_to_mcf_from_csv(parse_groups=True)` raised `AttributeError` when the CSV had
+  no `memberOf` column, or when a row left it blank. The missing column now raises a
+  `ValueError` naming it, and a blank value leaves that node's `memberOf` unset.
+- A group path with a whitespace-only segment, such as `"Economic/\t/Health"`, minted a group
+  whose dcid ended in a bare `g/` with no slug. Only `/` and spaces were stripped, so a tab or
+  line break survived the split and `to_camelCase` reduced it to an empty slug. Such segments
+  are now dropped.
 
 ### Removed
 - `add_implicit_schema_file` method on `CustomDataManager`.
@@ -83,6 +111,11 @@
   `CLOUD_SERVICE_REGION`, `CLOUD_RUN_SERVICE_NAME`, and `DATACOMMONS_SERVICE_IMAGE`.
 - **BREAKING**: `entity` key on `ColumnMappings`. Use `observationAbout` for single-entity data or
   `custom:<name>` for multi-entity dimensions.
+- The `PeerGroupDcidOrListPeerGroupDcid` and `TopicDcidOrListTopicDcid` type aliases, and the
+  `TopicDcid` they wrapped. `PeerGroupDcidOrListPeerGroupDcid` and `TopicDcid` were never
+  referenced by any field, which is how the bypass in them went unnoticed.
+  `TopicDcidOrListTopicDcid` was the permissive member of `TopicMCFNode.relevantVariable`'s
+  union, and nothing references it now that the union has collapsed.
 
 **Migration:**
 - Replace `add_implicit_schema_file` calls with `add_input_file` and supply a
@@ -95,6 +128,12 @@
 - Rename `ExplicitSchemaFile` → `InputFile` and `add_explicit_schema_file` → `add_input_file`.
   Names only; arguments and behaviour are unchanged.
 - Rename `export_mfc_file` → `export_mcf_file`.
+- Check any `memberOf` value you pass to `add_variable_to_mcf` or supply in a StatVar CSV. It
+  must now resolve to a group dcid containing `g/`, for example `one/g/economy` or
+  `dcid:one/g/economy`. A value such as `dcid:economy` is rejected instead of being written to
+  the MCF as-is.
+- Replace direct calls to `build_stat_var_groups_from_strings` with either
+  `csv_metadata_to_nodes(..., parse_groups=True, group_namespace=...)` or `resolve_group_paths`.
 
 ## [0.1.1] - 2026-02-19
 

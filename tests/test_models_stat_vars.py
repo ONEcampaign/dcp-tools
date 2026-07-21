@@ -79,12 +79,12 @@ def test_rows_to_stat_var_nodes_parses_spreadsheet_lists_no_quotes():
         {
             "Node": ["dcid:n3"],
             "name": ["Var"],
-            "memberOf": ['["dcid:oneId", "dcid:twoId"]'],
+            "memberOf": ['["dcid:g/oneId", "dcid:g/twoId"]'],
         }
     )
     nodes = _rows_to_stat_var_nodes(df)
     mcf = nodes.nodes[0].mcf
-    assert "memberOf: dcid:oneId, dcid:twoId" in mcf
+    assert "memberOf: dcid:g/oneId, dcid:g/twoId" in mcf
 
 
 # --- observationProperties / relevantVariable normalize bare tokens (regression for #126) ---

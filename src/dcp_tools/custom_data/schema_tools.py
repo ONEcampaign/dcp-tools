@@ -121,8 +121,9 @@ def resolve_group_paths(
 
     Args:
         paths: Raw slash-separated group path strings, one per StatVar. Each path
-            has a leading '-' stripped and '/' and whitespace stripped from both
-            ends before being split; empty segments are dropped.
+            has line breaks removed, a leading '-' stripped, and '/' and whitespace
+            stripped from both ends before being split; empty and whitespace-only
+            segments are dropped.
         group_namespace: The namespace under which group dcids are minted (e.g.,
             "one"). The resulting dcids have the form
             "dcid:{group_namespace}/g/{groupSlug}".
@@ -145,8 +146,13 @@ def resolve_group_paths(
         if raw in resolved:
             continue
 
-        cleaned = raw.lstrip("-").strip("/ ")
-        parts = [p for p in cleaned.split("/") if p]
+        # Strip line breaks and trailing spaces first. Group paths used to reach the
+        # resolver through `StatVarMCFNode(memberOf=...)`, which cleaned them on the
+        # way in; resolving before construction skips that. Segments that are only
+        # whitespace are dropped too, or `to_camelCase` yields an empty slug and the
+        # path mints a group whose dcid ends in a bare "g/".
+        cleaned = MCFNode._clean_value(raw).lstrip("-").strip("/ ")
+        parts = [p for p in cleaned.split("/") if p.strip()]
         if not parts:
             continue
         slug_parts = [to_camelCase(part) for part in parts]

@@ -53,7 +53,9 @@
   `add_variables_to_mcf_from_csv` is unchanged.
 - Fixed `add_variables_to_mcf_from_csv(parse_groups=True)` raising `AttributeError` when the
   CSV had no `memberOf` column or a row left it blank. The missing column now raises a clear
-  `ValueError`, and a blank value leaves that node's `memberOf` unset.
+  `ValueError`, and a blank value leaves that node's `memberOf` unset. A group path holding a
+  whitespace-only segment, such as a stray tab between two slashes, also used to mint a group
+  with an empty name; those segments are now dropped.
 - **Breaking:** re-pointed the data load flow at the DCP v1.1.0 prep job. `run_data_load`
   now triggers the preprocessing job. The `redeploy` command and `redeploy_service` are removed.
   Load-job settings are renamed: `CLOUD_RUN_JOB_NAME` → `LOAD_JOB_NAME`,

@@ -135,6 +135,30 @@ def test_resolve_group_paths_cleans_raw_path():
     assert resolved["-Economic// Employment / "] == "dcid:ns/g/employment"
 
 
+@pytest.mark.parametrize(
+    ("raw", "expected"),
+    [
+        ("Economic/\t", ["dcid:ns/g/economic"]),
+        ("Economic/\t/Health", ["dcid:ns/g/economic", "dcid:ns/g/health"]),
+        ("Economic/Health\n", ["dcid:ns/g/economic", "dcid:ns/g/health"]),
+        ("Eco\nnomic", ["dcid:ns/g/economic"]),
+    ],
+)
+def test_resolve_group_paths_drops_whitespace_only_segments(raw, expected):
+    """A segment that is only whitespace mints no group.
+
+    `.strip("/ ")` does not remove a tab or newline, so such a segment used to
+    survive and `to_camelCase` reduced it to an empty slug, minting a group whose
+    dcid ends in a bare "g/". These paths reached the resolver through
+    `StatVarMCFNode(memberOf=...)` before groups were resolved ahead of node
+    construction, and were cleaned on the way in.
+    """
+    resolved, groups = resolve_group_paths([raw], group_namespace="ns")
+
+    assert [g.Node for g in groups] == expected
+    assert resolved[raw] == expected[-1]
+
+
 def test_resolve_group_paths_omits_path_with_no_segments():
     """A path that cleans down to nothing (e.g. just '-' or '/') mints no group
     and is omitted from the resolved mapping."""

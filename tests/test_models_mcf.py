@@ -1,3 +1,5 @@
+from enum import StrEnum
+
 import pytest
 from pydantic import ValidationError
 
@@ -167,7 +169,8 @@ def test_stat_type_survives_assignment():
     fields the assignment did not touch. Because StatType is a StrEnum, the old
     `_clean_value` matched its `isinstance(value, str)` branch and `value.replace(...)`
     returned a plain str, silently degrading the enum member on any unrelated
-    assignment. `_clean_value` now leaves Enum members untouched."""
+    assignment. `_clean_value` now keeps an Enum member that cleaning would not
+    change."""
     sv = StatVarMCFNode(Node="dcid:v1")
     assert isinstance(sv.statType, StatType)
 
@@ -175,6 +178,21 @@ def test_stat_type_survives_assignment():
 
     assert isinstance(sv.statType, StatType)
     assert sv.statType == StatType.MEASURED_VALUE
+
+
+def test_enum_carrying_a_line_break_is_still_cleaned():
+    """The Enum carve-out above must not become a way to smuggle a line break into
+    the MCF. A StrEnum member whose value would change under cleaning is cleaned to
+    a plain string, since keeping it would split one property across two lines and
+    corrupt the file."""
+
+    class Dirty(StrEnum):
+        BAD = "line\nbreak  "
+
+    node = MCFNode(Node="dcid:n1", typeOf="dcid:T1", custom=Dirty.BAD)
+
+    assert node.custom == "linebreak"
+    assert "custom: linebreak\n" in node.mcf
 
 
 def test_mcfnodes_rename_rejected_leaves_index_intact():

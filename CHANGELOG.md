@@ -92,6 +92,10 @@
 - `add_variables_to_mcf_from_csv(parse_groups=True)` raised `AttributeError` when the CSV had
   no `memberOf` column, or when a row left it blank. The missing column now raises a
   `ValueError` naming it, and a blank value leaves that node's `memberOf` unset.
+- A group path with a whitespace-only segment, such as `"Economic/\t/Health"`, minted a group
+  whose dcid ended in a bare `g/` with no slug. Only `/` and spaces were stripped, so a tab or
+  line break survived the split and `to_camelCase` reduced it to an empty slug. Such segments
+  are now dropped.
 
 ### Removed
 - `add_implicit_schema_file` method on `CustomDataManager`.

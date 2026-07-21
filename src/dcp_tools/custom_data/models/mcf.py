@@ -45,21 +45,29 @@ class MCFNode(BaseModel):
     # (which assigns `.Node`), not just on construction.
     model_config = ConfigDict(extra="allow", validate_assignment=True)
 
+    @staticmethod
+    def _clean_str(value: str) -> str:
+        return value.replace("\n", "").replace("\r", "").rstrip()
+
     @classmethod
     def _clean_value(cls, value: Any) -> Any:
         """Recursively remove line breaks and trailing spaces from strings.
 
-        Enum members (e.g. StatType) are returned untouched. They are not plain
-        strings even when their base class is str: `value.replace(...)` on a
-        StrEnum member returns a plain `str`, which would silently degrade the
-        enum to its value. That only matters under validate_assignment, where this
-        also runs on assignment (see `__setattr__` below) over an
-        already-constructed value.
+        An Enum member survives cleaning that would not change it. A StrEnum member
+        is a `str`, so `value.replace(...)` returns a plain `str` and silently
+        degrades the member to its value. That matters under validate_assignment,
+        where this also runs on assignment (see `__setattr__` below) over
+        already-constructed values, and it would demote a `StatType` on any
+        unrelated assignment. A member whose value does carry a line break is still
+        cleaned, since keeping it would put a line break mid-node in the MCF file.
         """
         if isinstance(value, Enum):
+            if isinstance(value, str):
+                cleaned = cls._clean_str(value)
+                return value if cleaned == str(value) else cleaned
             return value
         if isinstance(value, str):
-            return value.replace("\n", "").replace("\r", "").rstrip()
+            return cls._clean_str(value)
         if isinstance(value, list):
             return [cls._clean_value(v) for v in value]
         if isinstance(value, dict):

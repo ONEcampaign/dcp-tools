@@ -2,11 +2,19 @@
 
 ## v1.0.0 (in development)
 - Stable release of the `dcp-tools` package
-- **Breaking:** removed implicit-schema support — `add_implicit_schema_file`,
-  `add_variable_to_config`, and the `ImplicitSchemaFile` / `ObservationProperties` / `Variable`
-  model classes are gone. Loading a legacy `variablePerColumn` config now raises `ValueError`.
-  Migrate by using `add_explicit_schema_file` with `columnMappings`; see
+- **Breaking:** removed support for the second, implicit import mechanism —
+  `add_implicit_schema_file`, `add_variable_to_config`, and the `ImplicitSchemaFile` /
+  `Variable` model classes are gone (`ObservationProperties` is retained, but now carries
+  file-level constants on `InputFile`). Loading a legacy
+  `variablePerColumn` config now raises `ValueError`. Migrate by using `add_input_file` with
+  `columnMappings`; see
   [Data Commons custom data docs](https://docs.datacommons.org/custom_dc/custom_data.html).
+- **Breaking:** with a single import format left, the input-file API drops the "explicit"
+  qualifier: `ExplicitSchemaFile` is now `InputFile` and `add_explicit_schema_file` is now
+  `add_input_file`. Arguments and the generated `config.json` are unchanged.
+- **Breaking:** `export_mfc_file` is now spelled `export_mcf_file`.
+- Fixed `rename_variable`, which left the renamed node unreachable by its new name. A
+  following `remove_indicator` raised "not found" until you passed the pre-rename name.
 - **Breaking:** re-pointed the data load flow at the DCP v1.1.0 prep job. `run_data_load`
   now triggers the preprocessing job. The `redeploy` command and `redeploy_service` are removed.
   Load-job settings are renamed: `CLOUD_RUN_JOB_NAME` → `LOAD_JOB_NAME`,

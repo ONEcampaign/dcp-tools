@@ -13,7 +13,7 @@ from dcp_tools.custom_data.data_management import (
 from dcp_tools.custom_data.models.config_file import Config
 from dcp_tools.custom_data.models.data_files import (
     ColumnMappings,
-    ExplicitSchemaFile,
+    InputFile,
 )
 from dcp_tools.custom_data.models.schema_nodes import PropertyMCFNode
 
@@ -103,7 +103,7 @@ def test_validate_provenances_raises_for_unknown_provenance(tmp_path):
     manager = CustomDataManager()
     # Register a file with a provenance that has no corresponding MCF node
     manager._config.inputFiles.append(
-        ExplicitSchemaFile(
+        InputFile(
             filename="x.csv",
             provenance="dcid:provenance/ghost",
             columnMappings=ColumnMappings(),
@@ -165,9 +165,9 @@ def test_import_name_set_and_export_default(tmp_path):
     assert Config.from_json(str(out3 / "config.json")).importName == "toad_data"
 
 
-def test_add_explicit_schema_file_registration_and_override(tmp_path):
+def test_add_input_file_registration_and_override(tmp_path):
     """
-    Verifies explicit schema file registration in config and data,
+    Verifies input file registration in config and data,
     and override/error behaviors.
     """
     manager = CustomDataManager()
@@ -175,62 +175,60 @@ def test_add_explicit_schema_file_registration_and_override(tmp_path):
     manager.add_provenance(name="p1", url="http://prov", source="s1")
 
     df3 = pd.DataFrame({"entity": ["e1"], "Year": [2020], "Value": [100]})
-    manager.add_explicit_schema_file(
-        file_name="exp.csv",
+    manager.add_input_file(
+        file_name="input.csv",
         provenance="p1",
         data=df3,
         columnMappings={"observationAbout": "entity", "date": "Year", "value": "Value"},
     )
-    assert any(e.filename == "exp.csv" for e in manager._config.inputFiles)
-    assert "exp.csv" in manager._data
+    assert any(e.filename == "input.csv" for e in manager._config.inputFiles)
+    assert "input.csv" in manager._data
 
     with pytest.raises(ValueError):
-        manager.add_explicit_schema_file(
-            file_name="exp.csv",
+        manager.add_input_file(
+            file_name="input.csv",
             provenance="p1",
         )
 
     df_new = pd.DataFrame({"entity": ["e2"], "Year": [2021], "Value": [200]})
-    manager.add_explicit_schema_file(
-        file_name="exp.csv",
+    manager.add_input_file(
+        file_name="input.csv",
         provenance="p1",
         data=df_new,
         override=True,
     )
-    pd.testing.assert_frame_equal(manager._data["exp.csv"], df_new)
+    pd.testing.assert_frame_equal(manager._data["input.csv"], df_new)
 
     df4 = pd.DataFrame({"X": [1]})
     with pytest.raises(ValueError):
         manager.add_data(df4, "no_file.csv")
 
 
-def test_add_explicit_schema_file_without_column_mappings():
+def test_add_input_file_without_column_mappings():
     """Ensure missing columnMappings defaults to empty dict without error."""
     manager = CustomDataManager()
     manager.add_source(name="s1", url="http://src")
     manager.add_provenance(name="p1", url="http://prov", source="s1")
 
     df = pd.DataFrame({"A": [1]})
-    manager.add_explicit_schema_file(file_name="exp.csv", provenance="p1", data=df)
+    manager.add_input_file(file_name="input.csv", provenance="p1", data=df)
 
-    entry = next(e for e in manager._config.inputFiles if e.filename == "exp.csv")
+    entry = next(e for e in manager._config.inputFiles if e.filename == "input.csv")
     mappings = entry.columnMappings
     assert mappings.model_dump(exclude_none=True) == {}
 
 
-def test_add_explicit_schema_file_pattern_xor_filename():
-    """add_explicit_schema_file raises when neither or both of file_name/pattern are given."""
+def test_add_input_file_pattern_xor_filename():
+    """add_input_file raises when neither or both of file_name/pattern are given."""
     manager = CustomDataManager()
     manager.add_source(name="s1", url="http://src")
     manager.add_provenance(name="p1", url="http://prov", source="s1")
 
     with pytest.raises(ValueError, match="Exactly one"):
-        manager.add_explicit_schema_file(provenance="p1")
+        manager.add_input_file(provenance="p1")
 
     with pytest.raises(ValueError, match="Exactly one"):
-        manager.add_explicit_schema_file(
-            file_name="a.csv", pattern="a*", provenance="p1"
-        )
+        manager.add_input_file(file_name="a.csv", pattern="a*", provenance="p1")
 
 
 def test_export_methods(tmp_path):
@@ -241,7 +239,7 @@ def test_export_methods(tmp_path):
     manager.add_source(name="s1", url="http://src")
     manager.add_provenance(name="p1", url="http://prov", source="s1")
     df = pd.DataFrame({"A": [1]})
-    manager.add_explicit_schema_file(
+    manager.add_input_file(
         file_name="data.csv",
         provenance="p1",
         data=df,
@@ -259,7 +257,7 @@ def test_export_methods(tmp_path):
     data_file = tmp_path / "data.csv"
     assert data_file.exists()
 
-    manager.export_mfc_file(tmp_path, mcf_file_name="custom_nodes.mcf")
+    manager.export_mcf_file(tmp_path, mcf_file_name="custom_nodes.mcf")
     mcf_file = tmp_path / "custom_nodes.mcf"
     assert mcf_file.exists()
     assert "Node: dcid:vX" in mcf_file.read_text()
@@ -308,7 +306,7 @@ def test_custom_data_manager_repr():
     manager.add_source(name="s1", url="http://src")
     manager.add_provenance(name="p1", url="http://prov", source="s1")
     df = pd.DataFrame({"A": [1]})
-    manager.add_explicit_schema_file(
+    manager.add_input_file(
         file_name="f.csv",
         provenance="p1",
         data=df,
@@ -329,7 +327,7 @@ def test_remove_indicator():
     manager.add_provenance(name="p1", url="http://prov", source="s1")
 
     df = pd.DataFrame({"A": [1]})
-    manager.add_explicit_schema_file(
+    manager.add_input_file(
         file_name="a.csv",
         provenance="p1",
         data=df,
@@ -359,7 +357,7 @@ def _make_cfg(
     vertical_specs_file: str | None = None,
 ):
     input_files = [
-        ExplicitSchemaFile(
+        InputFile(
             filename=key,
             provenance=prov,
             columnMappings=ColumnMappings(),
@@ -480,10 +478,10 @@ def test_export_all_includes_vertical_specs(tmp_path):
     assert config["verticalSpecsFile"] == DEFAULT_VERTICAL_SPECS_NAME
 
 
-def test_add_explicit_schema_file_observation_properties():
+def test_add_input_file_observation_properties():
     manager = CustomDataManager()
 
-    manager.add_explicit_schema_file(
+    manager.add_input_file(
         "data.csv",
         provenance="prov1",
         columnMappings={"observationAbout": "Country", "date": "Year"},
@@ -498,7 +496,7 @@ def test_add_explicit_schema_file_observation_properties():
     assert entry.columnMappings is not None
 
     # Omitting the kwarg leaves observationProperties absent (None)
-    manager.add_explicit_schema_file(
+    manager.add_input_file(
         "other.csv",
         provenance="prov1",
     )
@@ -655,6 +653,34 @@ def test_rename_variable_mcf_only():
         manager.rename_variable("dcid:v2", "dcid:v3")
 
 
+def test_rename_variable_keeps_lookup_index_consistent():
+    """A renamed node is addressable by its new name, and its old name is freed."""
+    manager = CustomDataManager()
+    manager.add_variable_to_mcf(Node="dcid:v1", name="Var1")
+    manager.rename_variable("dcid:v1", "dcid:v2")
+
+    # The old name no longer resolves...
+    with pytest.raises(ValueError):
+        manager.remove_indicator("dcid:v1")
+
+    # ...and the new one does.
+    manager.remove_indicator("dcid:v2")
+    for nodes in manager._mcf_nodes.values():
+        assert all(n.Node not in {"dcid:v1", "dcid:v2"} for n in nodes.nodes)
+
+
+def test_rename_variable_frees_the_old_name_for_reuse():
+    """After a rename the old name is available again, and both nodes survive."""
+    manager = CustomDataManager()
+    manager.add_variable_to_mcf(Node="dcid:v1", name="Var1")
+    manager.rename_variable("dcid:v1", "dcid:v2")
+
+    manager.add_variable_to_mcf(Node="dcid:v1", name="A different Var1")
+
+    stored = {n.Node for nodes in manager._mcf_nodes.values() for n in nodes.nodes}
+    assert {"dcid:v1", "dcid:v2"} <= stored
+
+
 def test_validate_all_input_files_have_data(tmp_path):
     """Verify the optional data-completeness validation on export_all and the standalone method."""
     manager = CustomDataManager()
@@ -664,12 +690,12 @@ def test_validate_all_input_files_have_data(tmp_path):
     df = pd.DataFrame({"A": [1, 2]})
 
     # Register one file WITH data and one WITHOUT data
-    manager.add_explicit_schema_file(
+    manager.add_input_file(
         file_name="with_data.csv",
         provenance="p1",
         data=df,
     )
-    manager.add_explicit_schema_file(
+    manager.add_input_file(
         file_name="no_data.csv",
         provenance="p1",
     )
@@ -702,7 +728,7 @@ def test_export_all_requires_provenance_mcf(tmp_path):
     manager = CustomDataManager()
     manager.add_source(name="s1", url="http://src")
     manager.add_provenance(name="p1", url="http://prov", source="s1")
-    manager.add_explicit_schema_file(
+    manager.add_input_file(
         file_name="data.csv", provenance="p1", data=pd.DataFrame({"A": [1]})
     )
 
@@ -722,7 +748,7 @@ def test_export_all_requires_linked_source_mcf(tmp_path):
     manager = CustomDataManager()
     manager.add_source(name="s1", url="http://src", mcf_file_name="sources.mcf")
     manager.add_provenance(name="p1", url="http://prov", source="s1")
-    manager.add_explicit_schema_file(
+    manager.add_input_file(
         file_name="data.csv", provenance="p1", data=pd.DataFrame({"A": [1]})
     )
 
@@ -737,7 +763,7 @@ def test_export_all_requires_linked_source_mcf(tmp_path):
     assert (tmp_path / "sources.mcf").exists()
 
 
-def test_loading_legacy_implicit_config_raises_with_message():
+def test_loading_legacy_variable_per_column_config_raises_with_message():
     """Loading a JSON config with variablePerColumn format raises ValueError with a clear message."""
     cfg = {
         "inputFiles": {

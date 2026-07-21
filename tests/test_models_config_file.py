@@ -5,35 +5,35 @@ import pytest
 from dcp_tools.custom_data.models.config_file import Config
 from dcp_tools.custom_data.models.data_files import (
     ColumnMappings,
-    ExplicitSchemaFile,
+    InputFile,
     ObservationProperties,
 )
 
 
 def test_config_validators_raise_on_invalid_input_files():
     """
-    Validates that a non-CSV filename causes an error on ExplicitSchemaFile construction.
+    Validates that a non-CSV filename causes an error on InputFile construction.
     """
     with pytest.raises(ValueError):
-        ExplicitSchemaFile(
+        InputFile(
             filename="data.txt",
             provenance="p1",
             columnMappings=ColumnMappings(),
         )
 
 
-def test_explicit_schema_file_filename_pattern_xor():
+def test_input_file_filename_pattern_xor():
     """Exactly one of filename/pattern must be set; providing both or neither raises."""
     # Neither provided
     with pytest.raises(ValueError):
-        ExplicitSchemaFile(
+        InputFile(
             provenance="p1",
             columnMappings=ColumnMappings(),
         )
 
     # Both provided
     with pytest.raises(ValueError):
-        ExplicitSchemaFile(
+        InputFile(
             filename="a.csv",
             pattern="a*",
             provenance="p1",
@@ -41,40 +41,40 @@ def test_explicit_schema_file_filename_pattern_xor():
         )
 
     # filename only — valid
-    ef = ExplicitSchemaFile(
+    by_filename = InputFile(
         filename="a.csv",
         provenance="p1",
         columnMappings=ColumnMappings(),
     )
-    assert ef.filename == "a.csv"
-    assert ef.pattern is None
+    assert by_filename.filename == "a.csv"
+    assert by_filename.pattern is None
 
     # pattern only — valid (no .csv check on pattern)
-    ep = ExplicitSchemaFile(
+    by_pattern = InputFile(
         pattern="data_*",
         provenance="p1",
         columnMappings=ColumnMappings(),
     )
-    assert ep.pattern == "data_*"
-    assert ep.filename is None
+    assert by_pattern.pattern == "data_*"
+    assert by_pattern.filename is None
 
 
-def test_explicit_schema_file_provenance_minted():
-    """ExplicitSchemaFile mints the provenance to dcid:provenance/<name>."""
-    ef = ExplicitSchemaFile(
+def test_input_file_provenance_minted():
+    """InputFile mints the provenance to dcid:provenance/<name>."""
+    entry = InputFile(
         filename="a.csv",
         provenance="myProv",
         columnMappings=ColumnMappings(),
     )
-    assert ef.provenance == "dcid:provenance/myProv"
+    assert entry.provenance == "dcid:provenance/myProv"
 
     # Already-minted provenance is returned verbatim
-    ef2 = ExplicitSchemaFile(
+    already_minted = InputFile(
         filename="b.csv",
         provenance="dcid:provenance/myProv",
         columnMappings=ColumnMappings(),
     )
-    assert ef2.provenance == "dcid:provenance/myProv"
+    assert already_minted.provenance == "dcid:provenance/myProv"
 
 
 def test_config_round_trips_import_name(tmp_path):
@@ -143,22 +143,22 @@ def test_config_accepts_data_download_url_and_vertical_specs_file(tmp_path):
     assert dumped["verticalSpecsFile"] == "vert.json"
 
 
-def test_explicit_schema_file_observation_properties_roundtrip():
+def test_input_file_observation_properties_roundtrip():
     """observationProperties coexists with columnMappings; custom keys survive dump+reload."""
-    ef = ExplicitSchemaFile(
+    entry = InputFile(
         filename="data.csv",
         provenance="prov1",
         columnMappings=ColumnMappings(observationAbout="Country", date="Year"),
         observationProperties=ObservationProperties(unit="USD", customProp="x"),
     )
-    dumped = ef.model_dump(exclude_none=True, by_alias=True)
+    dumped = entry.model_dump(exclude_none=True, by_alias=True)
     assert "observationProperties" in dumped
     assert dumped["observationProperties"]["unit"] == "USD"
     assert dumped["observationProperties"]["customProp"] == "x"
     assert "columnMappings" in dumped
 
     # Reload from the dumped dict
-    reloaded = ExplicitSchemaFile.model_validate(dumped)
+    reloaded = InputFile.model_validate(dumped)
     assert reloaded.observationProperties is not None
     assert reloaded.observationProperties.unit == "USD"
     assert reloaded.observationProperties.__pydantic_extra__["customProp"] == "x"

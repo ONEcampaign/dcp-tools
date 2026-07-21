@@ -78,7 +78,7 @@ def _merge_input_files(existing: Config, new: Config, policy: DuplicatePolicy) -
     for entry in new.inputFiles:
         key = entry.filename or entry.pattern
         if key is None:
-            # Should not happen: ExplicitSchemaFile enforces filename XOR pattern.
+            # Should not happen: InputFile enforces filename XOR pattern.
             continue
         if key not in existing_by_key:
             logger.info(f"Added input file '{key}'")

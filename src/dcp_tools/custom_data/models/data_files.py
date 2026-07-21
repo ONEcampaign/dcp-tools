@@ -110,7 +110,7 @@ class ColumnMappings(BaseModel):
 
 
 class ObservationProperties(BaseModel):
-    """File-level constant observation properties for an explicit-schema input file.
+    """File-level constant observation properties for an input file.
 
     Applied as constants to every observation in the file (the only working route to a
     constant ``unit``/``scalingFactor``/``measurementMethod``/``observationPeriod``). Keys
@@ -132,8 +132,8 @@ class ObservationProperties(BaseModel):
     model_config = ConfigDict(extra="allow")
 
 
-class ExplicitSchemaFile(BaseModel):
-    """Representation of an input file using the explicit (variable-per-row) schema.
+class InputFile(BaseModel):
+    """Representation of an input file in variable-per-row form (one observation per row).
 
     Exactly one of ``filename`` or ``pattern`` must be set. The ``.csv``-suffix
     check applies to ``filename`` only; ``pattern`` entries are exempt.
@@ -151,7 +151,7 @@ class ExplicitSchemaFile(BaseModel):
             the equivalent names for each column.
         observationProperties: File-level constant observation properties applied to every
             observation (constants such as unit or measurementMethod). Optional.
-        data_format: Format of the data (variable per row).
+        data_format: Format of the data (variable per row, one observation per row).
             This attribute is represented as "format" in the JSON.
     """
 
@@ -173,7 +173,7 @@ class ExplicitSchemaFile(BaseModel):
         return mint_dcid(prefix="provenance", name=value)
 
     @model_validator(mode="after")
-    def _validate_filename_or_pattern(self) -> "ExplicitSchemaFile":
+    def _validate_filename_or_pattern(self) -> "InputFile":
         if (self.filename is None) == (self.pattern is None):
             raise ValueError("Exactly one of 'filename' or 'pattern' must be set.")
         if self.filename is not None and not self.filename.lower().endswith(".csv"):

@@ -3,7 +3,7 @@ from typing import Any
 
 from pydantic import BaseModel, ConfigDict, model_validator
 
-from dcp_tools.custom_data.models.data_files import ExplicitSchemaFile
+from dcp_tools.custom_data.models.data_files import InputFile
 
 
 class Config(BaseModel):
@@ -41,7 +41,7 @@ class Config(BaseModel):
     svHierarchyPropsBlocklist: list[str] | None = None
     dataDownloadUrl: list[str] | None = None
     verticalSpecsFile: str | None = None
-    inputFiles: list[ExplicitSchemaFile]
+    inputFiles: list[InputFile]
 
     # model configuration - populate by name (for the "format" field alias)
     # and forbid extra fields
@@ -54,8 +54,8 @@ class Config(BaseModel):
 
     @model_validator(mode="before")
     @classmethod
-    def _reject_implicit_schema_files(cls, data: Any) -> Any:
-        """Reject legacy implicit-schema (variablePerColumn) inputFiles with a clear error.
+    def _reject_legacy_variable_per_column(cls, data: Any) -> Any:
+        """Reject legacy 'variablePerColumn' inputFiles with a clear migration error.
 
         Handles both the legacy dict format and the current list format for ``inputFiles``
         so that the friendly migration message fires before any type-coercion error.
@@ -64,18 +64,18 @@ class Config(BaseModel):
             input_files = data.get("inputFiles") or {}
             if isinstance(input_files, dict):
                 # Legacy dict format — use the dict key in the error message so callers
-                # can identify the offending file (e.g. test_loading_legacy_implicit_config).
+                # can identify the offending file.
                 for key, entry in input_files.items():
                     if isinstance(entry, dict) and "variablePerColumn" in {
                         entry.get("format"),
                         entry.get("data_format"),
                     }:
                         raise ValueError(
-                            f"Config contains implicit-schema file '{key}': "
-                            "format 'variablePerColumn' is no longer supported. "
-                            "Migrate to explicit schema before loading. See "
-                            "https://docs.datacommons.org/custom_dc/custom_data.html "
-                            "for the explicit-schema format."
+                            f"Config contains input file '{key}' in the legacy "
+                            "'variablePerColumn' format, which is no longer supported. "
+                            "Convert the file to the variable-per-row format (one "
+                            "observation per row) with a 'columnMappings' block. See "
+                            "https://docs.datacommons.org/custom_dc/custom_data.html"
                         )
             elif isinstance(input_files, list):
                 # Current list format — key off filename or pattern for the message.
@@ -88,11 +88,11 @@ class Config(BaseModel):
                             entry.get("filename") or entry.get("pattern") or "<unknown>"
                         )
                         raise ValueError(
-                            f"Config contains implicit-schema file '{key}': "
-                            "format 'variablePerColumn' is no longer supported. "
-                            "Migrate to explicit schema before loading. See "
-                            "https://docs.datacommons.org/custom_dc/custom_data.html "
-                            "for the explicit-schema format."
+                            f"Config contains input file '{key}' in the legacy "
+                            "'variablePerColumn' format, which is no longer supported. "
+                            "Convert the file to the variable-per-row format (one "
+                            "observation per row) with a 'columnMappings' block. See "
+                            "https://docs.datacommons.org/custom_dc/custom_data.html"
                         )
         return data
 

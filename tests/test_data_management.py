@@ -820,6 +820,19 @@ def test_column_mappings_round_trip_preserves_custom_prefix():
     assert result == mappings_dict
 
 
+@pytest.mark.parametrize(
+    "dimension_name", ["source country", "", None, " sourceCountry"]
+)
+def test_column_mappings_rejects_malformed_custom_dimension_names(dimension_name):
+    with pytest.raises(ValueError):
+        ColumnMappings(
+            variable="Var",
+            date="Year",
+            value="Val",
+            customDimensions={dimension_name: "Source"},
+        )
+
+
 # --- Schema node builder tests ---
 
 

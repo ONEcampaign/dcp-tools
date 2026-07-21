@@ -5,14 +5,14 @@ from pydantic import (
     BaseModel,
     ConfigDict,
     Field,
+    SerializerFunctionWrapHandler,
     StringConstraints,
     field_validator,
     model_serializer,
     model_validator,
 )
-from pydantic import SerializerFunctionWrapHandler
 
-from dcp_tools.custom_data.models.common import mint_dcid
+from dcp_tools.custom_data.models.common import CustomDimensionName, mint_dcid
 
 
 class MCFFileName(BaseModel):
@@ -77,7 +77,7 @@ class ColumnMappings(BaseModel):
         validation_alias=AliasChoices("observationAbout", "dcid:observationAbout"),
         serialization_alias="dcid:observationAbout",
     )
-    customDimensions: dict[str, str] = Field(
+    customDimensions: dict[CustomDimensionName, str] = Field(
         default_factory=dict,
     )
 

@@ -7,6 +7,9 @@
   CLI command. This triggers a load of specific imports rather than all imports.
 - Optional `LOAD_JOB_SERVICE_ACCOUNT` setting that sets which service account the load
   job impersonates. When unset, the caller's credentials are used.
+- Support for multi-entity observations using custom dimensions, each declared using
+  `custom:<name>` in `ColumnMappings` and a matching `dcid:<name>` in the StatVar's
+  `observationProperties`.
 
 ### Changed
 - **Renamed the package from `bblocks-datacommons-tools` to `dcp-tools`.** The import
@@ -24,6 +27,7 @@
   `"format": "variablePerColumn"` now raises a clear `ValueError` with a migration message
   instead of a generic Pydantic `ValidationError`.
 - `ExplicitSchemaFile` now rejects unknown keys (`extra="forbid"`).
+- Single-entity StatVars don't emit `observationProperties` by default.
 
 ### Removed
 - `add_implicit_schema_file` method on `CustomDataManager`.
@@ -34,6 +38,8 @@
   ingestion workflow.
 - Settings which are no longer used: `CLOUD_SQL_DB_NAME`, `CLOUD_SQL_REGION`,
   `CLOUD_SERVICE_REGION`, `CLOUD_RUN_SERVICE_NAME`, and `DATACOMMONS_SERVICE_IMAGE`.
+- **BREAKING**: `entity` key on `ColumnMappings`. Use `observationAbout` for single-entity data or
+  `custom:<name>` for multi-entity dimensions.
 
 **Migration:**
 - Replace `add_implicit_schema_file` calls with `add_explicit_schema_file` and supply a
@@ -42,6 +48,7 @@
 - Drop any `redeploy` calls, and update your settings: rename
   `CLOUD_RUN_JOB_NAME` → `LOAD_JOB_NAME` and `CLOUD_JOB_REGION` → `LOAD_JOB_REGION`, add
   `LOAD_JOB_SERVICE_ACCOUNT` if the job runs under an impersonated service account.
+- Replace `entity` on `ColumnMappings` with `observationAbout`.
 
 ## [0.1.1] - 2026-02-19
 

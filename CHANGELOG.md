@@ -27,8 +27,10 @@
   `"format": "variablePerColumn"` now raises a clear `ValueError` with a migration message
   instead of a generic Pydantic `ValidationError`.
 - `InputFile` now rejects unknown keys (`extra="forbid"`).
-- **Renamed `export_mfc_file` to `export_mcf_file`**, correcting a transposition in the
-  method name. The old spelling is gone; update any calls.
+- **Renamed `export_mfc_file` to `export_mcf_file` and `csv_metadata_to_mfc_file` to
+  `csv_metadata_to_mcf_file`**, correcting a transposition in both names
+  (`csv_metadata_to_mcf_file` is exported from the package root). The old spellings are
+  gone; update any calls.
 - **Renamed the input-file API now that there is a single import format.** The
   `ExplicitSchemaFile` model is now `InputFile`, and `CustomDataManager.add_explicit_schema_file`
   is now `add_input_file`. The "explicit schema" name only made sense as a contrast with the
@@ -40,6 +42,15 @@
 - `rename_variable` left the `MCFNodes` lookup index keyed by the old name, so
   `remove_indicator` raised "not found" for the renamed node and still resolved the old
   name. The rename now goes through a new `MCFNodes.rename`, which keeps the index in step.
+- `export_data`, `export_mcf_file`, and `export_vertical_specs` raised `OSError` when the
+  target file name (an `add_input_file` path, an `mcf_file_name`, or a `verticalSpecsFile`)
+  nested in a subdirectory that did not yet exist. Each now creates the parent directory
+  before writing.
+- `add_variable_to_mcf` did not normalize a bare `Node` to `dcid:<token>`, unlike the
+  schema-node builders, so a bare token raised a `ValidationError` there while working
+  everywhere else. It now goes through the same `ensure_dcid` normalization, as do its
+  `populationType`, `measuredProperty`, `measurementQualifier` and
+  `measurementDenominator` arguments, which had the same gap.
 
 ### Removed
 - `add_implicit_schema_file` method on `CustomDataManager`.

@@ -1,7 +1,7 @@
 # Getting started with `dcp-tools`
 
 This page walks you through the basic steps to install and start using 
-`bblocks-datacommonst-tools` to prepare and load the data for your custom instance.
+`bblocks-datacommons-tools` to prepare and load the data for your custom instance.
 
 ## About custom Data Commons instances
 

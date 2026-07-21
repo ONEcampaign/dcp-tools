@@ -8,6 +8,7 @@ import pytest
 from dcp_tools import CustomDataManager
 from dcp_tools.custom_data.data_management import (
     DEFAULT_GROUP_NAME,
+    DEFAULT_STATVAR_MCF_NAME,
     DEFAULT_VERTICAL_SPECS_NAME,
 )
 from dcp_tools.custom_data.models.config_file import Config
@@ -261,6 +262,68 @@ def test_export_methods(tmp_path):
     mcf_file = tmp_path / "custom_nodes.mcf"
     assert mcf_file.exists()
     assert "Node: dcid:vX" in mcf_file.read_text()
+
+
+def test_export_data_creates_missing_subdirectory(tmp_path):
+    """export_data creates the parent directory for a nested file_name."""
+    manager = CustomDataManager()
+    manager.add_source(name="S", url="http://s")
+    manager.add_provenance(name="P", url="http://p", source="S")
+    manager.set_includeInputSubdirs(True)
+    manager.add_input_file(
+        file_name="sub/gdp.csv",
+        provenance="P",
+        data=pd.DataFrame({"a": [1]}),
+        columnMappings={"value": "a"},
+    )
+
+    manager.export_data(tmp_path)
+
+    assert (tmp_path / "sub" / "gdp.csv").exists()
+
+
+def test_export_mcf_file_creates_missing_subdirectory(tmp_path):
+    """export_mcf_file creates the parent directory for a nested mcf_file_name."""
+    manager = CustomDataManager()
+    manager.add_variable_to_mcf(
+        Node="dcid:vX", name="VX", mcf_file_name="sub/custom_nodes.mcf"
+    )
+
+    manager.export_mcf_file(tmp_path, mcf_file_name="sub/custom_nodes.mcf")
+
+    assert (tmp_path / "sub" / "custom_nodes.mcf").exists()
+
+
+def test_export_vertical_specs_creates_missing_subdirectory(tmp_path):
+    """export_vertical_specs creates the parent directory for a nested verticalSpecsFile."""
+    manager = CustomDataManager()
+    manager.add_vertical_spec(
+        verticals=["PersonCountVertical"], file_name="sub/vertical_specs.json"
+    )
+
+    manager.export_vertical_specs(tmp_path)
+
+    assert (tmp_path / "sub" / "vertical_specs.json").exists()
+
+
+def test_export_all_writes_full_bundle_for_subdirectory_input_file(tmp_path):
+    """export_all writes the complete bundle when a file_name nests in a subdirectory."""
+    manager = CustomDataManager()
+    manager.set_includeInputSubdirs(True)
+    manager.add_source(name="S", url="http://s")
+    manager.add_provenance(name="P", url="http://p", source="S")
+    manager.add_input_file(
+        file_name="sub/gdp.csv",
+        provenance="P",
+        data=pd.DataFrame({"a": [1]}),
+        columnMappings={"value": "a"},
+    )
+
+    manager.export_all(tmp_path, mcf_file_names=["provenance.mcf"])
+
+    assert (tmp_path / "sub" / "gdp.csv").exists()
+    assert (tmp_path / "config.json").exists()
+    assert (tmp_path / "provenance.mcf").exists()
 
 
 def test_add_variable_group_to_mcf_and_override():
@@ -874,6 +937,47 @@ def test_column_mappings_rejects_malformed_custom_dimension_names(dimension_name
 
 
 # --- Schema node builder tests ---
+
+
+def test_add_variable_to_mcf_normalizes_bare_node():
+    """add_variable_to_mcf normalizes a bare Node to dcid:, matching the other builders."""
+    manager = CustomDataManager()
+    manager.add_variable_to_mcf(Node="StatVar", name="Variable Name")
+    node = manager._mcf_nodes[DEFAULT_STATVAR_MCF_NAME].nodes[0]
+    assert node.Node == "dcid:StatVar"
+
+
+def test_add_variable_to_mcf_normalizes_bare_reference_fields():
+    """The Dcid-typed reference kwargs accept bare tokens too, like Node."""
+    manager = CustomDataManager()
+    manager.add_variable_to_mcf(
+        Node="StatVar",
+        name="Variable Name",
+        populationType="Person",
+        measuredProperty="count",
+        measurementQualifier="Commitment",
+        measurementDenominator="Area",
+    )
+    node = manager._mcf_nodes[DEFAULT_STATVAR_MCF_NAME].nodes[0]
+    assert node.populationType == "dcid:Person"
+    assert node.measuredProperty == "dcid:count"
+    assert node.measurementQualifier == "dcid:Commitment"
+    assert node.measurementDenominator == "dcid:Area"
+
+
+def test_add_variable_to_mcf_passes_prefixed_reference_fields_through():
+    """Already dcid:-prefixed values are not double-prefixed."""
+    manager = CustomDataManager()
+    manager.add_variable_to_mcf(
+        Node="dcid:StatVar",
+        name="Variable Name",
+        populationType="dcid:Person",
+        measuredProperty="dcid:count",
+    )
+    node = manager._mcf_nodes[DEFAULT_STATVAR_MCF_NAME].nodes[0]
+    assert node.Node == "dcid:StatVar"
+    assert node.populationType == "dcid:Person"
+    assert node.measuredProperty == "dcid:count"
 
 
 def test_add_entity_type_lands_node():

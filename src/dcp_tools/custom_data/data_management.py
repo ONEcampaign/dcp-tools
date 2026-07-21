@@ -95,9 +95,9 @@ class CustomDataManager:
     >>> )
 
     To add a variable for export to an MCF file, use the add_variable_to_mcf method.
-    Unlike the schema-node builders below, ``Node`` here must be ``dcid:``-prefixed:
+    ``Node`` accepts a bare or ``dcid:``-prefixed token, as the schema-node builders below do:
     >>> dc_manager.add_variable_to_mcf(
-    >>>    Node="dcid:StatVar",
+    >>>    Node="StatVar",
     >>>    name="Variable Name",
     >>>    description="Variable Description",
     >>>    ...
@@ -548,7 +548,11 @@ class CustomDataManager:
         """Add a StatVar node for the MCF file
 
         Args:
-            Node: The identifier of the statistical variable.
+            Node: The identifier of the statistical variable. A bare token is
+                normalized to ``dcid:<token>`` and an already ``dcid:``-prefixed token
+                is kept as-is; either way whitespace raises ``ValueError``. The same
+                applies to ``populationType``, ``measuredProperty``,
+                ``measurementQualifier`` and ``measurementDenominator``.
             name: Name of the variable (Optional)
             memberOf: Member of group for the variable (Optional)
             statType: Type of the statistical variable (Optional)
@@ -570,6 +574,16 @@ class CustomDataManager:
         Returns:
             CustomDataManager object
         """
+
+        Node = ensure_dcid(Node)
+        if populationType is not None:
+            populationType = ensure_dcid(populationType)
+        if measuredProperty is not None:
+            measuredProperty = ensure_dcid(measuredProperty)
+        if measurementQualifier is not None:
+            measurementQualifier = ensure_dcid(measurementQualifier)
+        if measurementDenominator is not None:
+            measurementDenominator = ensure_dcid(measurementDenominator)
 
         props = _parse_kwargs_into_properties(locals())
         node = StatVarMCFNode(**props)
@@ -1352,6 +1366,7 @@ class CustomDataManager:
         if not nodes:
             raise ValueError(f"No data available for '{mcf_file_name}'")
 
+        output_path.parent.mkdir(parents=True, exist_ok=True)
         nodes.export_to_mcf_file(file_path=output_path, override=override)
 
     def config_to_dict(self) -> dict:
@@ -1385,7 +1400,9 @@ class CustomDataManager:
             raise ValueError("No data to export")
 
         for file, data in self._data.items():
-            data.to_csv(Path(dir_path) / file, index=False)
+            path = Path(dir_path) / file
+            path.parent.mkdir(parents=True, exist_ok=True)
+            data.to_csv(path, index=False)
 
     def export_vertical_specs(self, dir_path: str | PathLike[str]) -> None:
         """Export the vertical-specs file as ``{"specs": [...]}`` JSON.
@@ -1408,7 +1425,9 @@ class CustomDataManager:
         payload = {
             "specs": [spec.model_dump(mode="json") for spec in self._vertical_specs]
         }
-        with (Path(dir_path) / file_name).open("w") as f:
+        output_path = Path(dir_path) / file_name
+        output_path.parent.mkdir(parents=True, exist_ok=True)
+        with output_path.open("w") as f:
             f.write(json.dumps(payload, indent=4))
 
     def validate_all_input_files_have_data(self) -> CustomDataManager:

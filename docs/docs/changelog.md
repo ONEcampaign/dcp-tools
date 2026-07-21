@@ -12,9 +12,19 @@
 - **Breaking:** with a single import format left, the input-file API drops the "explicit"
   qualifier: `ExplicitSchemaFile` is now `InputFile` and `add_explicit_schema_file` is now
   `add_input_file`. Arguments and the generated `config.json` are unchanged.
-- **Breaking:** `export_mfc_file` is now spelled `export_mcf_file`.
+- **Breaking:** `export_mfc_file` is now spelled `export_mcf_file`, and
+  `csv_metadata_to_mfc_file` is now `csv_metadata_to_mcf_file`.
 - Fixed `rename_variable`, which left the renamed node unreachable by its new name. A
   following `remove_indicator` raised "not found" until you passed the pre-rename name.
+- Fixed `export_data`, `export_mcf_file`, and `export_vertical_specs` raising `OSError`
+  when the target file name nested in a subdirectory that did not yet exist (for example
+  an `add_input_file` name such as `"sub/gdp.csv"`). Each now creates the parent
+  directory before writing.
+- Fixed `add_variable_to_mcf`, which did not normalize a bare `Node` to `dcid:<token>`
+  like the schema-node builders do, so a bare token raised a `ValidationError` there
+  while working everywhere else. Its `populationType`, `measuredProperty`,
+  `measurementQualifier` and `measurementDenominator` arguments had the same gap and
+  now accept bare tokens too.
 - **Breaking:** re-pointed the data load flow at the DCP v1.1.0 prep job. `run_data_load`
   now triggers the preprocessing job. The `redeploy` command and `redeploy_service` are removed.
   Load-job settings are renamed: `CLOUD_RUN_JOB_NAME` → `LOAD_JOB_NAME`,

@@ -7,7 +7,7 @@ from pathlib import Path
 
 from dcp_tools.custom_data.schema_tools import (
     NodeTypes,
-    csv_metadata_to_mfc_file,
+    csv_metadata_to_mcf_file,
 )
 
 __all__ = ["add_parser", "run"]
@@ -81,7 +81,7 @@ def run(args: argparse.Namespace) -> int:
     column_mapping = dict(args.column_mapping) if args.column_mapping else None
     csv_options = dict(args.csv_option) if args.csv_option else None
 
-    csv_metadata_to_mfc_file(
+    csv_metadata_to_mcf_file(
         csv_path=args.csv,
         mcf_path=args.mcf,
         node_type=args.node_type,

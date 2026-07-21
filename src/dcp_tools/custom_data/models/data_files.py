@@ -10,7 +10,7 @@ from pydantic import (
     model_serializer,
     model_validator,
 )
-from pydantic_core.core_schema import SerializerFunctionWrapHandler
+from pydantic import SerializerFunctionWrapHandler
 
 from dcp_tools.custom_data.models.common import mint_dcid
 

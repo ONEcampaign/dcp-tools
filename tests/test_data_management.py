@@ -775,7 +775,7 @@ def test_column_mappings_emit_dcid_keys():
         },
     )
 
-    result = cm.model_dump(by_alias=True)
+    result = cm.model_dump(by_alias=True, exclude_none=True)
 
     assert result == {
         "dcid:variableMeasured": "Var",
@@ -788,6 +788,18 @@ def test_column_mappings_emit_dcid_keys():
         "custom:sourceCountry": "Source",
         "custom:destinationCountry": "Destination",
     }
+
+
+def test_column_mappings_dump_respects_exclude_none_flag():
+    cm = ColumnMappings(variable="Var", customDimensions={"sourceCountry": "Source"})
+    assert cm.model_dump(exclude_none=True) == {
+        "variable": "Var",
+        "custom:sourceCountry": "Source",
+    }
+
+    full_dump = cm.model_dump()
+    assert "date" in full_dump
+    assert full_dump["date"] is None
 
 
 def test_column_mappings_accepts_dcid_keys_on_input():
@@ -816,7 +828,9 @@ def test_column_mappings_round_trip_preserves_custom_prefix():
         "custom:sourceCountry": "provider",
         "custom:destinationCountry": "recipient",
     }
-    result = ColumnMappings.model_validate(mappings_dict).model_dump(by_alias=True)
+    result = ColumnMappings.model_validate(mappings_dict).model_dump(
+        by_alias=True, exclude_none=True
+    )
     assert result == mappings_dict
 
 

@@ -88,7 +88,7 @@ class ColumnMappings(BaseModel):
         data = handler(self)
         for name, column in (data.pop("customDimensions", None) or {}).items():
             data[f"custom:{name}"] = column
-        return {k: v for k, v in data.items() if v is not None}
+        return data
 
     @model_validator(mode="before")
     @classmethod

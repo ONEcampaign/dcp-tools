@@ -146,6 +146,10 @@ PeerGroupDcid = Annotated[
     Dcid, StringConstraints(strip_whitespace=True, pattern=r"^dcid:.*svpg/.*")
 ]
 
+TopicDcid = Annotated[
+    Dcid, StringConstraints(strip_whitespace=True, pattern=r"^dcid:.*topic/.*")
+]
+
 DcidOrListDcid = Annotated[
     Dcid | list[Dcid],
     BeforeValidator(_prepare_dcid_or_list),

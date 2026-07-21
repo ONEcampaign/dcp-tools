@@ -1,8 +1,6 @@
-from typing import Annotated, Literal
+from typing import Literal
 
-from pydantic import StringConstraints
-
-from dcp_tools.custom_data.models.common import DcidOrListDcid
+from dcp_tools.custom_data.models.common import DcidOrListDcid, TopicDcid
 from dcp_tools.custom_data.models.mcf import MCFNode
 
 
@@ -13,7 +11,7 @@ class TopicMCFNode(MCFNode):
     related to a common concept.
 
     Attributes:
-        Node: Node identifier, must contain '/topic'.
+        Node: Node identifier, must start with 'dcid:' and contain 'topic/'.
         typeOf: Fixed type indicating this is a Topic.
         relevantVariable: Variable or list of variables relevant to a topic.
             Contains a list of ordered values. Must start with 'dcid:'. Accepts
@@ -30,8 +28,6 @@ class TopicMCFNode(MCFNode):
             subClassOf: Optional DCID indicating the 'parent' Node class.
     """
 
-    Node: Annotated[
-        str, StringConstraints(strip_whitespace=True, pattern=r".*topic/.*")
-    ]
+    Node: TopicDcid
     typeOf: Literal["dcid:Topic"] = "dcid:Topic"
     relevantVariable: DcidOrListDcid

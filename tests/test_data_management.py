@@ -350,6 +350,44 @@ def test_add_variable_group_to_mcf_and_override():
     assert any(n.name == "Group2" for n in updated if n.Node == "dcid:test/g/1")
 
 
+def test_add_variables_to_mcf_from_csv_parse_groups(tmp_path):
+    """
+    Checks that parse_groups/group_namespace are forwarded correctly: StatVars
+    and the minted StatVarGroup nodes both land in the target MCF file.
+    """
+    csv_path = tmp_path / "vars.csv"
+    csv_path.write_text(
+        "Node,name,typeOf,memberOf\n"
+        "dcid:n1,Name1,dcid:StatisticalVariable,Economic/Employment\n"
+    )
+
+    manager = CustomDataManager()
+    manager.add_variables_to_mcf_from_csv(
+        str(csv_path), parse_groups=True, group_namespace="ns"
+    )
+
+    nodes = manager._mcf_nodes[DEFAULT_STATVAR_MCF_NAME].nodes
+    node_ids = [n.Node for n in nodes]
+    assert node_ids == ["dcid:n1", "dcid:ns/g/economic", "dcid:ns/g/employment"]
+
+    statvar = next(n for n in nodes if n.Node == "dcid:n1")
+    assert statvar.memberOf == "dcid:ns/g/employment"
+
+
+def test_add_variables_to_mcf_from_csv_rejects_namespace_without_parse_groups(
+    tmp_path,
+):
+    """group_namespace without parse_groups=True stays a ValueError."""
+    csv_path = tmp_path / "vars.csv"
+    csv_path.write_text("Node,name,typeOf\ndcid:n1,Name1,dcid:StatisticalVariable\n")
+
+    manager = CustomDataManager()
+    with pytest.raises(
+        ValueError, match="group_namespace should not be set if parse_groups is False"
+    ):
+        manager.add_variables_to_mcf_from_csv(str(csv_path), group_namespace="ns")
+
+
 def test_config_round_trip(tmp_path):
     """
     Ensures a Config can be dumped to JSON and loaded back identically.
@@ -714,6 +752,21 @@ def test_rename_variable_mcf_only():
     manager.add_variable_to_mcf(Node="dcid:v3", name="Var3")
     with pytest.raises(ValueError):
         manager.rename_variable("dcid:v2", "dcid:v3")
+
+
+def test_rename_variable_mints_bare_tokens():
+    """Both old_name and new_name are run through ensure_dcid (#131), consistent
+    with add_variable_to_mcf (#130). A bare old_name used to fail the lookup (it
+    never matched the stored dcid:-prefixed Node), so minting both is strictly an
+    improvement, not a behaviour change any test pinned."""
+    manager = CustomDataManager()
+    manager.add_variable_to_mcf(Node="dcid:v1", name="Var1")
+
+    manager.rename_variable("v1", "v2")
+
+    for nodes in manager._mcf_nodes.values():
+        assert any(n.Node == "dcid:v2" for n in nodes.nodes)
+        assert all(n.Node != "dcid:v1" for n in nodes.nodes)
 
 
 def test_rename_variable_keeps_lookup_index_consistent():

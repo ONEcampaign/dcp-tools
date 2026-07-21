@@ -84,7 +84,7 @@ def _prepare_dcid_or_list(value: Any) -> str | list[str]:
 
     Used as a ``BeforeValidator`` (not ``PlainValidator``, which would replace the inner
     schema rather than run before it) so the ``dcid:``/slug pattern check on the wrapped
-    ``Dcid``/``GroupDcid``/``PeerGroupDcid``/``TopicDcid`` type still runs afterwards.
+    ``Dcid``/``GroupDcid`` type still runs afterwards.
 
     Splits a comma-delimited string into a list (``parse_str_or_list``), repairs
     ``"dcid: <token>"`` spacing per element the same way ``Dcid``'s own
@@ -146,10 +146,6 @@ PeerGroupDcid = Annotated[
     Dcid, StringConstraints(strip_whitespace=True, pattern=r"^dcid:.*svpg/.*")
 ]
 
-TopicDcid = Annotated[
-    Dcid, StringConstraints(strip_whitespace=True, pattern=r"^dcid:.*topic/.*")
-]
-
 DcidOrListDcid = Annotated[
     Dcid | list[Dcid],
     BeforeValidator(_prepare_dcid_or_list),
@@ -161,35 +157,11 @@ ensure_dcid) and serialises to a comma-separated string."""
 
 GroupDcidOrListGroupDcid = Annotated[
     GroupDcid | list[GroupDcid],
-    PlainValidator(parse_str_or_list),
+    BeforeValidator(_prepare_dcid_or_list),
     PlainSerializer(mcf_str, return_type=GroupDcid | None, when_used="always"),
 ]
-"""Accepts a string or list and serialises to a comma-separated string.
-
-Still uses PlainValidator, unlike DcidOrListDcid: `memberOf` on StatVarMCFNode is used
-by build_stat_var_groups_from_strings as a scratch field for an unresolved raw group
-path before it is reassigned to a real group dcid, and MCFNode has no
-validate_assignment, so enforcing the pattern here would block that legitimate
-intermediate value without actually guarding the value that reaches the MCF file.
-Tracked separately from #126 (see follow-up issue)."""
-
-PeerGroupDcidOrListPeerGroupDcid = Annotated[
-    PeerGroupDcid | list[PeerGroupDcid],
-    PlainValidator(parse_str_or_list),
-    PlainSerializer(mcf_str, return_type=PeerGroupDcid | None, when_used="always"),
-]
-"""Accepts a string or list and serialises to a comma-separated string.
-
-See GroupDcidOrListGroupDcid docstring: same PlainValidator, same follow-up."""
-
-TopicDcidOrListTopicDcid = Annotated[
-    TopicDcid | list[TopicDcid],
-    PlainValidator(parse_str_or_list),
-    PlainSerializer(mcf_str, return_type=TopicDcid | None, when_used="always"),
-]
-"""Accepts a string or list and serialises to a comma-separated string.
-
-See GroupDcidOrListGroupDcid docstring: same PlainValidator, same follow-up."""
+"""Accepts a bare or dcid:-prefixed string/list (bare tokens are minted via
+ensure_dcid) and serialises to a comma-separated string."""
 
 CustomDimensionName = Annotated[str, StringConstraints(pattern=r"^\S+$")]
 """A custom dimension key, becomes `custom:<name>` and `dcid:<name>` downstream."""

@@ -39,7 +39,6 @@ from dcp_tools.custom_data.models.stat_vars import (
 )
 from dcp_tools.custom_data.models.vertical_specs import VerticalSpec
 from dcp_tools.custom_data.schema_tools import (
-    build_stat_var_groups_from_strings,
     csv_metadata_to_nodes,
     validate_mcf_file_name,
 )
@@ -927,21 +926,21 @@ class CustomDataManager:
                 ``pandas.read_csv``.
             ignore_columns: List of columns to ignore in the CSV file.
             override: If True, overwrite the existing nodes if they exist. Defaults to False.
+
+        Raises:
+            ValueError: If ``group_namespace`` is set while ``parse_groups`` is False, or
+                if ``parse_groups`` is True and the CSV has no ``memberOf`` column.
         """
         stat_vars = csv_metadata_to_nodes(
             file_path=csv_file_path,
             column_to_property_mapping=column_to_property_mapping,
             csv_options=csv_options,
             ignore_columns=ignore_columns,
+            parse_groups=parse_groups,
+            group_namespace=group_namespace,
         )
 
-        if parse_groups:
-            if not group_namespace:
-                group_namespace = ""
-            stat_vars = build_stat_var_groups_from_strings(
-                stat_vars, groups_namespace=group_namespace
-            )
-        elif group_namespace:
+        if not parse_groups and group_namespace:
             raise ValueError(
                 "group_namespace should not be set if parse_groups is False"
             )
@@ -1092,8 +1091,11 @@ class CustomDataManager:
         """Rename a variable across any loaded MCF files.
 
         Args:
-            old_name: The name of the variable to rename.
-            new_name: The new name for the variable.
+            old_name: The name of the variable to rename. A bare token is normalized
+                to ``dcid:<token>``, the same rule ``add_variable_to_mcf`` applies to
+                ``Node``.
+            new_name: The new name for the variable. Same normalization as
+                ``old_name``.
             mcf_file_name: Optional name of the MCF file from which to rename the variable.
                 If omitted, all managed MCF files are searched.
         Raises:
@@ -1101,6 +1103,9 @@ class CustomDataManager:
                 new name already exists in any searched MCF file.
 
         """
+
+        old_name = ensure_dcid(old_name)
+        new_name = ensure_dcid(new_name)
 
         file_names = (
             [validate_mcf_file_name(mcf_file_name)]

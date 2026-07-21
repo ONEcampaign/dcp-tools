@@ -3,10 +3,12 @@ from pydantic import ValidationError
 
 from dcp_tools.custom_data.models.topics import TopicMCFNode
 
-# relevantVariable is DcidOrListDcid | GroupDcidOrListGroupDcid | TopicDcidOrListTopicDcid.
-# Only DcidOrListDcid was fixed for #126 (see models/common.py); the other two still use
-# PlainValidator, so there is no whitespace-rejection test here — a value the DcidOrListDcid
-# branch would reject can still validate via the still-permissive Group/Topic branches.
+# relevantVariable collapsed to plain DcidOrListDcid in #131. The group and topic members of
+# the old union each layered an extra pattern on top of Dcid, so every value they accept, Dcid
+# accepts too, and the three-member union was exactly DcidOrListDcid once all three enforced
+# their patterns.
+# Unlike before #131, a value DcidOrListDcid rejects is now rejected outright (there is no
+# more-permissive Group/Topic branch left to fall back on).
 
 
 def test_topic_relevant_variable_accepts_bare_statvar_dcid():
@@ -43,3 +45,11 @@ def test_topic_relevant_variable_accepts_list():
 def test_topic_node_rejects_missing_slug():
     with pytest.raises(ValidationError):
         TopicMCFNode(Node="dcid:NotATopic", name="Topic", relevantVariable="var")
+
+
+def test_topic_relevant_variable_rejects_whitespace_bearing_token():
+    """Regression for #131: before the union collapsed to plain DcidOrListDcid, a
+    value DcidOrListDcid rejected could still validate via the more-permissive
+    Group/Topic branches (which used PlainValidator and never enforced a pattern)."""
+    with pytest.raises(ValidationError):
+        TopicMCFNode(Node="dcid:topic/T", name="Topic", relevantVariable="has space")

@@ -1,21 +1,40 @@
 # Changelog
 
 ## v1.0.0 (in development)
-- Stable release of the `dcp-tools` package
+- Stable release of the `dcp-tools` package.
+- Renamed the package from `bblocks-datacommons-tools` to `dcp-tools`. The import path is
+  now `dcp_tools` (was `bblocks.datacommons_tools`). Installing the old
+  `bblocks-datacommons-tools` distribution now pulls in `dcp-tools` and re-exports it with a
+  `DeprecationWarning`; update imports to `dcp_tools` at your convenience.
+- Minimum supported Python is now 3.13 (was 3.11).
+- Packaging now follows the `bblocks-projects` copier template (ruff lint preset, `ty` type
+  checking, pre-commit hooks, PyPI trusted publishing).
 - **Breaking:** removed support for the second, implicit import mechanism —
   `add_implicit_schema_file`, `add_variable_to_config`, and the `ImplicitSchemaFile` /
-  `Variable` model classes are gone (`ObservationProperties` is retained, but now carries
-  file-level constants on `InputFile`). Loading a legacy
+  `Variable` model classes are gone. `ObservationProperties` is retained but repurposed: it's
+  no longer nested under a variable definition, and now carries the file-level constant
+  observation properties on `InputFile`; it also accepts custom keys (`extra="allow"`, was
+  `extra="forbid"`), and the four standard fields are unchanged. Loading a legacy
   `variablePerColumn` config now raises `ValueError`. Migrate by using `add_input_file` with
   `columnMappings`; see
   [Data Commons custom data docs](https://docs.datacommons.org/custom_dc/custom_data.html).
 - **Breaking:** with a single import format left, the input-file API drops the "explicit"
   qualifier: `ExplicitSchemaFile` is now `InputFile` and `add_explicit_schema_file` is now
   `add_input_file`. Arguments and the generated `config.json` are unchanged.
+- **Breaking:** `Config.inputFiles` is now `list[InputFile]` (was a dict keyed by file name).
+  `InputFile` also rejects unknown keys now (`extra="forbid"`).
 - **Breaking:** `export_mfc_file` is now spelled `export_mcf_file`, and
   `csv_metadata_to_mfc_file` is now `csv_metadata_to_mcf_file`.
-- Fixed `rename_variable`, which left the renamed node unreachable by its new name. A
-  following `remove_indicator` raised "not found" until you passed the pre-rename name.
+- **Breaking:** removed the `entity` key on `ColumnMappings`. Use `observationAbout` for
+  single-entity data or `custom:<name>` for multi-entity dimensions.
+- Added support for multi-entity observations using custom dimensions: declare each
+  dimension with `custom:<name>` in `ColumnMappings` and a matching `dcid:<name>` in the
+  StatVar's `observationProperties`.
+- Single-entity StatVars no longer emit `observationProperties` by default.
+- Fixed `rename_variable`, which left the `MCFNodes` lookup index keyed by the old name, so
+  a following `remove_indicator` raised "not found" for the renamed node and still resolved
+  the old name. The rename now goes through a new `MCFNodes.rename`, which keeps the index
+  in step.
 - Fixed `export_data`, `export_mcf_file`, and `export_vertical_specs` raising `OSError`
   when the target file name nested in a subdirectory that did not yet exist (for example
   an `add_input_file` name such as `"sub/gdp.csv"`). Each now creates the parent
@@ -39,11 +58,18 @@
   sorting out first. That leaves `StatVarMCFNode.memberOf` and
   `TopicMCFNode.relevantVariable` unguarded, the latter because its type unions the fixed
   and unfixed variants. `StatVarMCFNode.relevantVariable` is fixed. Tracked separately.
-- **Breaking:** re-pointed the data load flow at the DCP v1.1.0 prep job. `run_data_load`
-  now triggers the preprocessing job. The `redeploy` command and `redeploy_service` are removed.
-  Load-job settings are renamed: `CLOUD_RUN_JOB_NAME` → `LOAD_JOB_NAME`,
-  `CLOUD_JOB_REGION` → `LOAD_JOB_REGION`, plus a new optional `LOAD_JOB_SERVICE_ACCOUNT`.
-  New `--imports` flag on `dataload` loads specific named imports.
+- **Breaking:** re-pointed the data load flow at the DCP prep job, using the
+  `IngestionJobClient`. `run_data_load` now triggers the prep job. The `redeploy`
+  CLI command and the `redeploy_service`
+  and `redeploy_cloud_run_service` functions are removed; the service restart is now owned
+  by the ingestion workflow. Load-job settings are renamed: `CLOUD_RUN_JOB_NAME` →
+  `LOAD_JOB_NAME`, `CLOUD_JOB_REGION` → `LOAD_JOB_REGION`, plus a new optional
+  `LOAD_JOB_SERVICE_ACCOUNT` that sets which service account the load job impersonates
+  (when unset, the caller's credentials are used). The unused Cloud SQL and Cloud Run
+  service settings are removed too: `CLOUD_SQL_DB_NAME`, `CLOUD_SQL_REGION`,
+  `CLOUD_SERVICE_REGION`, `CLOUD_RUN_SERVICE_NAME`, and `DATACOMMONS_SERVICE_IMAGE`.
+- Added an `imports` argument on `run_data_load` and a matching `--imports` flag on the
+  `dataload` CLI command, to trigger a load of specific imports rather than all imports.
 
 ## v0.1.0 (in development)
 - Initial release of the `dcp-tools` package for external preview and testing
@@ -53,7 +79,7 @@
 `set_defaultCustomRootStatVarGroupName` and `set_svHierarchyPropsBlocklist`.
 
 ## v0.0.8 (2025-09-03)
-- Removed white space between quoted items do defend against a bug with data loading on
+- Removed white space between quoted items to defend against a bug with data loading on
 the DC side.
 
 ## v0.0.7 (2025-08-27)
@@ -72,7 +98,7 @@ additional special characters
 - Removed option to override input and output folders on the data load job.
 
 ## v0.0.3 (2025-07-18)
-- Fixes two bugs related to MFC files. It now enforces the `dcid:` prefix for Node and
+- Fixes two bugs related to MCF files. It now enforces the `dcid:` prefix for Node and
 automatically trims spaces between `dcid:` and the start of the id string.
 
 ## v0.0.2 (2025-07-07)

@@ -1,69 +1,67 @@
-# Getting started with `dcp-tools`
+# Build your first custom Data Commons import
 
-This page walks you through the basic steps to install and start using 
-`bblocks-datacommons-tools` to prepare and load the data for your custom instance.
+> A working import bundle for a custom Data Commons instance, built with `dcp-tools` and verified by loading it back.
 
-## About custom Data Commons instances
+## What you'll build
 
-Anyone can build and manage their own Data Commons instance—combining their own datasets with the base
-data available from datacommons.org, and taking advantage of built-in features like natural language queries, 
-interactive visualisations, and data exploration tools. For many organisations, a custom instance is a practical 
-way to publish data with exploration and visualisation tools without building infrastructure from scratch.
+By the end, you'll have a complete import bundle on disk: a `config.json`, two MCF files, and a CSV of climate finance data, generated entirely from Python. This is the same shape of bundle a custom Data Commons instance loads from Google Cloud Storage.
 
-However, preparing your data for a Data Commons knowledge graph, uploading the necessary files to Google 
-Cloud Platform (GCP), and deploying the service can be a repetitive and error-prone process.
-For smaller projects with limited data and infrequent updates, managing the workflow manually may be
-sufficient. But for larger datasets or pipelines with regular refreshes, the process quickly 
-becomes tedious and difficult to maintain.
+```
+one_climate_finance/
+├── config.json
+├── custom_nodes.mcf
+├── provenance.mcf
+└── climate_finance/
+    └── one_cf_provider_commitments.csv
+```
 
-`dcp-tools` streamlines this workflow by allowing you to programmatically prepare and load data using
-a Python-based pipeline.
+## What you'll learn
 
-Before you get started, you should have a basic understanding of how custom Data Commons instances work and 
-what the data loading process involves. You can find the
-[official documentation here](docs.datacommons.org/custom_dc/custom_data.html).
+- How to register a source and a provenance as MCF nodes
+- How to register an input CSV file with column mappings
+- How to declare a StatVar for a data file
+- How to export a complete bundle with `export_all`
+- How to verify an exported bundle by loading it back
 
-At a top level, you should be familiar with:
+## What you'll need
 
-- **The `config.json` file**: the 
-[JSON configuration](https://docs.datacommons.org/custom_dc/custom_data.html#step-2-write-the-json-config-file) 
-file that specifies how to map and resolve data to the
-Data Commons schema knowledge graph.
-- **The data files**: CSV files containing the data formatted for the
-[explicit schema](https://docs.datacommons.org/custom_dc/custom_data.html#explicit).
-- **Meta Content Framework 
-([MCF](https://docs.datacommons.org/custom_dc/custom_data.html#step-1-define-statistical-variables-in-mcf)) files**: files that provide additional flexibility form modeling data for the knowledge
-graph.
-- **Uploading data and deploying**: Files need to be loaded to GCP, and the service needs to be 
-[deployed](https://docs.datacommons.org/custom_dc/deploy_cloud.html).
+- Python 3.13 or later
+- `pip install dcp-tools` (installs `pandas` and `pydantic` alongside it)
+- No GCP account or credentials. This tutorial stops at a bundle on disk. [Loading data](./loading-data.md) covers uploading it.
+- About 15-20 minutes
 
+## Step 1: Install dcp-tools and create a manager
 
-## Installation
+Install the package, then create a `CustomDataManager`. It's the object you'll register everything on (sources, variables, input files) before anything gets written to disk.
 
-The package can be installed in various ways. 
-
-Directly as
 ```bash
 pip install dcp-tools
 ```
-
-## Preparing data
-
-`dcp-tools` offers convenient functionality to prepare configuration JSON, MCF, and custom data files
-without having to manually edit these files. To access this functionality, create an instance of the 
-`CustomDataManager` class.
 
 ```python
 from dcp_tools import CustomDataManager
 
 manager = CustomDataManager()
+print(manager)
 ```
 
-The `CustomDataManager` lets you create or edit the `config.json` file without editing it manually. 
+You should see a manager with nothing registered yet:
 
-You can register variables, sources or provenances, and data files. 
+```
+<CustomDataManager config: 
+0 inputFiles, with 0 containing data
+0 sources
+0 provenances
+0 variables
+0 vertical specs
+flags: importName=None, includeInputSubdirs=None, groupStatVarsByProperty=None, defaultCustomRootStatVarGroupName=None, customIdNamespace=None, customSvgPrefix=None, svHierarchyPropsBlocklist=None, dataDownloadUrl=None, verticalSpecsFile=None>
+```
 
-```python title="Add source and provenance"
+## Step 2: Register a source and a provenance
+
+Register where the data comes from: a Source (the publishing organization) and a Provenance (this specific dataset). Every input file you register later points back at a Provenance dcid, so it has to exist first.
+
+```python
 manager.add_source(name="ONEData", url="https://data.one.org")
 manager.add_provenance(
     name="ONEClimateFinance",
@@ -72,64 +70,207 @@ manager.add_provenance(
 )
 ```
 
-You can pass pandas DataFrames to the manager and the manager will handle exporting the data as
-CSVs in the correct format.
+!!! note
+    `name` becomes part of the node's dcid, so it can't contain spaces. `add_source` turns `"ONEData"` into `dcid:source/ONEData`. If you want a spaced-out label, put it in `description` instead.
 
-```python title="Add explicit schema data"
+Both calls add MCF nodes in memory. Export them to see what they'll look like on disk:
+
+```python
+manager.export_mcf_file("one_climate_finance", mcf_file_name="provenance.mcf")
+print(open("one_climate_finance/provenance.mcf").read())
+```
+
+This also creates the `one_climate_finance/` directory, since it doesn't exist yet. You should see:
+
+```
+Node: dcid:source/ONEData
+typeOf: dcid:Source
+url: "https://data.one.org"
+
+Node: dcid:provenance/ONEClimateFinance
+typeOf: dcid:Provenance
+url: "https://datacommons.one.org/data/climate-finance-files"
+sourceLink: dcid:source/ONEData
+```
+
+## Step 3: Register the input CSV file
+
+Register a CSV of bilateral climate finance commitments, one row per observation. `columnMappings` tells `dcp-tools` which column holds which piece of an observation. The Kenya and Fiji figures below are illustrative, not published commitments.
+
+```python
 import pandas as pd
-from dcp_tools.custom_data.models.data_files import ColumnMappings
 
-df = pd.DataFrame(...)
+data = pd.DataFrame({
+    "country": ["Kenya", "Kenya", "Fiji", "Fiji"],
+    "year": [2022, 2023, 2022, 2023],
+    "variable": ["climateFinanceProvidedCommitments"] * 4,
+    "value": [12.4, 15.8, 3.1, 4.6],
+})
 
-manager.add_explicit_schema_file(
+manager.add_input_file(
     file_name="climate_finance/one_cf_provider_commitments.csv",
     provenance="ONEClimateFinance",
-    data=df,
-    columnMappings=ColumnMappings(
-        entity="country",
-        date="year",
-        variable="variable",
-        value="value",
-    ),
+    data=data,
+    columnMappings={
+        "observationAbout": "country",
+        "date": "year",
+        "variable": "variable",
+        "value": "value",
+    },
 )
 ```
 
-
-Once you are finished adding and editing data and configuration, you can 
-validate and export all the files for your custom Data Commons instance.
+`file_name` can include a subdirectory, like `climate_finance/one_cf_provider_commitments.csv` above, and `export_all` creates that subdirectory for you later. Check what landed in the config with `config_to_dict`:
 
 ```python
-manager.export_all("path/to/output/folder")
+import json
+
+print(json.dumps(manager.config_to_dict()["inputFiles"], indent=2))
 ```
 
-**Read more detailed documentation about preparing data with the `CustomDataManager` 
-[here ↗](./preparing-data.md)**
+You should see one entry, with `provenance` minted to a dcid and each mapping rewritten to its `dcid:` form:
 
-## Loading data
-
-You can programmatically push the data and config to a Google Cloud
-Storage Bucket and trigger the data load job.
-
-First, specify all the configuration settings needed to add files to the storage bucket. For convenience these
-can be specified in a `.env` file (read more about the configuration settings [here](./loading-data.md)).
-
-
-```python
-from dcp_tools.gcp_utilities import get_kg_settings
-
-settings = get_kg_settings(source="env", env_file="customDC.env")
+```json
+[
+  {
+    "filename": "climate_finance/one_cf_provider_commitments.csv",
+    "provenance": "dcid:provenance/ONEClimateFinance",
+    "columnMappings": {
+      "dcid:variableMeasured": "variable",
+      "dcid:observationDate": "year",
+      "dcid:value": "value",
+      "dcid:observationAbout": "country"
+    },
+    "format": "variablePerRow"
+  }
+]
 ```
 
+## Step 4: Declare the StatVar
 
-Now we can load data and configuration files to the storage bucket and run the data load job on GCP.
+The `variable` column holds `climateFinanceProvidedCommitments`, a dcid that has to resolve to a real StatVar node, or the importer has nothing to attach the observations to. Declare it with `add_variable_to_mcf`.
 
 ```python
-from dcp_tools.gcp_utilities import (
-    upload_to_cloud_storage,
-    run_data_load,
+manager.add_variable_to_mcf(
+    Node="climateFinanceProvidedCommitments",
+    name="Climate finance provided (commitments)",
+    description="Bilateral climate finance commitments reported by the provider country.",
+    provenance="ONEClimateFinance",
+    populationType="Thing",
+    measuredProperty="amount",
 )
+```
 
-upload_to_cloud_storage(settings=settings, directory="path/to/folder/with/data_and_config")
-run_data_load(settings=settings)
+`Node` is a bare token here, so `dcp-tools` normalizes it to `dcid:climateFinanceProvidedCommitments` for you. It must match the `variable` column values exactly. Export the checkpoint and take a look:
+
+```python
+manager.export_mcf_file("one_climate_finance", mcf_file_name="custom_nodes.mcf")
+print(open("one_climate_finance/custom_nodes.mcf").read())
+```
 
 ```
+Node: dcid:climateFinanceProvidedCommitments
+name: "Climate finance provided (commitments)"
+typeOf: dcid:StatisticalVariable
+description: "Bilateral climate finance commitments reported by the provider country."
+provenance: "ONEClimateFinance"
+statType: dcid:measuredValue
+populationType: dcid:Thing
+measuredProperty: dcid:amount
+```
+
+The `provenance` field here is the bare name you passed in, stored as a plain quoted string on the node, not the minted dcid you saw on the input file entry in Step 3.
+
+## Step 5: Export the bundle and verify it
+
+`export_all` writes the config, the data, and any MCF files you name, in one call. It doesn't export MCF files unless you list them.
+
+!!! warning "Heads up"
+    `mcf_file_names` defaults to `None`, which exports no MCF at all. Since the input file from Step 3 references the provenance node in `provenance.mcf`, leaving it off `mcf_file_names` makes `export_all` raise a `ValueError` before writing anything, rather than shipping a config with a dangling reference.
+
+Steps 2 and 4 already wrote `provenance.mcf` and `custom_nodes.mcf` once each as checkpoints, so this final call needs `override=True` to overwrite them instead of appending:
+
+```python
+manager.export_all(
+    "one_climate_finance",
+    mcf_file_names=["provenance.mcf", "custom_nodes.mcf"],
+    override=True,
+)
+```
+
+List the directory to confirm the full bundle landed:
+
+```python
+import os
+
+for root, _, files in os.walk("one_climate_finance"):
+    for f in sorted(files):
+        print(os.path.relpath(os.path.join(root, f)))
+```
+
+```
+one_climate_finance/config.json
+one_climate_finance/custom_nodes.mcf
+one_climate_finance/provenance.mcf
+one_climate_finance/climate_finance/one_cf_provider_commitments.csv
+```
+
+`config.json` now has an `importName`, defaulted from the export directory name since we never called `set_importName`:
+
+```json
+{
+    "importName": "one_climate_finance",
+    "inputFiles": [
+        {
+            "filename": "climate_finance/one_cf_provider_commitments.csv",
+            "provenance": "dcid:provenance/ONEClimateFinance",
+            "columnMappings": {
+                "dcid:variableMeasured": "variable",
+                "dcid:observationDate": "year",
+                "dcid:value": "value",
+                "dcid:observationAbout": "country"
+            },
+            "format": "variablePerRow"
+        }
+    ]
+}
+```
+
+Now confirm the bundle is self-consistent by loading it into a fresh manager:
+
+```python
+reloaded = CustomDataManager(
+    config_file="one_climate_finance/config.json",
+    mcf_files=[
+        "one_climate_finance/provenance.mcf",
+        "one_climate_finance/custom_nodes.mcf",
+    ],
+)
+print(reloaded)
+```
+
+```
+<CustomDataManager config: 
+1 inputFiles, with 0 containing data
+1 sources
+1 provenances
+1 variables
+0 vertical specs
+flags: importName=one_climate_finance, includeInputSubdirs=None, groupStatVarsByProperty=None, defaultCustomRootStatVarGroupName=None, customIdNamespace=None, customSvgPrefix=None, svHierarchyPropsBlocklist=None, dataDownloadUrl=None, verticalSpecsFile=None>
+```
+
+1 input file, 1 source, 1 provenance, 1 variable. `with 0 containing data` is expected. Reloading from `config_file`/`mcf_files` restores the config and MCF nodes, not the CSV data. That data lives in the CSV file on disk, never in `config.json`.
+
+## What you learned
+
+- You registered a source and a provenance as MCF nodes
+- You registered an input CSV file with column mappings
+- You declared a StatVar for a data file
+- You exported a complete bundle with `export_all`
+- You verified an exported bundle by loading it back
+
+## What's next
+
+- **[Preparing data](./preparing-data.md)**. The full `CustomDataManager` catalogue: schema-node builders, multi-entity dimensions, vertical specs, config merging.
+- **[Why config.json and MCF](./dc-schemas.md)**. The reasoning behind the `config.json`/MCF split and the column-mapping shapes.
+- **[Loading data](./loading-data.md)**. Upload `one_climate_finance/` to Google Cloud Storage and trigger the ingestion job.

@@ -1,41 +1,29 @@
 # dcp-tools
 
-__Tools to manage and load data for custom [Data Commons](https://datacommons.org/)
-instances__
+**Prepare and load data for custom Data Commons instances.**
 
-[![GitHub Repo](https://img.shields.io/badge/GitHub-bblocks--datacommons--tools-181717?style=flat-square&labelColor=%23ddd&logo=github&color=%23555&logoColor=%23000)](https://github.com/ONEcampaign/bblocks-datacommons-tools)
-[![GitHub License](https://img.shields.io/github/license/ONEcampaign/bblocks-datacommons-tools?style=flat-square&labelColor=%23ddd)](https://github.com/ONEcampaign/bblocks-datacommons-tools/blob/main/LICENSE)
-[![PyPI - Version](https://img.shields.io/pypi/v/dcp-tools?style=flat-square&labelColor=%23ddd)](https://pypi.org/project/dcp-tools/)
+`dcp-tools` is a Python package for building the config, metadata, and data files a custom Data
+Commons instance needs, then uploading them and triggering ingestion. Use it as a library or
+through the `dcp-tools` command-line tool.
 
-
-The `dcp-tools` package simplifies the process of preparing and loading data to custom 
-Data Commons instances. It provides utilities for building and editing configuration, metadata, and data files, 
-and automating the data load pipeline.
-
-[Data Commons](https://datacommons.org/) is a Google initiative that brings together public data from a
-wide range of sources into a unified knowledge graph, making it easier to explore and analyze 
-information across domains. Organisations can create custom instances of Data Commons to host their 
-own datasets, integrate them into the graph, and build tailored tools on top of the platform.
-
-Custom instances allow you to take advantage of core features such as natural language search and interactive 
-visualisations, while combining your own data with everything available in the base Data Commons.
-
-`dcp-tools` is designed to simplify and automate steps to build your custom instance—removing
-much of the manual work involved in formatting and loading data, and helping you get your custom 
-knowledge graph up and running quickly.
-
+A custom Data Commons instance lets an organization combine its own datasets with the public
+knowledge graph at [datacommons.org](https://datacommons.org/), while reusing the platform's
+search and visualization tools. The official
+[Custom Data Commons documentation](https://docs.datacommons.org/custom_dc/index.html) covers how
+the platform itself works. This site covers the tooling that prepares and loads data into it.
 
 **Key features**
 
 - Build and edit `config.json` files programmatically
-- Generate MCF files from simple metadata
-- Upload CSV, MCF, and config files to Google Cloud Storage
-- Trigger the data load job
-- Use as a Python module or from the command line
+- Register single- and multi-entity observations from CSV data
+- Declare custom schema nodes (entity types, event types, properties, units, measurement methods, StatVars, and StatVar groups) with typed builders
+- Upload prepared files to Google Cloud Storage and trigger the DCP (Data Commons Platform) ingestion job
+- Usable as a Python API or through the `dcp-tools` CLI
 
-Ready to get started using `dcp-tools`?<br> 
-**Read [Getting started ↗](./getting-started.md).**
+## Where to go next
 
-Want to learn more about Data Commons? <br>
-**Read the official 
-[Custom Data Commons documentation ↗](https://docs.datacommons.org/custom_dc/index.html).**
+- **[Getting started](getting-started.md)**: install `dcp-tools` and build a first import, from an empty config to files ready to upload.
+- **[Preparing data](preparing-data.md)**: task recipes covering the full `CustomDataManager` surface, from input files and custom dimensions to schema nodes and config merging.
+- **[Why config.json and MCF](dc-schemas.md)**: the reasoning behind the `config.json`/MCF split, dcid minting rules, and how multi-entity observations use custom dimensions.
+- **[Loading data](loading-data.md)**: upload prepared files to Cloud Storage and trigger the job that loads them into your instance.
+- **[CLI tools](cli-tools.md)**: reference for the `dcp-tools` command and its subcommands.

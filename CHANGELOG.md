@@ -51,6 +51,23 @@
   everywhere else. It now goes through the same `ensure_dcid` normalization, as do its
   `populationType`, `measuredProperty`, `measurementQualifier` and
   `measurementDenominator` arguments, which had the same gap.
+- `DcidOrListDcid` used a `PlainValidator`, which replaces the wrapped `Dcid` schema
+  instead of running before it, so the `dcid:` prefix check never executed. Any string,
+  including one with no `dcid:` prefix at all, passed through unvalidated and landed in
+  the MCF verbatim. This affected `typeOf` on every MCF node, `relevantVariable`,
+  `observationProperties` and `member` on StatVar nodes, and `includedIn`, `subClassOf`,
+  `domainIncludes`, `rangeIncludes` and `subPropertyOf` on the schema-node builders.
+  These fields now normalize a bare token to `dcid:<token>` (the same rule `ensure_dcid`
+  already applied at the builder level) and reject anything empty or whitespace-bearing.
+  A non-string value now raises `ValidationError` rather than being accepted silently.
+  This is a behaviour change for anyone passing a bare token to one of these fields today
+  and relying on it staying bare. The group/peer-group/topic variants
+  (`GroupDcidOrListGroupDcid` and friends) have the same gap and are not fixed here.
+  `memberOf`'s use as a scratch field in `build_stat_var_groups_from_strings` needs sorting
+  out first, and it is tracked separately. Two fields therefore stay unguarded:
+  `StatVarMCFNode.memberOf`, and `TopicMCFNode.relevantVariable`, whose type is a union of
+  the fixed and unfixed variants, so a value the fixed branch rejects still validates
+  through an unfixed one. `StatVarMCFNode.relevantVariable` is unaffected and is fixed.
 
 ### Removed
 - `add_implicit_schema_file` method on `CustomDataManager`.

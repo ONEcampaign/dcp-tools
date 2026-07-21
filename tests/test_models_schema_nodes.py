@@ -33,6 +33,12 @@ def test_entity_type_rejects_malformed_node():
         EntityTypeMCFNode(Node="MyClass", name="My Class")
 
 
+def test_entity_type_included_in_normalizes_bare_token():
+    """includedIn is DcidOrListDcid; a bare token is minted (regression for #126)."""
+    node = EntityTypeMCFNode(Node="dcid:MyClass", name="My Class", includedIn="p")
+    assert node.includedIn == "dcid:p"
+
+
 # --- EventTypeMCFNode ---
 
 
@@ -48,6 +54,14 @@ def test_event_type_subclassof_override():
     )
     assert node.subClassOf == "dcid:DisasterEvent"
     assert "subClassOf: dcid:DisasterEvent" in node.mcf
+
+
+def test_event_type_subclassof_normalizes_bare_token():
+    """subClassOf is DcidOrListDcid; a bare token is minted (regression for #126)."""
+    node = EventTypeMCFNode(
+        Node="dcid:MyEvent", name="My Event", subClassOf="DisasterEvent"
+    )
+    assert node.subClassOf == "dcid:DisasterEvent"
 
 
 # --- PropertyMCFNode ---
@@ -71,15 +85,29 @@ def test_property_optional_refs_serialize():
     assert "subPropertyOf: dcid:baseProp" in node.mcf
 
 
-def test_property_model_accepts_bare_ref_unvalidated():
-    """DcidOrListDcid uses PlainValidator; the dcid: pattern is NOT enforced on ref fields.
-
-    This documents that the builder (add_property, via ensure_dcid) — not the model — is
-    what guarantees the dcid: prefix on domainIncludes/rangeIncludes/subPropertyOf. Contrast
-    with test_entity_type_rejects_malformed_node: Node is a bare Dcid field and DOES enforce.
-    """
+def test_property_model_normalizes_bare_ref():
+    """DcidOrListDcid now runs ensure_dcid via a BeforeValidator (regression for #126), so
+    domainIncludes/rangeIncludes/subPropertyOf are normalized at the model layer too, not
+    just by the builder (add_property). A bare token is minted to dcid:<token>."""
     node = PropertyMCFNode(Node="dcid:myProp", domainIncludes="Person")
-    assert node.domainIncludes == "Person"
+    assert node.domainIncludes == "dcid:Person"
+
+
+def test_property_model_rejects_whitespace_bearing_ref():
+    with pytest.raises(ValidationError):
+        PropertyMCFNode(Node="dcid:myProp", domainIncludes="has space")
+
+
+def test_property_model_normalizes_bare_ref_list():
+    node = PropertyMCFNode(
+        Node="dcid:myProp",
+        domainIncludes=["Person", "Household"],
+        rangeIncludes=["Number"],
+        subPropertyOf=["baseProp"],
+    )
+    assert node.domainIncludes == ["dcid:Person", "dcid:Household"]
+    assert node.rangeIncludes == ["dcid:Number"]
+    assert node.subPropertyOf == ["dcid:baseProp"]
 
 
 # --- UnitOfMeasureMCFNode ---

@@ -79,6 +79,40 @@ def parse_str_or_list(value: str | list[str]) -> str | list[str]:
     return value
 
 
+def _prepare_dcid_or_list(value: Any) -> str | list[str]:
+    """Normalize dcid-or-list input ahead of the inner Dcid-family schema.
+
+    Used as a ``BeforeValidator`` (not ``PlainValidator``, which would replace the inner
+    schema rather than run before it) so the ``dcid:``/slug pattern check on the wrapped
+    ``Dcid``/``GroupDcid``/``PeerGroupDcid``/``TopicDcid`` type still runs afterwards.
+
+    Splits a comma-delimited string into a list (``parse_str_or_list``), repairs
+    ``"dcid: <token>"`` spacing per element the same way ``Dcid``'s own
+    ``BeforeValidator`` does, and mints bare tokens to ``dcid:<token>`` via
+    ``ensure_dcid``. Repairing the spacing before minting means a value like
+    ``"dcid: Foo"`` is fixed up rather than rejected by ``ensure_dcid``'s
+    no-whitespace rule, matching what a plain ``Dcid`` field already does.
+
+    Raises:
+        ValueError: If the value is not a string or a list of strings. Raising
+            ``ValueError`` (rather than letting ``ensure_dcid`` fail on a non-iterable)
+            keeps the failure a ``pydantic.ValidationError`` for the caller.
+    """
+    if not isinstance(value, (str, list)):
+        raise ValueError(
+            f"expected a string or list of strings, got {type(value).__name__}"
+        )
+    if isinstance(value, list) and not all(isinstance(v, str) for v in value):
+        raise ValueError("expected every element to be a string")
+
+    value = parse_str_or_list(value)
+    if isinstance(value, list):
+        value = [_strip_space_after_dcid(v) for v in value]
+    else:
+        value = _strip_space_after_dcid(value)
+    return ensure_dcid(value)
+
+
 QuotedStr = Annotated[
     str, PlainSerializer(_ensure_quoted, return_type=str | None, when_used="always")
 ]
@@ -118,10 +152,11 @@ TopicDcid = Annotated[
 
 DcidOrListDcid = Annotated[
     Dcid | list[Dcid],
-    PlainValidator(parse_str_or_list),
+    BeforeValidator(_prepare_dcid_or_list),
     PlainSerializer(mcf_str, return_type=Dcid | None, when_used="always"),
 ]
-"""Accepts a string or list and serialises to a comma-separated string."""
+"""Accepts a bare or dcid:-prefixed string/list (bare tokens are minted via
+ensure_dcid) and serialises to a comma-separated string."""
 
 
 GroupDcidOrListGroupDcid = Annotated[
@@ -129,21 +164,32 @@ GroupDcidOrListGroupDcid = Annotated[
     PlainValidator(parse_str_or_list),
     PlainSerializer(mcf_str, return_type=GroupDcid | None, when_used="always"),
 ]
-"""Accepts a string or list and serialises to a comma-separated string."""
+"""Accepts a string or list and serialises to a comma-separated string.
+
+Still uses PlainValidator, unlike DcidOrListDcid: `memberOf` on StatVarMCFNode is used
+by build_stat_var_groups_from_strings as a scratch field for an unresolved raw group
+path before it is reassigned to a real group dcid, and MCFNode has no
+validate_assignment, so enforcing the pattern here would block that legitimate
+intermediate value without actually guarding the value that reaches the MCF file.
+Tracked separately from #126 (see follow-up issue)."""
 
 PeerGroupDcidOrListPeerGroupDcid = Annotated[
     PeerGroupDcid | list[PeerGroupDcid],
     PlainValidator(parse_str_or_list),
     PlainSerializer(mcf_str, return_type=PeerGroupDcid | None, when_used="always"),
 ]
-"""Accepts a string or list and serialises to a comma-separated string."""
+"""Accepts a string or list and serialises to a comma-separated string.
+
+See GroupDcidOrListGroupDcid docstring: same PlainValidator, same follow-up."""
 
 TopicDcidOrListTopicDcid = Annotated[
     TopicDcid | list[TopicDcid],
     PlainValidator(parse_str_or_list),
     PlainSerializer(mcf_str, return_type=TopicDcid | None, when_used="always"),
 ]
-"""Accepts a string or list and serialises to a comma-separated string."""
+"""Accepts a string or list and serialises to a comma-separated string.
+
+See GroupDcidOrListGroupDcid docstring: same PlainValidator, same follow-up."""
 
 CustomDimensionName = Annotated[str, StringConstraints(pattern=r"^\S+$")]
 """A custom dimension key, becomes `custom:<name>` and `dcid:<name>` downstream."""

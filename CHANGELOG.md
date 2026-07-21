@@ -19,6 +19,11 @@
 - Re-pointed the data load flow at the DCP prep job, using the `IngestionJobClient`.
 - Renamed load job settings: `CLOUD_RUN_JOB_NAME` -> `LOAD_JOB_NAME` and
   `CLOUD_JOB_REGION` -> `LOAD_JOB_REGION`.
+- `Config.inputFiles` is now `Dict[str, ExplicitSchemaFile]` — the implicit
+  (`variablePerColumn`) path is no longer supported. Loading a legacy config that contains
+  `"format": "variablePerColumn"` now raises a clear `ValueError` with a migration message
+  instead of a generic Pydantic `ValidationError`.
+- `ExplicitSchemaFile` now rejects unknown keys (`extra="forbid"`).
 
 ### Removed
 - `add_implicit_schema_file` method on `CustomDataManager`.
@@ -28,14 +33,7 @@
   `redeploy_cloud_run_service` functions. The service restart is now owned by the
   ingestion workflow.
 - Settings which are no longer used: `CLOUD_SQL_DB_NAME`, `CLOUD_SQL_REGION`,
-  `CLOUD_SERVICE_REGION`, `CLOUD_RUN_SERVICE_NAME`, and `DATACOMMONS_SERVICE_IMAGE`. 
-
-### Changed
-- `Config.inputFiles` is now `Dict[str, ExplicitSchemaFile]` — the implicit
-  (`variablePerColumn`) path is no longer supported. Loading a legacy config that contains
-  `"format": "variablePerColumn"` now raises a clear `ValueError` with a migration message
-  instead of a generic Pydantic `ValidationError`.
-- `ExplicitSchemaFile` now rejects unknown keys (`extra="forbid"`).
+  `CLOUD_SERVICE_REGION`, `CLOUD_RUN_SERVICE_NAME`, and `DATACOMMONS_SERVICE_IMAGE`.
 
 **Migration:**
 - Replace `add_implicit_schema_file` calls with `add_explicit_schema_file` and supply a

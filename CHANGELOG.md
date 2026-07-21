@@ -96,6 +96,14 @@
   whose dcid ended in a bare `g/` with no slug. Only `/` and spaces were stripped, so a tab or
   line break survived the split and `to_camelCase` reduced it to an empty slug. Such segments
   are now dropped.
+- **Breaking:** `TopicMCFNode.Node` is now `TopicDcid` rather than a hand-rolled pattern that
+  looked for a `topic/` segment anywhere in the string without requiring the `dcid:` prefix.
+  `Node="topic/x"` validated and reached the MCF unprefixed, as did `"xtopic/y"` and
+  `"notdcid:topic/x"`. Every other node type's `Node` already required the prefix, and
+  `rename_variable` mints one on lookup, so a topic stored under a bare id could not be found.
+  Those values now raise, whitespace inside the id is rejected instead of being carried into
+  the MCF, and `"dcid: topic/x"` is normalized to `"dcid:topic/x"`. Add the `dcid:` prefix to
+  the `Node` column of any topic CSV; Data Commons rejects unprefixed node ids on load anyway.
 
 ### Removed
 - `add_implicit_schema_file` method on `CustomDataManager`.

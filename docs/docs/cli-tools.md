@@ -82,7 +82,7 @@ dcp-tools csv2mcf <CSV> <MCF>
 - **`--node-type {Node,StatVar,StatVarGroup,Topic,StatVarPeerGroup}`** (default: `Node`) — the MCF
   node type to build, one per CSV row. `StatVar`, `StatVarGroup`, `Topic`, and `StatVarPeerGroup`
   map to the typed node models under `dcp_tools.custom_data.models`. `Node` builds the untyped base
-  `MCFNode` and accepts any column as an extra property.
+  model and accepts any column as an extra property.
 - **`--column-mapping CSV_COL=MCF_PROP`** (repeatable) — rename a CSV column to an MCF property
   before building nodes, e.g. `--column-mapping identifier=Node`. Pass the flag once per column.
 - **`--csv-option KEY=VALUE`** (repeatable) — an extra keyword argument forwarded to

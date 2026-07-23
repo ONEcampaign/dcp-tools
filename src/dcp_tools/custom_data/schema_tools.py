@@ -11,13 +11,13 @@ from typing import Any
 import pandas as pd
 
 from dcp_tools.custom_data.models.data_files import MCFFileName
-from dcp_tools.custom_data.models.mcf import MCFNode, MCFNodes
+from dcp_tools.custom_data.models.mcf import Node, Nodes
 from dcp_tools.custom_data.models.stat_vars import (
-    StatVarGroupMCFNode,
-    StatVarMCFNode,
-    StatVarPeerGroupMCFNode,
+    StatVarGroupNode,
+    StatVarNode,
+    StatVarPeerGroupNode,
 )
-from dcp_tools.custom_data.models.topics import TopicMCFNode
+from dcp_tools.custom_data.models.topics import TopicNode
 
 
 class NodeTypes(StrEnum):
@@ -48,7 +48,7 @@ def _parse_maybe_list(s: str | Any) -> str | list[str]:
 
 def _rows_to_stat_var_nodes(
     data: pd.DataFrame, node_type: str | NodeTypes = "StatVar"
-) -> MCFNodes[StatVarMCFNode]:
+) -> Nodes[StatVarNode]:
     """Convert a DataFrame into a collection of Node objects (of the type selected).
 
     Empty/NA values are removed from each row before constructing the node.
@@ -70,11 +70,11 @@ def _rows_to_stat_var_nodes(
     nodes = []
 
     constructor = {
-        "Node": MCFNode,
-        "StatVar": StatVarMCFNode,
-        "StatVarGroup": StatVarGroupMCFNode,
-        "Topic": TopicMCFNode,
-        "StatVarPeerGroup": StatVarPeerGroupMCFNode,
+        "Node": Node,
+        "StatVar": StatVarNode,
+        "StatVarGroup": StatVarGroupNode,
+        "Topic": TopicNode,
+        "StatVarPeerGroup": StatVarPeerGroupNode,
     }
 
     for record in records:
@@ -87,7 +87,7 @@ def _rows_to_stat_var_nodes(
             clean["dcid"] = clean.pop("Node")
         nodes.append(constructor[node_type](**clean))
 
-    return MCFNodes(nodes=nodes)
+    return Nodes(nodes=nodes)
 
 
 def to_camelCase(segment: str) -> str:
@@ -113,11 +113,11 @@ def to_camelCase(segment: str) -> str:
 
 def resolve_group_paths(
     paths: Iterable[str], *, group_namespace: str
-) -> tuple[dict[str, str], list[StatVarGroupMCFNode]]:
+) -> tuple[dict[str, str], list[StatVarGroupNode]]:
     """Resolve slash-separated group path strings into StatVarGroup dcids.
 
     Each path (e.g. "Economic/Employment/Unemployment") is split into segments,
-    each segment is camelCased and minted into a chain of StatVarGroupMCFNode
+    each segment is camelCased and minted into a chain of StatVarGroupNode
     objects rooted at "dcid:dc/g/Root". A segment shared by two paths (a common
     prefix, or the same path repeated) mints only one node.
 
@@ -135,12 +135,12 @@ def resolve_group_paths(
             - A mapping from each input path (as given) to the dcid of its
               deepest group. A path with no non-empty segments once cleaned
               (e.g. "-", "/") is omitted.
-            - The StatVarGroupMCFNode objects for every unique group, in
+            - The StatVarGroupNode objects for every unique group, in
               first-seen order.
     """
 
     resolved: dict[str, str] = {}
-    group_nodes: list[StatVarGroupMCFNode] = []
+    group_nodes: list[StatVarGroupNode] = []
     seen: set[str] = set()
     root = f"dcid:{group_namespace}/g/"
 
@@ -149,11 +149,11 @@ def resolve_group_paths(
             continue
 
         # Strip line breaks and trailing spaces first. Group paths used to reach the
-        # resolver through `StatVarMCFNode(memberOf=...)`, which cleaned them on the
+        # resolver through `StatVarNode(memberOf=...)`, which cleaned them on the
         # way in; resolving before construction skips that. Segments that are only
         # whitespace are dropped too, or `to_camelCase` yields an empty slug and the
         # path mints a group whose dcid ends in a bare "g/".
-        cleaned = MCFNode._clean_value(raw).lstrip("-").strip("/ ")
+        cleaned = Node._clean_value(raw).lstrip("-").strip("/ ")
         parts = [p for p in cleaned.split("/") if p.strip()]
         if not parts:
             continue
@@ -166,7 +166,7 @@ def resolve_group_paths(
                 seen.add(group_dcid)
                 parent = "dcid:dc/g/Root" if idx == 0 else root + slug_parts[idx - 1]
                 group_nodes.append(
-                    StatVarGroupMCFNode(
+                    StatVarGroupNode(
                         dcid=group_dcid, name=part, specializationOf=parent
                     )
                 )
@@ -185,21 +185,21 @@ def csv_metadata_to_nodes(
     ignore_columns: list[str] | None = None,
     parse_groups: bool = False,
     group_namespace: str | None = None,
-) -> MCFNodes[StatVarMCFNode]:
+) -> Nodes[StatVarNode]:
     """Read a CSV of StatVar metadata and return the corresponding MCF StatVar nodes.
 
     Args:
         file_path: Path to the CSV file.
         node_type: The type of node to create. Default is "StatVar".
         column_to_property_mapping: Optional map from CSV column names to
-            ``StatVarMCFNode`` attribute names.
+            ``StatVarNode`` attribute names.
         csv_options: Extra keyword arguments forwarded verbatim to
             ``pandas.read_csv``.
         ignore_columns: Optional list of columns to ignore when reading the CSV.
         parse_groups: If True, the ``memberOf`` column is treated as a
             slash-separated group path (e.g. "Economic/Employment/Unemployment"),
             resolved via ``resolve_group_paths``, and the minted
-            ``StatVarGroupMCFNode`` objects are appended to the returned
+            ``StatVarGroupNode`` objects are appended to the returned
             container. A row whose ``memberOf`` carries no group path, whether
             missing, empty, or cleaning to no segments at all (e.g. "-", "/"), is
             left unset rather than raising. Defaults to False.
@@ -208,8 +208,8 @@ def csv_metadata_to_nodes(
             used if not provided.
 
     Returns:
-        A ``Nodes`` container populated with ``StatVarMCFNode`` objects, followed
-        by any ``StatVarGroupMCFNode`` objects minted from ``memberOf`` paths.
+        A ``Nodes`` container populated with ``StatVarNode`` objects, followed
+        by any ``StatVarGroupNode`` objects minted from ``memberOf`` paths.
 
     Raises:
         ValueError: If ``parse_groups`` is True and the CSV has no ``memberOf``
@@ -231,7 +231,7 @@ def csv_metadata_to_nodes(
         .rename(columns=column_to_property_mapping)
     )
 
-    group_nodes: list[StatVarGroupMCFNode] = []
+    group_nodes: list[StatVarGroupNode] = []
     if parse_groups:
         if "memberOf" not in data.columns:
             raise ValueError(

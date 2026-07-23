@@ -1,9 +1,9 @@
 import pytest
 
-from dcp_tools.custom_data.models.mcf import MCFNodes
+from dcp_tools.custom_data.models.mcf import Nodes
 from dcp_tools.custom_data.models.stat_vars import (
-    StatVarGroupMCFNode,
-    StatVarMCFNode,
+    StatVarGroupNode,
+    StatVarNode,
 )
 from dcp_tools.custom_data.schema_tools import (
     csv_metadata_to_nodes,
@@ -37,14 +37,14 @@ def test_csv_metadata_to_nodes(tmp_path):
         assert hasattr(node, "searchDescription")
 
 
-def get_group_nodes(nodes: MCFNodes) -> list[StatVarGroupMCFNode]:
-    """Extract all StatVarGroupMCFNode instances from MCFNodes."""
-    return [n for n in nodes.nodes if isinstance(n, StatVarGroupMCFNode)]
+def get_group_nodes(nodes: Nodes) -> list[StatVarGroupNode]:
+    """Extract all StatVarGroupNode instances from Nodes."""
+    return [n for n in nodes.nodes if isinstance(n, StatVarGroupNode)]
 
 
-def get_statvar_nodes(nodes: MCFNodes) -> list[StatVarMCFNode]:
-    """Extract all StatVarMCFNode instances from MCFNodes."""
-    return [n for n in nodes.nodes if isinstance(n, StatVarMCFNode)]
+def get_statvar_nodes(nodes: Nodes) -> list[StatVarNode]:
+    """Extract all StatVarNode instances from Nodes."""
+    return [n for n in nodes.nodes if isinstance(n, StatVarNode)]
 
 
 def test_single_level_group():
@@ -150,7 +150,7 @@ def test_resolve_group_paths_drops_whitespace_only_segments(raw, expected):
     `.strip("/ ")` does not remove a tab or newline, so such a segment used to
     survive and `to_camelCase` reduced it to an empty slug, minting a group whose
     dcid ends in a bare "g/". These paths reached the resolver through
-    `StatVarMCFNode(memberOf=...)` before groups were resolved ahead of node
+    `StatVarNode(memberOf=...)` before groups were resolved ahead of node
     construction, and were cleaned on the way in.
     """
     resolved, groups = resolve_group_paths([raw], group_namespace="ns")
@@ -225,7 +225,7 @@ def test_csv_metadata_to_nodes_parse_groups_leaves_segmentless_memberof_unset(tm
 
 def test_csv_metadata_to_nodes_parse_groups_remove_works_on_group_node(tmp_path):
     """Regression test: csv_metadata_to_nodes used to append group nodes directly to
-    `nodes.nodes`, bypassing `MCFNodes.add` and leaving `_pos` stale. `.remove()` (which
+    `nodes.nodes`, bypassing `Nodes.add` and leaving `_pos` stale. `.remove()` (which
     looks the node up via `_pos`) on a group node from a parse_groups=True result must
     work — the same class of index bug #126 fixed in `rename_variable`."""
     content = (

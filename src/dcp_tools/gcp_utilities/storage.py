@@ -12,7 +12,7 @@ import pandas as pd
 from google.cloud.storage import Bucket
 
 from dcp_tools.custom_data.models.config_file import Config
-from dcp_tools.custom_data.models.mcf import MCFNodes
+from dcp_tools.custom_data.models.mcf import Nodes
 from dcp_tools.logger import logger
 
 _VALID_EXTENSIONS = {".csv", ".json", ".mcf"}
@@ -398,7 +398,7 @@ def get_bucket_files(
             with tempfile.NamedTemporaryFile(suffix=".mcf", delete=False) as tmp:
                 tmp.write(raw)
             try:
-                results[name] = MCFNodes().load_from_mcf_file(tmp.name)
+                results[name] = Nodes().load_from_mcf_file(tmp.name)
             finally:
                 os.unlink(tmp.name)
         else:

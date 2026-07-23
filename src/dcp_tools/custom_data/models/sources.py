@@ -1,14 +1,14 @@
 from typing import Literal
 
 from dcp_tools.custom_data.models.common import Dcid, QuotedStr
-from dcp_tools.custom_data.models.mcf import MCFNode
+from dcp_tools.custom_data.models.mcf import Node
 
 
-class SourceMCFNode(MCFNode):
-    """Represents a Source node for MCF.
+class SourceNode(Node):
+    """Represents a Data Commons Source node.
 
     Attributes:
-        # Inherited from MCFNode
+        # Inherited from Node
         dcid: Identifier for the Node (minted as ``dcid:source/<name>``).
         name: The human-readable name for the Node.
         description: Optional human-readable description.
@@ -26,11 +26,11 @@ class SourceMCFNode(MCFNode):
     isPartOf: Dcid | None = None
 
 
-class ProvenanceMCFNode(MCFNode):
-    """Represents a Provenance node for MCF.
+class ProvenanceNode(Node):
+    """Represents a Data Commons Provenance node.
 
     Attributes:
-        # Inherited from MCFNode
+        # Inherited from Node
         dcid: Identifier for the Node (minted as ``dcid:provenance/<name>``).
         name: The human-readable name for the Node.
         description: Optional human-readable description.

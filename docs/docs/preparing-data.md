@@ -284,7 +284,7 @@ another group's dcid for a sub-group. Unlike the schema-node builders above,
 `add_variable_group_to_mcf` doesn't normalize a bare `Node`. Pass it already `dcid:`-prefixed.
 
 To declare many StatVars at once instead of calling `add_variable_to_mcf` per variable, put them
-in a CSV with one row per StatVar and columns matching `StatVarMCFNode` field names:
+in a CSV with one row per StatVar and columns matching `StatVarNode` field names:
 
 ```csv
 Node,name,statType,memberOf
@@ -302,7 +302,7 @@ manager.add_variables_to_mcf_from_csv(
 
 `parse_groups=True` treats `memberOf` as a slash-separated group path
 (`"Economic/ClimateFinance/BilateralCommitments"`) instead of a dcid, and expands it into a chain
-of `StatVarGroupMCFNode`s under `group_namespace` (here, `dcid:one/g/economic`, then
+of `StatVarGroupNode`s under `group_namespace` (here, `dcid:one/g/economic`, then
 `.../climatefinance`, then `.../bilateralcommitments`). Each StatVar's `memberOf` is rewritten to
 the deepest group's dcid. Rename CSV columns to node field names with
 `column_to_property_mapping` if your headers don't already match.

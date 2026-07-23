@@ -1,17 +1,17 @@
 from typing import Literal
 
 from dcp_tools.custom_data.models.common import DcidOrListDcid
-from dcp_tools.custom_data.models.mcf import MCFNode
+from dcp_tools.custom_data.models.mcf import Node
 
 
-class EntityTypeMCFNode(MCFNode):
-    """Represents a custom entity-type (Class) node for MCF.
+class EntityTypeNode(Node):
+    """Represents a Data Commons entity-type (Class) node.
 
     typeOf is fixed to ``dcid:Class``. ``includedIn`` references the provenance(s) — and,
     via the builder, their linked source(s) — the type is defined in.
 
     Attributes:
-        # Inherited from MCFNode
+        # Inherited from Node
         dcid: Identifier for the Node (e.g. ``dcid:MyClass``).
         name: The human-readable name for the Node.
         description: Optional human-readable description.
@@ -25,14 +25,14 @@ class EntityTypeMCFNode(MCFNode):
     includedIn: DcidOrListDcid | None = None
 
 
-class EventTypeMCFNode(MCFNode):
-    """Represents a custom event-type node for MCF.
+class EventTypeNode(Node):
+    """Represents a Data Commons event-type node.
 
     typeOf is fixed to ``dcid:Class``; ``subClassOf`` defaults to ``dcid:Event`` and is
     overridable. ``includedIn`` mirrors EntityType.
 
     Attributes:
-        # Inherited from MCFNode
+        # Inherited from Node
         dcid: Identifier for the Node (e.g. ``dcid:MyEventType``).
         name: The human-readable name for the Node.
         description: Optional human-readable description.
@@ -48,14 +48,14 @@ class EventTypeMCFNode(MCFNode):
     includedIn: DcidOrListDcid | None = None
 
 
-class PropertyMCFNode(MCFNode):
-    """Represents a custom Property node for MCF.
+class PropertyNode(Node):
+    """Represents a Data Commons Property node.
 
     typeOf is fixed to ``dcid:Property``. Optional schema refs describe the property's
     domain, range, and parent property.
 
     Attributes:
-        # Inherited from MCFNode
+        # Inherited from Node
         dcid: Identifier for the Node (e.g. ``dcid:myProperty``).
         name: The human-readable name for the Node.
         description: Optional human-readable description.
@@ -73,15 +73,15 @@ class PropertyMCFNode(MCFNode):
     subPropertyOf: DcidOrListDcid | None = None
 
 
-class UnitOfMeasureMCFNode(MCFNode):
-    """Represents a custom unit-of-measure node for MCF.
+class UnitOfMeasureNode(Node):
+    """Represents a Data Commons UnitOfMeasure node.
 
     typeOf defaults to ``dcid:UnitOfMeasure`` and is overridable (e.g.
     ``dcid:CurrencyUnitOfMeasure``). ``name``/``shortDisplayName``/``description`` are
-    inherited from MCFNode.
+    inherited from Node.
 
     Attributes:
-        # Inherited from MCFNode
+        # Inherited from Node
         dcid: Identifier for the Node (e.g. ``dcid:MyUnit``).
         name: The human-readable name for the Node.
         shortDisplayName: Optional short display name (e.g. ``"$"``).
@@ -94,14 +94,14 @@ class UnitOfMeasureMCFNode(MCFNode):
     typeOf: DcidOrListDcid = "dcid:UnitOfMeasure"
 
 
-class MeasurementMethodMCFNode(MCFNode):
-    """Represents a custom measurement-method node for MCF.
+class MeasurementMethodNode(Node):
+    """Represents a Data Commons MeasurementMethod node.
 
     typeOf defaults to ``dcid:MeasurementMethodEnum`` and is overridable (e.g.
     ``dcid:CensusSurveyEnum``). ``name`` is optional (inherited).
 
     Attributes:
-        # Inherited from MCFNode
+        # Inherited from Node
         dcid: Identifier for the Node (e.g. ``dcid:MyMethod``).
         name: Optional human-readable name for the Node.
         description: Optional human-readable description.

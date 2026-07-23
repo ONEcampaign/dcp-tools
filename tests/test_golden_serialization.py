@@ -5,16 +5,16 @@ import pytest
 
 from dcp_tools.custom_data.data_management import CustomDataManager
 from dcp_tools.custom_data.models.config_file import Config
-from dcp_tools.custom_data.models.mcf import MCFNode
+from dcp_tools.custom_data.models.mcf import Node
 from dcp_tools.custom_data.schema_tools import csv_metadata_to_nodes
 
 GOLDEN_DIR = Path(__file__).parent / "goldens"
 
 
-def test_mcfnode_snapshot():
+def test_node_snapshot():
     got = (GOLDEN_DIR / "sample_node.mcf").read_text()
 
-    node = MCFNode(
+    node = Node(
         dcid="dcid:X/foo",
         name='"Some Name"',
         typeOf="dcid:StatisticalVariable",

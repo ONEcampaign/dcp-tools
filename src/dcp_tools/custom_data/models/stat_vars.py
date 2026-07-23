@@ -9,7 +9,7 @@ from dcp_tools.custom_data.models.common import (
     PeerGroupDcid,
     QuotedStrListOrStr,
 )
-from dcp_tools.custom_data.models.mcf import MCFNode
+from dcp_tools.custom_data.models.mcf import Node
 
 
 class StatType(StrEnum):
@@ -26,11 +26,11 @@ class StatType(StrEnum):
     STANDARD_ERROR = "dcid:stdErr"
 
 
-class StatVarMCFNode(MCFNode):
+class StatVarNode(Node):
     """Represents a Statistical Variable node in MCF.
 
     Attributes:
-        # Inherited from MCFNode
+        # Inherited from Node
         dcid: Identifier for the Node.
         name: The human-readable name for the Node.
         description: Optional human-readable description.
@@ -65,7 +65,7 @@ class StatVarMCFNode(MCFNode):
     observationProperties: DcidOrListDcid | None = None
 
 
-class StatVarGroupMCFNode(MCFNode):
+class StatVarGroupNode(Node):
     """Represents a Statistical Variable Group node in MCF.
 
     Attributes:
@@ -74,7 +74,7 @@ class StatVarGroupMCFNode(MCFNode):
         typeOf: Fixed type indicating this is a StatVarGroup.
         specializationOf: DCID of the parent group, must start with 'dcid:' and contain 'g/'.
 
-         # Inherits from MCFNode
+         # Inherits from Node
         name: The human-readable name for the Node.
         dcid: Optional DCID for uniquely identifying the Node.
         description: Optional human-readable description.
@@ -88,7 +88,7 @@ class StatVarGroupMCFNode(MCFNode):
     specializationOf: GroupDcid
 
 
-class StatVarPeerGroupMCFNode(MCFNode):
+class StatVarPeerGroupNode(Node):
     """Represents a Statistical Variable Peer Group node in MCF.
     A StatVarPeerGroup represents a group of StatisticalVariable nodes that are comparable peers.
 
@@ -98,7 +98,7 @@ class StatVarPeerGroupMCFNode(MCFNode):
         typeOf: Fixed type indicating this is a StatVarPeerGroup.
         member: DCID of the parent group, must start with 'dcid:' and contain 'g/'.
 
-         # Inherits from MCFNode
+         # Inherits from Node
         name: The human-readable name for the Node.
         description: Optional human-readable description.
         provenance: Optional provenance information.

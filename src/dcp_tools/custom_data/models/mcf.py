@@ -15,7 +15,7 @@ from dcp_tools.custom_data.models.common import (
 )
 
 
-class MCFNode(BaseModel):
+class Node(BaseModel):
     """Represents a Data Commons graph node.
 
     Attributes:
@@ -37,9 +37,9 @@ class MCFNode(BaseModel):
     shortDisplayName: QuotedStr | None = None
     subClassOf: StrOrListStr | None = None
 
-    # Allow extra fields since MCF can have arbitrary properties and this
-    # class is not comprehensive of all possible MCF properties. Assignments are
-    # validated too, so patterns like Dcid/GroupDcid are enforced on `MCFNodes.rename`
+    # Allow extra fields since nodes can have arbitrary properties and this
+    # class is not comprehensive of all possible node properties. Assignments are
+    # validated too, so patterns like Dcid/GroupDcid are enforced on `Nodes.rename`
     # (which assigns `.dcid`), not just on construction.
     model_config = ConfigDict(extra="allow", validate_assignment=True)
 
@@ -86,7 +86,7 @@ class MCFNode(BaseModel):
         but its cleaned output is applied only to the *other*, already-set fields and
         is discarded for the field actually being assigned. Cleaning here instead
         covers both declared fields and the `extra="allow"` keys that carry arbitrary
-        MCF properties, neither of which a wildcard field validator would reach in
+        node properties, neither of which a wildcard field validator would reach in
         full.
         """
         super().__setattr__(name, self._clean_value(value))
@@ -107,14 +107,14 @@ class MCFNode(BaseModel):
         return "\n".join(lines) + "\n\n"
 
 
-class MCFNodes(BaseModel):
+class Nodes(BaseModel):
     """Represents a collection of Nodes.
 
     Attributes:
         nodes: A list of Node instances.
     """
 
-    nodes: list[MCFNode] = Field(default_factory=list)
+    nodes: list[Node] = Field(default_factory=list)
     _pos: dict[str, int] = PrivateAttr(default_factory=dict)
 
     def _reindex(self) -> None:
@@ -132,7 +132,7 @@ class MCFNodes(BaseModel):
             raise ValueError(f"Node '{node_id}' not found.") from None
 
     def _flush(self, block: dict[str, str]) -> None:
-        """Convert the current block into an `MCFNode` and store it."""
+        """Convert the current block into a `Node` and store it."""
         if not block:
             return
         if "Node" not in block:
@@ -141,10 +141,10 @@ class MCFNodes(BaseModel):
                 f"{next(iter(block.items()))!r}"
             )
         block["dcid"] = block.pop("Node")
-        self.add(MCFNode(**block))
+        self.add(Node(**block))
         block.clear()
 
-    def load_from_mcf_file(self, file_path: str | PathLike) -> MCFNodes:
+    def load_from_mcf_file(self, file_path: str | PathLike) -> Nodes:
         """Parses MCF nodes from a file and populates the collection.
 
         Each node block is expected to start with
@@ -180,11 +180,11 @@ class MCFNodes(BaseModel):
 
         return self
 
-    def add(self, node: MCFNode, override: bool = False) -> MCFNodes:
+    def add(self, node: Node, override: bool = False) -> Nodes:
         """Adds a new node to the collection.
 
         Args:
-            node: The MCFNode instance to add.
+            node: The Node instance to add.
             override: If True, overwrite the existing node with the same ID.
                 If False, raise an error if a node with the same ID already exists.
         """
@@ -202,7 +202,7 @@ class MCFNodes(BaseModel):
 
         return self
 
-    def remove(self, node_id: str) -> MCFNodes:
+    def remove(self, node_id: str) -> Nodes:
         """Removes a node from the collection by its ID.
 
         Args:
@@ -219,7 +219,7 @@ class MCFNodes(BaseModel):
 
         return self
 
-    def rename(self, old_id: str, new_id: str) -> MCFNodes:
+    def rename(self, old_id: str, new_id: str) -> Nodes:
         """Renames a node in place, keeping the lookup index consistent.
 
         Args:
@@ -241,7 +241,7 @@ class MCFNodes(BaseModel):
 
     def export_to_mcf_file(
         self, file_path: str | PathLike, *, override: bool = True
-    ) -> MCFNodes:
+    ) -> Nodes:
         """Exports the MCF nodes to a file.
 
         Args:

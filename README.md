@@ -4,7 +4,7 @@ __Manage and load data to Data Commons Platform instances__
 
 [![PyPI](https://img.shields.io/pypi/v/dcp-tools.svg)](https://pypi.org/project/dcp-tools/)
 [![PyPI - Python Version](https://img.shields.io/pypi/pyversions/dcp-tools.svg)](https://pypi.org/project/dcp-tools/)
-[![Docs](https://img.shields.io/badge/docs-bblocks-blue)](https://docs.one.org/tools/bblocks/datacommons-tools/)
+[![Docs](https://img.shields.io/badge/docs-dcp--tools-blue)](https://docs.one.org/tools/dcp-tools/)
 [![Lint/format: Ruff](https://img.shields.io/badge/lint%2Fformat-ruff-46a758.svg)](https://github.com/astral-sh/ruff)
 
 A [Data Commons Platform](https://docs.datacommons.org/custom_dc/custom_data.html) instance takes
@@ -20,10 +20,13 @@ the CLI) and uploads it to Cloud Storage to trigger the platform's ingestion job
 pip install dcp-tools
 ```
 
+During the `1.0.0rc1` release-candidate period, this is a pre-release, so pip won't find it
+unless you ask for pre-releases explicitly: `pip install --pre dcp-tools`.
+
 Or from GitHub:
 
 ```bash
-pip install git+https://github.com/ONEcampaign/bblocks-datacommons-tools
+pip install git+https://github.com/ONEcampaign/dcp-tools
 ```
 
 ## Quickstart
@@ -119,11 +122,11 @@ run_data_load(settings=settings)
 
 `run_data_load` triggers the DCP (Data Commons Platform) ingestion job, which ingests the new
 data and serves it. There's no separate redeploy step to run. See the
-[loading-data docs](https://docs.one.org/tools/bblocks/datacommons-tools/loading-data/) for the
+[loading-data docs](https://docs.one.org/tools/dcp-tools/loading-data/) for the
 full settings reference, and the `dcp-tools` CLI (`upload`, `dataload`, `pipeline`), which wraps
 this same flow.
 
 ## Contributing
 
-Contributions are welcome! See [CONTRIBUTING](https://github.com/ONEcampaign/bblocks-datacommons-tools/blob/main/CONTRIBUTING.MD)
+Contributions are welcome! See [CONTRIBUTING](https://github.com/ONEcampaign/dcp-tools/blob/main/CONTRIBUTING.MD)
 for how to get started, report bugs, and submit changes.

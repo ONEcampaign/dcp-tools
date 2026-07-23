@@ -1,7 +1,8 @@
 # Changelog
 
-## v1.0.0 (in development)
-- Stable release of the `dcp-tools` package.
+## v1.0.0rc1 (2026-07-23)
+
+- Release candidate for the `dcp-tools` package, the first release under the new name.
 - Renamed the package from `bblocks-datacommons-tools` to `dcp-tools`. The import path is
   now `dcp_tools` (was `bblocks.datacommons_tools`). Installing the old
   `bblocks-datacommons-tools` distribution now pulls in `dcp-tools` and re-exports it with a
@@ -93,38 +94,48 @@
 - Added an `imports` argument on `run_data_load` and a matching `--imports` flag on the
   `dataload` CLI command, to trigger a load of specific imports rather than all imports.
 
-## v0.1.0 (in development)
+## v0.1.0 (2026-02-13)
+
 - Initial release of the `dcp-tools` package for external preview and testing
 
 ## v0.0.9 (2025-09-17)
+
 - Added new configuration options, including `set_customIdNamespace`, `set_customSvgPrefix`,
-`set_defaultCustomRootStatVarGroupName` and `set_svHierarchyPropsBlocklist`.
+  `set_defaultCustomRootStatVarGroupName` and `set_svHierarchyPropsBlocklist`.
 
 ## v0.0.8 (2025-09-03)
+
 - Removed white space between quoted items to defend against a bug with data loading on
-the DC side.
+  the DC side.
 
 ## v0.0.7 (2025-08-27)
+
 - Handle linebreaks and trailing spaces by removing them. This prevents errors when serialising
-to MCF which could (quietly) break the data loading job.
+  to MCF which could (quietly) break the data loading job.
 
 ## v0.0.6 (2025-08-14)
+
 - Node name is now an optional attribute. This enables easily appending data to existing Base DC Nodes.
 
 ## v0.0.5 (2025-08-14)
+
 - Nodes can now contain a single `dcid` or a list of `dcids`
 
 ## v0.0.4 (2025-07-22)
+
 - Improved how groups strings are transformed to camelCase by dealing with
-additional special characters
+  additional special characters
 - Removed option to override input and output folders on the data load job.
 
 ## v0.0.3 (2025-07-18)
+
 - Fixes two bugs related to MCF files. It now enforces the `dcid:` prefix for Node and
-automatically trims spaces between `dcid:` and the start of the id string.
+  automatically trims spaces between `dcid:` and the start of the id string.
 
 ## v0.0.2 (2025-07-07)
+
 - Minor update to documentation and release to PyPI
 
 ## v0.0.1 (2025-07-07)
+
 - Initial release of the `dcp-tools`

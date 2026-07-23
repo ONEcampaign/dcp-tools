@@ -7,7 +7,6 @@ on:
 
 permissions:
   contents: read
-  id-token: write  # Required for PyPI trusted publishing
 
 jobs:
   build:
@@ -38,9 +37,20 @@ jobs:
           name: dist
           path: dist/
 
+      - name: Build shim package
+        run: cd shim && uv build
+
+      - name: Upload shim artifacts
+        uses: actions/upload-artifact@v7
+        with:
+          name: dist-shim
+          path: shim/dist/
+
   publish:
     needs: build
     runs-on: ubuntu-latest
+    permissions:
+      id-token: write  # Required for PyPI trusted publishing
     environment:
       name: pypi
       url: https://pypi.org/project/dcp-tools
@@ -56,3 +66,61 @@ jobs:
 
       - name: Publish to PyPI
         run: uv publish
+
+  publish-shim:
+    needs: build
+    runs-on: ubuntu-latest
+    permissions:
+      id-token: write  # Required for PyPI trusted publishing
+    environment:
+      name: pypi-shim
+      url: https://pypi.org/project/bblocks-datacommons-tools
+    steps:
+      - name: Install uv
+        uses: astral-sh/setup-uv@v8.2.0
+
+      - name: Download shim artifacts
+        uses: actions/download-artifact@v8
+        with:
+          name: dist-shim
+          path: dist/
+
+      - name: Publish shim to PyPI
+        run: uv publish
+
+  github-release:
+    needs: [publish, publish-shim]
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write  # Required to create a GitHub release
+    steps:
+      - name: Download build artifacts
+        uses: actions/download-artifact@v8
+        with:
+          name: dist
+          path: dist/
+
+      - name: Download shim artifacts
+        uses: actions/download-artifact@v8
+        with:
+          name: dist-shim
+          path: dist-shim/
+
+      - name: Classify the tag
+        id: tag
+        run: |
+          if [[ "${GITHUB_REF_NAME}" =~ ^v[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
+            echo "prerelease=false" >> "$GITHUB_OUTPUT"
+          else
+            echo "prerelease=true" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Create GitHub release
+        uses: softprops/action-gh-release@v2
+        with:
+          draft: true
+          generate_release_notes: true
+          prerelease: ${{ steps.tag.outputs.prerelease }}
+          files: |
+            dist/*
+            dist-shim/*

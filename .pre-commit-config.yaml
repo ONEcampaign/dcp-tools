@@ -111,5 +111,6 @@ repos:
         additional_dependencies:
           - mdformat-gfm
           - mdformat-frontmatter
+          - mdformat-admon
         # Example: limit to docs if desired
         # files: ^(README\.md|docs/|.*/README\.md)$

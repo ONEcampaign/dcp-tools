@@ -5,8 +5,8 @@ and `.mcf` files) without hand-editing any of the three. Each section below is a
 recipe. Jump to the one you need.
 
 !!! note
-    Assumes `dcp-tools` is installed (`pip install dcp-tools`). See
-    [Getting started](getting-started.md) if it isn't.
+    Assumes `dcp-tools` is installed (`pip install --pre dcp-tools` during the 1.0.0rc1 release
+    candidate). See [Getting started](getting-started.md) if it isn't.
 
 ## How to create a `CustomDataManager`
 
@@ -199,14 +199,14 @@ for why `observationAbout` can't represent a row about two entities.
 themselves. Use the other five when your data needs a schema concept Data Commons doesn't already
 define.
 
-| Method | Emits | Use when |
-|---|---|---|
-| `add_variable_to_mcf` | `dcid:StatisticalVariable` | Declaring a StatVar (see above) |
-| `add_entity_type` | `dcid:Class` | Your data describes something Data Commons doesn't have a `Class` for yet, such as a program type or a facility category |
-| `add_event_type` | `dcid:Class` (`subClassOf` defaults to `dcid:Event`) | Your data is about events (a pledge announcement, a policy change) rather than a state |
-| `add_property` | `dcid:Property` | You need a new predicate, such as a custom dimension from the previous section |
-| `add_unit` | `dcid:UnitOfMeasure` | Your values are in a unit Data Commons doesn't already define |
-| `add_measurement_method` | `dcid:MeasurementMethodEnum` | You want to record how an observation was produced (survey, estimate, administrative data) |
+| Method                   | Emits                                                | Use when                                                                                                                 |
+| ------------------------ | ---------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------ |
+| `add_variable_to_mcf`    | `dcid:StatisticalVariable`                           | Declaring a StatVar (see above)                                                                                          |
+| `add_entity_type`        | `dcid:Class`                                         | Your data describes something Data Commons doesn't have a `Class` for yet, such as a program type or a facility category |
+| `add_event_type`         | `dcid:Class` (`subClassOf` defaults to `dcid:Event`) | Your data is about events (a pledge announcement, a policy change) rather than a state                                   |
+| `add_property`           | `dcid:Property`                                      | You need a new predicate, such as a custom dimension from the previous section                                           |
+| `add_unit`               | `dcid:UnitOfMeasure`                                 | Your values are in a unit Data Commons doesn't already define                                                            |
+| `add_measurement_method` | `dcid:MeasurementMethodEnum`                         | You want to record how an observation was produced (survey, estimate, administrative data)                               |
 
 All six accept a bare or `dcid:`-prefixed `Node` token. Bare tokens are normalized to
 `dcid:<token>` (no namespace segment, unlike source/provenance names). `add_measurement_method` is

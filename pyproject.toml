@@ -1,6 +1,6 @@
 [project]
 name = "dcp-tools"
-version = "0.1.1"
+version = "1.0.0rc1"
 description = "Tools to work with the Data Commons Platform."
 authors = [
     { name = "ONE Campaign" },
@@ -20,14 +20,24 @@ dependencies = [
 ]
 keywords = ["data-commons", "datacommons", "dcp", "etl", "statistics"]
 classifiers = [
-    "Development Status :: 3 - Alpha",
+    "Development Status :: 4 - Beta",
     "Intended Audience :: Developers",
+    "Operating System :: OS Independent",
     "Programming Language :: Python :: 3.13",
     "Programming Language :: Python :: 3.14",
+    "Topic :: Scientific/Engineering :: Information Analysis",
+    "Topic :: Software Development :: Libraries :: Python Modules",
+    "Typing :: Typed",
 ]
 
 [project.scripts]
 dcp-tools = "dcp_tools.cli:main"
+
+[project.urls]
+homepage = "https://docs.one.org/tools/dcp-tools/"
+documentation = "https://docs.one.org/tools/dcp-tools/"
+repository = "https://github.com/ONEcampaign/dcp-tools"
+issues = "https://github.com/ONEcampaign/dcp-tools/issues"
 
 [dependency-groups]
 dev = [

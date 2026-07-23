@@ -1,6 +1,6 @@
 [project]
 name = "bblocks-datacommons-tools"
-version = "0.1.1"
+version = "1.0.0rc1"
 description = "Deprecated: renamed to dcp-tools. Installs dcp-tools and redirects imports."
 authors = [
     { name = "ONE Campaign" },
@@ -10,8 +10,18 @@ license-files = ["LICENSE"]
 readme = "README.md"
 requires-python = ">=3.13"
 dependencies = [
-    "dcp-tools>=0.1.1",
+    "dcp-tools>=1.0.0rc1",
 ]
+classifiers = [
+    "Development Status :: 7 - Inactive",
+    "Operating System :: OS Independent",
+]
+
+[project.urls]
+repository = "https://github.com/ONEcampaign/dcp-tools"
+documentation = "https://pypi.org/project/dcp-tools/"
+homepage = "https://github.com/ONEcampaign/dcp-tools"
+issues = "https://github.com/ONEcampaign/dcp-tools/issues"
 
 [tool.uv.build-backend]
 module-name = "bblocks.datacommons_tools"

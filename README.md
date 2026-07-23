@@ -14,6 +14,11 @@ entities, or properties rather than reusing existing ones, you also need MCF (Me
 Framework) files describing them. `dcp-tools` builds and validates that bundle in Python (or from
 the CLI) and uploads it to Cloud Storage to trigger the platform's ingestion job.
 
+This package was published as `bblocks-datacommons-tools` until version 0.1.1, and imported as
+`bblocks.datacommons_tools`. Installing the old distribution now pulls in `dcp-tools` and
+redirects those imports with a `DeprecationWarning`, so existing code keeps working. Update
+imports to `dcp_tools` when convenient.
+
 ## Install
 
 ```bash

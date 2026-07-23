@@ -94,6 +94,13 @@
 - Added an `imports` argument on `run_data_load` and a matching `--imports` flag on the
   `dataload` CLI command, to trigger a load of specific imports rather than all imports.
 
+## v0.1.1 (2026-02-19)
+
+- Added a `--sync` flag to the `upload` and `pipeline` CLI commands, which deletes remote
+  blobs that no longer have a local counterpart after uploading.
+- Added `sync_directory_to_gcs` in `storage.py`, which composes upload and stale blob cleanup.
+- Added a `sync` parameter on `upload_to_cloud_storage`.
+
 ## v0.1.0 (2026-02-13)
 
 - Initial release of the `dcp-tools` package for external preview and testing

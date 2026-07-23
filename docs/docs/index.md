@@ -12,6 +12,12 @@ search and visualization tools. The official
 [Custom Data Commons documentation](https://docs.datacommons.org/custom_dc/index.html) covers how
 the platform itself works. This site covers the tooling that prepares and loads data into it.
 
+!!! note
+    This package was published as `bblocks-datacommons-tools` until version 0.1.1, and imported
+    as `bblocks.datacommons_tools`. Installing the old distribution now pulls in `dcp-tools` and
+    redirects those imports with a `DeprecationWarning`, so existing code keeps working. Update
+    imports to `dcp_tools` when convenient.
+
 **Key features**
 
 - Build and edit `config.json` files programmatically

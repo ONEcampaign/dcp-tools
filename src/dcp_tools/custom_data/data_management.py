@@ -23,19 +23,19 @@ from dcp_tools.custom_data.models.data_files import (
     MCFFileName,
     ObservationProperties,
 )
-from dcp_tools.custom_data.models.mcf import MCFNode, MCFNodes
+from dcp_tools.custom_data.models.mcf import Node, Nodes
 from dcp_tools.custom_data.models.schema_nodes import (
-    EntityTypeMCFNode,
-    EventTypeMCFNode,
-    MeasurementMethodMCFNode,
-    PropertyMCFNode,
-    UnitOfMeasureMCFNode,
+    EntityTypeNode,
+    EventTypeNode,
+    MeasurementMethodNode,
+    PropertyNode,
+    UnitOfMeasureNode,
 )
-from dcp_tools.custom_data.models.sources import ProvenanceMCFNode, SourceMCFNode
+from dcp_tools.custom_data.models.sources import ProvenanceNode, SourceNode
 from dcp_tools.custom_data.models.stat_vars import (
     StatType,
-    StatVarGroupMCFNode,
-    StatVarMCFNode,
+    StatVarGroupNode,
+    StatVarNode,
 )
 from dcp_tools.custom_data.models.vertical_specs import VerticalSpec
 from dcp_tools.custom_data.schema_tools import (
@@ -73,7 +73,7 @@ class CustomDataManager:
 
     Args:
         config_file: Path to the config json file. If not provided, a new config object will be created.
-        mcf_files: Path to one or more MCF files. If not provided, a new MCFNodes object will be created.
+        mcf_files: Path to one or more MCF files. If not provided, a new Nodes object will be created.
 
     Usage:
 
@@ -195,7 +195,7 @@ class CustomDataManager:
         Initialize the CustomDataManager object
         Args:
             config_file: Path to the config json file. If not provided, a new config object will be created.
-            mcf_files: Path to one or more MCF files. If not provided, a new MCFNodes object will be created.
+            mcf_files: Path to one or more MCF files. If not provided, a new Nodes object will be created.
         """
 
         self._config = (
@@ -209,14 +209,11 @@ class CustomDataManager:
             else:
                 paths = [Path(p) for p in mcf_files]
 
-            self._mcf_nodes: dict[str, MCFNodes] = {
-                path.name: MCFNodes().load_from_mcf_file(file_path=path)
-                for path in paths
+            self._mcf_nodes: dict[str, Nodes] = {
+                path.name: Nodes().load_from_mcf_file(file_path=path) for path in paths
             }
         else:
-            self._mcf_nodes: dict[str, MCFNodes] = {
-                DEFAULT_STATVAR_MCF_NAME: MCFNodes()
-            }
+            self._mcf_nodes: dict[str, Nodes] = {DEFAULT_STATVAR_MCF_NAME: Nodes()}
 
         self._data = {}
         self._vertical_specs: list[VerticalSpec] = []
@@ -443,10 +440,10 @@ class CustomDataManager:
         dcid = mint_dcid(prefix="source", name=name)
         url = str(url)
         props = _parse_kwargs_into_properties(locals(), extra_exclude={"name"})
-        node = SourceMCFNode(**props)
+        node = SourceNode(**props)
 
         mcf_name = validate_mcf_file_name(mcf_file_name)
-        self._mcf_nodes.setdefault(mcf_name, MCFNodes()).add(node, override=override)
+        self._mcf_nodes.setdefault(mcf_name, Nodes()).add(node, override=override)
 
         return self
 
@@ -517,10 +514,10 @@ class CustomDataManager:
         props = _parse_kwargs_into_properties(
             locals(), extra_exclude={"name", "source"}
         )
-        node = ProvenanceMCFNode(**props)
+        node = ProvenanceNode(**props)
 
         mcf_name = validate_mcf_file_name(mcf_file_name)
-        self._mcf_nodes.setdefault(mcf_name, MCFNodes()).add(node, override=override)
+        self._mcf_nodes.setdefault(mcf_name, Nodes()).add(node, override=override)
 
         return self
 
@@ -585,10 +582,10 @@ class CustomDataManager:
             measurementDenominator = ensure_dcid(measurementDenominator)
 
         props = _parse_kwargs_into_properties(locals())
-        node = StatVarMCFNode(**props)
+        node = StatVarNode(**props)
 
         name = validate_mcf_file_name(mcf_file_name)
-        self._mcf_nodes.setdefault(name, MCFNodes()).add(node, override=override)
+        self._mcf_nodes.setdefault(name, Nodes()).add(node, override=override)
 
         return self
 
@@ -628,10 +625,10 @@ class CustomDataManager:
         """
         props = _parse_kwargs_into_properties(locals())
 
-        node = StatVarGroupMCFNode(**props)
+        node = StatVarGroupNode(**props)
 
         name = validate_mcf_file_name(mcf_file_name)
-        self._mcf_nodes.setdefault(name, MCFNodes()).add(node, override=override)
+        self._mcf_nodes.setdefault(name, Nodes()).add(node, override=override)
         return self
 
     def add_entity_type(
@@ -680,9 +677,9 @@ class CustomDataManager:
         if includedIn is not None:
             includedIn = self._expand_included_in(includedIn)
         props = _parse_kwargs_into_properties(locals())
-        node = EntityTypeMCFNode(**props)
+        node = EntityTypeNode(**props)
         mcf_name = validate_mcf_file_name(mcf_file_name)
-        self._mcf_nodes.setdefault(mcf_name, MCFNodes()).add(node, override=override)
+        self._mcf_nodes.setdefault(mcf_name, Nodes()).add(node, override=override)
         return self
 
     def add_event_type(
@@ -735,9 +732,9 @@ class CustomDataManager:
         if includedIn is not None:
             includedIn = self._expand_included_in(includedIn)
         props = _parse_kwargs_into_properties(locals())
-        node = EventTypeMCFNode(**props)
+        node = EventTypeNode(**props)
         mcf_name = validate_mcf_file_name(mcf_file_name)
-        self._mcf_nodes.setdefault(mcf_name, MCFNodes()).add(node, override=override)
+        self._mcf_nodes.setdefault(mcf_name, Nodes()).add(node, override=override)
         return self
 
     def add_property(
@@ -793,9 +790,9 @@ class CustomDataManager:
         if subPropertyOf is not None:
             subPropertyOf = ensure_dcid(subPropertyOf)
         props = _parse_kwargs_into_properties(locals())
-        node = PropertyMCFNode(**props)
+        node = PropertyNode(**props)
         mcf_name = validate_mcf_file_name(mcf_file_name)
-        self._mcf_nodes.setdefault(mcf_name, MCFNodes()).add(node, override=override)
+        self._mcf_nodes.setdefault(mcf_name, Nodes()).add(node, override=override)
         return self
 
     def add_unit(
@@ -841,9 +838,9 @@ class CustomDataManager:
         dcid = ensure_dcid(dcid)
         typeOf = ensure_dcid(typeOf)
         props = _parse_kwargs_into_properties(locals())
-        node = UnitOfMeasureMCFNode(**props)
+        node = UnitOfMeasureNode(**props)
         mcf_name = validate_mcf_file_name(mcf_file_name)
-        self._mcf_nodes.setdefault(mcf_name, MCFNodes()).add(node, override=override)
+        self._mcf_nodes.setdefault(mcf_name, Nodes()).add(node, override=override)
         return self
 
     def add_measurement_method(
@@ -888,9 +885,9 @@ class CustomDataManager:
         dcid = ensure_dcid(dcid)
         typeOf = ensure_dcid(typeOf)
         props = _parse_kwargs_into_properties(locals())
-        node = MeasurementMethodMCFNode(**props)
+        node = MeasurementMethodNode(**props)
         mcf_name = validate_mcf_file_name(mcf_file_name)
-        self._mcf_nodes.setdefault(mcf_name, MCFNodes()).add(node, override=override)
+        self._mcf_nodes.setdefault(mcf_name, Nodes()).add(node, override=override)
         return self
 
     def add_variables_to_mcf_from_csv(
@@ -906,17 +903,17 @@ class CustomDataManager:
         override: bool = False,
     ) -> CustomDataManager:
         """
-        Read a CSV containing StatVar nodes and parse them into StatVarMCFNode objects.
+        Read a CSV containing StatVar nodes and parse them into StatVarNode objects.
 
         Args:
             csv_file_path: Path to the CSV file.
             mcf_file_name: Name of the MCF file. Defaults to "custom_nodes.mcf".
             column_to_property_mapping: Optional map from CSV column names to
-                ``StatVarMCFNode`` attribute names.
+                ``StatVarNode`` attribute names.
             parse_groups: If True, parse groups into StatVar nodes. That means the `memberOf`
                 attribute of each StatVar node in `stat_vars`, which is expected to be a
                 slash-separated string path describing its group hierarchy
-                (e.g.,"Economic/Employment/Unemployment"), gets transformed into StatVarGroupMCFNode
+                (e.g.,"Economic/Employment/Unemployment"), gets transformed into StatVarGroupNode
                 objects for each group level. This sets up their parent-child relationships,
                 and updates the original memberOf attribute to reference the deepest group DCID.
                 Defaults to False.
@@ -947,7 +944,7 @@ class CustomDataManager:
 
         name = validate_mcf_file_name(mcf_file_name)
         for node in stat_vars.nodes:
-            self._mcf_nodes.setdefault(name, MCFNodes()).add(node, override=override)
+            self._mcf_nodes.setdefault(name, Nodes()).add(node, override=override)
 
         return self
 
@@ -1116,12 +1113,12 @@ class CustomDataManager:
         found_old = any(
             node.dcid == old_name
             for name in file_names
-            for node in (self._mcf_nodes.get(name) or MCFNodes()).nodes
+            for node in (self._mcf_nodes.get(name) or Nodes()).nodes
         )
         found_new = any(
             node.dcid == new_name
             for name in file_names
-            for node in (self._mcf_nodes.get(name) or MCFNodes()).nodes
+            for node in (self._mcf_nodes.get(name) or Nodes()).nodes
         )
 
         if not found_old:
@@ -1184,9 +1181,7 @@ class CustomDataManager:
 
         return self
 
-    def _require_provenance_exists(
-        self, provenance: str, provenance_link: str
-    ) -> MCFNode:
+    def _require_provenance_exists(self, provenance: str, provenance_link: str) -> Node:
         """Return the Provenance MCF node with id ``provenance_link``, or raise ValueError.
 
         Args:
@@ -1603,7 +1598,7 @@ class CustomDataManager:
         Args:
             directory: The directory to search for config files.
             policy: How to resolve collisions. Can be "error", "override", or "ignore".
-            mcf_files: Path to one or more MCF files. If not provided, a new MCFNodes object
+            mcf_files: Path to one or more MCF files. If not provided, a new Nodes object
                 will be created.
 
         Returns:

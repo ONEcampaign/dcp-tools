@@ -186,10 +186,10 @@ def test_dcid_or_list_dcid_rejects_non_string_input():
 # GroupDcidOrListGroupDcid, PeerGroupDcidOrListPeerGroupDcid and TopicDcidOrListTopicDcid
 # used to still use PlainValidator (their slug pattern bypassed), tracked separately from
 # #126. #131 switched all three to the same BeforeValidator as DcidOrListDcid, once
-# StatVarMCFNode.memberOf no longer used the field as a scratch value for an unresolved
+# StatVarNode.memberOf no longer used the field as a scratch value for an unresolved
 # raw group path (see resolve_group_paths in schema_tools.py). PeerGroupDcidOrListPeerGroupDcid
 # and TopicDcidOrListTopicDcid were then deleted, along with the TopicDcid they wrapped: no
-# field references them (TopicMCFNode.relevantVariable collapsed to plain DcidOrListDcid — see
+# field references them (TopicNode.relevantVariable collapsed to plain DcidOrListDcid — see
 # test_models_topics.py).
 
 

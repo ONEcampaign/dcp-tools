@@ -1,11 +1,11 @@
 from typing import Literal
 
 from dcp_tools.custom_data.models.common import DcidOrListDcid, TopicDcid
-from dcp_tools.custom_data.models.mcf import MCFNode
+from dcp_tools.custom_data.models.mcf import Node
 
 
-class TopicMCFNode(MCFNode):
-    """Represents a Topic node as MCF Nodes.
+class TopicNode(Node):
+    """Represents a Data Commons Topic node.
     A Topic represents a broad topic in the real-world such as economy, poverty,
     crime, etc. Typically used to associated variables (StatisticalVariable)
     related to a common concept.
@@ -19,7 +19,7 @@ class TopicMCFNode(MCFNode):
             (``.../topic/...``) dcids: both are already valid ``dcid:\\S+`` tokens,
             so DcidOrListDcid covers them without a separate union member.
 
-        Inherits from MCFNode:
+        Inherits from Node:
             name: The human-readable name for the Node.
             dcid: Optional DCID for uniquely identifying the Node.
             description: Optional human-readable description.

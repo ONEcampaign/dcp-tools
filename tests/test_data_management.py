@@ -16,7 +16,7 @@ from dcp_tools.custom_data.models.data_files import (
     ColumnMappings,
     InputFile,
 )
-from dcp_tools.custom_data.models.schema_nodes import PropertyMCFNode
+from dcp_tools.custom_data.models.schema_nodes import PropertyNode
 
 
 def test_custom_data_manager_add_provenance_and_override():
@@ -1082,7 +1082,7 @@ def test_add_property_lands_node():
     node = manager._mcf_nodes["custom_nodes.mcf"].nodes[0]
     assert node.dcid == "dcid:myProp"
     assert node.typeOf == "dcid:Property"
-    assert isinstance(node, PropertyMCFNode)
+    assert isinstance(node, PropertyNode)
     assert node.domainIncludes == "dcid:Person"
     assert node.rangeIncludes == "dcid:Number"
 

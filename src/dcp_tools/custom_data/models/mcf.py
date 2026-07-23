@@ -16,24 +16,22 @@ from dcp_tools.custom_data.models.common import (
 
 
 class MCFNode(BaseModel):
-    """Represents a general node for MCF.
+    """Represents a Data Commons graph node.
 
     Attributes:
-        Node: Identifier for the Node.
+        dcid: Unique identifier for the Node.
         name: The human-readable name for the Node.
         typeOf: The DCID representing the typeOf this Node. It can be a single DCID
             or a list of DCIDs if the Node belongs to multiple types.
-        dcid: Optional DCID for uniquely identifying the Node.
         description: Optional human-readable description.
         provenance: Optional provenance information.
         shortDisplayName: Optional human-readable short name for display.
         subClassOf: Optional DCID indicating the 'parent' Node class.
     """
 
-    Node: Dcid
+    dcid: Dcid
     name: QuotedStr | None = None
     typeOf: DcidOrListDcid
-    dcid: Dcid | None = None
     description: QuotedStr | None = None
     provenance: QuotedStr | None = None
     shortDisplayName: QuotedStr | None = None
@@ -42,7 +40,7 @@ class MCFNode(BaseModel):
     # Allow extra fields since MCF can have arbitrary properties and this
     # class is not comprehensive of all possible MCF properties. Assignments are
     # validated too, so patterns like Dcid/GroupDcid are enforced on `MCFNodes.rename`
-    # (which assigns `.Node`), not just on construction.
+    # (which assigns `.dcid`), not just on construction.
     model_config = ConfigDict(extra="allow", validate_assignment=True)
 
     @staticmethod
@@ -98,13 +96,12 @@ class MCFNode(BaseModel):
         """Generates an MCF-formatted string representing this node.
 
         Returns:
-            A string formatted according to MCF conventions, sorted alphabetically
-                except for 'Node', which appears first.
+            A string formatted according to MCF conventions.
         """
         data = self.model_dump(exclude_none=True)
 
-        # Pull Node first, then sort for consistent ordering
-        lines = [f"Node: {data.pop('Node')}"]
+        # Pull dcid first
+        lines = [f"Node: {data.pop('dcid')}"]
         lines.extend(f"{k}: {v}" for k, v in data.items())
 
         return "\n".join(lines) + "\n\n"
@@ -122,7 +119,7 @@ class MCFNodes(BaseModel):
 
     def _reindex(self) -> None:
         """If needed, rebuild the index of nodes."""
-        self._pos = {n.Node: i for i, n in enumerate(self.nodes)}
+        self._pos = {n.dcid: i for i, n in enumerate(self.nodes)}
 
     def model_post_init(self, context: Any, /) -> None:
         self._reindex()
@@ -143,6 +140,7 @@ class MCFNodes(BaseModel):
                 f"Missing mandatory 'Node:' line in block starting with "
                 f"{next(iter(block.items()))!r}"
             )
+        block["dcid"] = block.pop("Node")
         self.add(MCFNode(**block))
         block.clear()
 
@@ -190,16 +188,16 @@ class MCFNodes(BaseModel):
             override: If True, overwrite the existing node with the same ID.
                 If False, raise an error if a node with the same ID already exists.
         """
-        idx = self._pos.get(node.Node)
+        idx = self._pos.get(node.dcid)
 
         if idx is not None:
             if not override:
                 raise ValueError(
-                    f"Node '{node.Node}' already exists; pass override=True to replace it."
+                    f"Node '{node.dcid}' already exists; pass override=True to replace it."
                 )
             self.nodes[idx] = node
         else:
-            self._pos[node.Node] = len(self.nodes)
+            self._pos[node.dcid] = len(self.nodes)
             self.nodes.append(node)
 
         return self
@@ -235,7 +233,7 @@ class MCFNodes(BaseModel):
         if new_id in self._pos:
             raise ValueError(f"Node '{new_id}' already exists.")
 
-        self.nodes[idx].Node = new_id
+        self.nodes[idx].dcid = new_id
         self._pos.pop(old_id)
         self._pos[new_id] = idx
 

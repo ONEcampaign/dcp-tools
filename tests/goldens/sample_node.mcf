@@ -1,7 +1,6 @@
 Node: dcid:X/foo
 name: "Some Name"
 typeOf: dcid:StatisticalVariable
-dcid: dcid:foo
 description: "Foo description"
 provenance: "Some foo provenance"
 shortDisplayName: "F"

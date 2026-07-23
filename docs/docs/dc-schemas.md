@@ -124,7 +124,7 @@ flows = pd.DataFrame({
 })
 
 manager.add_variable_to_mcf(
-    Node="climateFinanceProvidedFlows",
+    dcid="climateFinanceProvidedFlows",
     name="Climate finance provided (bilateral flow)",
     statType="dcid:measuredValue",
     observationProperties=["dcid:providerCountry", "dcid:recipientCountry"],
@@ -161,7 +161,7 @@ on `add_variable_to_mcf`. Both rules turn a bare token into a `dcid:`-prefixed o
 of them inserts a namespace segment:
 
 - `add_source(name="ONEData", ...)` mints `dcid:source/ONEData`.
-- `add_property(Node="providerCountry", ...)` mints `dcid:providerCountry`, no `property/`
+- `add_property(dcid="providerCountry", ...)` mints `dcid:providerCountry`, no `property/`
   segment.
 
 The difference tracks what's being identified. A source or provenance name is usually a short
@@ -174,7 +174,7 @@ source's identity separate from a provenance's even if someone reuses the same w
 
 A custom entity type, property, unit, or measurement method doesn't have that problem, because
 defining one *is* the act of claiming a unique identifier. When you call
-`add_property(Node="providerCountry", ...)`, you're not labeling something that already exists
+`add_property(dcid="providerCountry", ...)`, you're not labeling something that already exists
 elsewhere. You're declaring that `dcid:providerCountry` is now a `Property` node. The
 `typeOf: dcid:Property` on the node itself is what disambiguates it from a same-named source or
 StatVar, not an extra path segment on the id. That's why these builders use `ensure_dcid`, which

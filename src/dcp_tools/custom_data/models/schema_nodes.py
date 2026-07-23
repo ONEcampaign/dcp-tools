@@ -12,7 +12,7 @@ class EntityTypeMCFNode(MCFNode):
 
     Attributes:
         # Inherited from MCFNode
-        Node: Identifier for the Node (e.g. ``dcid:MyClass``).
+        dcid: Identifier for the Node (e.g. ``dcid:MyClass``).
         name: The human-readable name for the Node.
         description: Optional human-readable description.
 
@@ -33,7 +33,7 @@ class EventTypeMCFNode(MCFNode):
 
     Attributes:
         # Inherited from MCFNode
-        Node: Identifier for the Node (e.g. ``dcid:MyEventType``).
+        dcid: Identifier for the Node (e.g. ``dcid:MyEventType``).
         name: The human-readable name for the Node.
         description: Optional human-readable description.
 
@@ -56,7 +56,7 @@ class PropertyMCFNode(MCFNode):
 
     Attributes:
         # Inherited from MCFNode
-        Node: Identifier for the Node (e.g. ``dcid:myProperty``).
+        dcid: Identifier for the Node (e.g. ``dcid:myProperty``).
         name: The human-readable name for the Node.
         description: Optional human-readable description.
 
@@ -82,7 +82,7 @@ class UnitOfMeasureMCFNode(MCFNode):
 
     Attributes:
         # Inherited from MCFNode
-        Node: Identifier for the Node (e.g. ``dcid:MyUnit``).
+        dcid: Identifier for the Node (e.g. ``dcid:MyUnit``).
         name: The human-readable name for the Node.
         shortDisplayName: Optional short display name (e.g. ``"$"``).
         description: Optional human-readable description.
@@ -102,7 +102,7 @@ class MeasurementMethodMCFNode(MCFNode):
 
     Attributes:
         # Inherited from MCFNode
-        Node: Identifier for the Node (e.g. ``dcid:MyMethod``).
+        dcid: Identifier for the Node (e.g. ``dcid:MyMethod``).
         name: Optional human-readable name for the Node.
         description: Optional human-readable description.
 

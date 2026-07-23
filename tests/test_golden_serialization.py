@@ -15,10 +15,9 @@ def test_mcfnode_snapshot():
     got = (GOLDEN_DIR / "sample_node.mcf").read_text()
 
     node = MCFNode(
-        Node="dcid:X/foo",
+        dcid="dcid:X/foo",
         name='"Some Name"',
         typeOf="dcid:StatisticalVariable",
-        dcid="dcid:foo",
         description='"Foo description',
         provenance='"Some foo provenance"',
         shortDisplayName='"F"',
@@ -93,10 +92,10 @@ def test_provenance_mcf_snapshot(tmp_path):
 def test_full_mcf_export(tmp_path):
     mgr = CustomDataManager()
     mgr.add_variable_group_to_mcf(
-        Node="dcid:one/g/group1", name="Group One", specializationOf="dcid:dc/g/Root"
+        dcid="dcid:one/g/group1", name="Group One", specializationOf="dcid:dc/g/Root"
     )
     mgr.add_variable_to_mcf(
-        Node="dcid:var/one",
+        dcid="dcid:var/one",
         name="Test Var",
         description="Test var",
         memberOf="dcid:one/g/group1",
@@ -110,7 +109,7 @@ def test_full_mcf_export(tmp_path):
 def test_mcf_export_multi_entity(tmp_path):
     manager = CustomDataManager()
     manager.add_variable_to_mcf(
-        Node="dcid:var/one",
+        dcid="dcid:var/one",
         name="Test Var",
         description="Test var",
         observationProperties=["dcid:originCountry", "dcid:destinationCountry"],

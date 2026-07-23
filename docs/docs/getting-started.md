@@ -152,7 +152,7 @@ The `variable` column holds `climateFinanceProvidedCommitments`, a dcid that has
 
 ```python
 manager.add_variable_to_mcf(
-    Node="climateFinanceProvidedCommitments",
+    dcid="climateFinanceProvidedCommitments",
     name="Climate finance provided (commitments)",
     description="Bilateral climate finance commitments reported by the provider country.",
     provenance="ONEClimateFinance",
@@ -161,7 +161,7 @@ manager.add_variable_to_mcf(
 )
 ```
 
-`Node` is a bare token here, so `dcp-tools` normalizes it to `dcid:climateFinanceProvidedCommitments` for you. It must match the `variable` column values exactly. Export the checkpoint and take a look:
+`dcid` is a bare token here, so `dcp-tools` normalizes it to `dcid:climateFinanceProvidedCommitments` for you. It must match the `variable` column values exactly. Export the checkpoint and take a look:
 
 ```python
 manager.export_mcf_file("one_climate_finance", mcf_file_name="custom_nodes.mcf")

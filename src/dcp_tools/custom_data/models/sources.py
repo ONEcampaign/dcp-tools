@@ -9,7 +9,7 @@ class SourceMCFNode(MCFNode):
 
     Attributes:
         # Inherited from MCFNode
-        Node: Identifier for the Node (minted as ``dcid:source/<name>``).
+        dcid: Identifier for the Node (minted as ``dcid:source/<name>``).
         name: The human-readable name for the Node.
         description: Optional human-readable description.
 
@@ -31,7 +31,7 @@ class ProvenanceMCFNode(MCFNode):
 
     Attributes:
         # Inherited from MCFNode
-        Node: Identifier for the Node (minted as ``dcid:provenance/<name>``).
+        dcid: Identifier for the Node (minted as ``dcid:provenance/<name>``).
         name: The human-readable name for the Node.
         description: Optional human-readable description.
 

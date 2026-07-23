@@ -4,7 +4,7 @@ nav:
     - index.md
     - Getting started: getting-started.md
     - Preparing data: preparing-data.md
-    - Data Commons schemas: dc-schemas.md
+    - Why config.json and MCF: dc-schemas.md
     - Loading data: loading-data.md
     - CLI tools: cli-tools.md
     - Changelog: changelog.md

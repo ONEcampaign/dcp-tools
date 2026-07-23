@@ -1,6 +1,6 @@
 # Contributing
 
-Contributions are welcome, and they are greatly appreciated. 
+Contributions are welcome and greatly appreciated.
 
 ## Types of Contributions
 
@@ -24,10 +24,9 @@ and "help wanted" is open to whoever wants to implement it.
 
 ### Write Documentation
 
-You can never have enough documentation. Please feel free to contribute to any
-part: official docs, docstrings, blog posts, articles, and such. 
-Documentation is built using
-[mkdocs] and documentation files are located in the `docs/` directory.
+Documentation contributions are always welcome, whether to the official docs,
+docstrings, blog posts, or articles. The docs are built with
+[mkdocs](https://www.mkdocs.org/), and the source files live in the `docs/` directory.
 
 ### Submit Feedback
 
@@ -35,8 +34,7 @@ If you are proposing a feature:
 
 * Explain in detail how it would work.
 * Keep the scope as narrow as possible, to make it easier to implement.
-* Remember that this is a public good project: the tools will always be 
-open source, and contributions are welcome,
+* This is a public-good project. The tools will always be open source.
 
 ## Get Started!
 
@@ -44,7 +42,7 @@ Ready to contribute? Here's how to set up `bblocks-datacommons-tools` for local 
 
 1. Open an issue in the `bblocks-datacommons-tools` repository to discuss your proposed changes or enhancements. 
    This is a good way to get feedback and ensure your work aligns with the project's goals.
-2. Fork `bblocks-datacommons-places` and clone your fork:
+2. Fork `bblocks-datacommons-tools` and clone your fork.
 3. Dependencies are managed using uv. Install uv in your virtual environment and
 install project dependencies:
 
@@ -52,16 +50,24 @@ install project dependencies:
 uv sync --group dev
 ```
 
-4.  Ensure tests are written for any new functionality
+4. Install the pre-commit hooks so formatting and lint checks run automatically on each commit:
+
+```console
+uv run pre-commit install
+```
+
+5. Ensure tests are written for any new functionality
 and that existing tests pass. Code coverage is important but not critical. We prioritize
 meaningful tests that cover all major functionality. Code should be formatted 
-using `ruff format` to adhere to the project's coding standards.
+using `ruff format` and pass `ruff check` and `ty check` to adhere to the project's coding
+standards. CI runs all four (`ruff check`, `ruff format --check`, `ty check`, and `pytest`) on
+every pull request.
 
-5. When you are done developing, open a pull request on the main repository, 
+6. When you are done developing, open a pull request on the main repository, 
 with a clear description of your changes and any relevant issue numbers.
 One of the maintainers will review your changes and provide feedback.
 
-6. If your pull request is accepted, it will be merged into the main branch. Your changes
+7. If your pull request is accepted, it will be merged into the main branch. Your changes
 will be included in the next release, and your contributions 
 will be acknowledged in the project's changelog.
 

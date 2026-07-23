@@ -151,7 +151,7 @@
 - `sync_directory_to_gcs` function in `storage.py` that composes upload + stale blob cleanup.
 - `sync` parameter on `upload_to_cloud_storage` in `pipeline.py`.
 
-## [0.1.0] - 2025-02-13
+## [0.1.0] - 2026-02-13
 
 ### Added
 - Support for Application Default Credentials (ADC) as an alternative to service account JSON keys.

@@ -40,8 +40,8 @@ def test_custom_data_manager_add_provenance_and_override():
     prov_node = next(
         n for n in prov_nodes if getattr(n, "typeOf", None) == "dcid:Provenance"
     )
-    assert source_node.Node == "dcid:source/new_source"
-    assert prov_node.Node == "dcid:provenance/pA"
+    assert source_node.dcid == "dcid:source/new_source"
+    assert prov_node.dcid == "dcid:provenance/pA"
     assert prov_node.sourceLink == "dcid:source/new_source"
 
     # duplicate provenance without override raises
@@ -73,7 +73,7 @@ def test_add_source_metadata_lands_on_node():
     )
     nodes = manager._mcf_nodes["provenance.mcf"].nodes
     node = next(n for n in nodes if getattr(n, "typeOf", None) == "dcid:Source")
-    assert node.Node == "dcid:source/MySource"
+    assert node.dcid == "dcid:source/MySource"
     # QuotedStr fields are stored raw; quotes applied at serialization
     assert node.description == "A test source"
     assert node.license == "CC-BY-4.0"
@@ -246,7 +246,7 @@ def test_export_methods(tmp_path):
         data=df,
         columnMappings={"observationAbout": "A"},
     )
-    manager.add_variable_to_mcf(Node="dcid:vX", name="VX")
+    manager.add_variable_to_mcf(dcid="dcid:vX", name="VX")
 
     manager.export_config(tmp_path)
     config_file = tmp_path / "config.json"
@@ -286,7 +286,7 @@ def test_export_mcf_file_creates_missing_subdirectory(tmp_path):
     """export_mcf_file creates the parent directory for a nested mcf_file_name."""
     manager = CustomDataManager()
     manager.add_variable_to_mcf(
-        Node="dcid:vX", name="VX", mcf_file_name="sub/custom_nodes.mcf"
+        dcid="dcid:vX", name="VX", mcf_file_name="sub/custom_nodes.mcf"
     )
 
     manager.export_mcf_file(tmp_path, mcf_file_name="sub/custom_nodes.mcf")
@@ -332,22 +332,22 @@ def test_add_variable_group_to_mcf_and_override():
     """
     manager = CustomDataManager()
     manager.add_variable_group_to_mcf(
-        Node="dcid:test/g/1", name="Group1", specializationOf="dcid:dc/g/Root"
+        dcid="dcid:test/g/1", name="Group1", specializationOf="dcid:dc/g/Root"
     )
     groups = manager._mcf_nodes[DEFAULT_GROUP_NAME].nodes
     assert any(
-        n.Node == "dcid:test/g/1" and n.specializationOf == "dcid:dc/g/Root"
+        n.dcid == "dcid:test/g/1" and n.specializationOf == "dcid:dc/g/Root"
         for n in groups
     )
 
     manager.add_variable_group_to_mcf(
-        Node="dcid:test/g/1",
+        dcid="dcid:test/g/1",
         name="Group2",
         specializationOf="dcid:dc/g/Root",
         override=True,
     )
     updated = manager._mcf_nodes[DEFAULT_GROUP_NAME].nodes
-    assert any(n.name == "Group2" for n in updated if n.Node == "dcid:test/g/1")
+    assert any(n.name == "Group2" for n in updated if n.dcid == "dcid:test/g/1")
 
 
 def test_add_variables_to_mcf_from_csv_parse_groups(tmp_path):
@@ -367,10 +367,10 @@ def test_add_variables_to_mcf_from_csv_parse_groups(tmp_path):
     )
 
     nodes = manager._mcf_nodes[DEFAULT_STATVAR_MCF_NAME].nodes
-    node_ids = [n.Node for n in nodes]
+    node_ids = [n.dcid for n in nodes]
     assert node_ids == ["dcid:n1", "dcid:ns/g/economic", "dcid:ns/g/employment"]
 
-    statvar = next(n for n in nodes if n.Node == "dcid:n1")
+    statvar = next(n for n in nodes if n.dcid == "dcid:n1")
     assert statvar.memberOf == "dcid:ns/g/employment"
 
 
@@ -413,7 +413,7 @@ def test_custom_data_manager_repr():
         data=df,
         columnMappings={"observationAbout": "A"},
     )
-    manager.add_variable_to_mcf(Node="dcid:vX", name="VX")
+    manager.add_variable_to_mcf(dcid="dcid:vX", name="VX")
     r = repr(manager)
     assert "1 inputFiles" in r
     assert "1 containing data" in r
@@ -434,11 +434,11 @@ def test_remove_indicator():
         data=df,
         columnMappings={"observationAbout": "A"},
     )
-    manager.add_variable_to_mcf(Node="dcid:sv1", name="Var", provenance="p1")
+    manager.add_variable_to_mcf(dcid="dcid:sv1", name="Var", provenance="p1")
 
     manager.remove_indicator("dcid:sv1")
     for nodes in manager._mcf_nodes.values():
-        assert all(n.Node != "dcid:sv1" for n in nodes.nodes)
+        assert all(n.dcid != "dcid:sv1" for n in nodes.nodes)
 
     with pytest.raises(ValueError):
         manager.remove_indicator("missing")
@@ -736,20 +736,20 @@ def test_merge_configs_blocklist_override(tmp_path):
 def test_rename_variable_mcf_only():
     """rename_variable operates on MCF nodes exclusively (no config.variables)."""
     manager = CustomDataManager()
-    manager.add_variable_to_mcf(Node="dcid:v1", name="Var1")
+    manager.add_variable_to_mcf(dcid="dcid:v1", name="Var1")
 
     manager.rename_variable("dcid:v1", "dcid:v2")
     for nodes in manager._mcf_nodes.values():
-        assert any(n.Node == "dcid:v2" for n in nodes.nodes)
+        assert any(n.dcid == "dcid:v2" for n in nodes.nodes)
     for nodes in manager._mcf_nodes.values():
-        assert all(n.Node != "dcid:v1" for n in nodes.nodes)
+        assert all(n.dcid != "dcid:v1" for n in nodes.nodes)
 
     # Renaming a missing variable raises ValueError
     with pytest.raises(ValueError):
         manager.rename_variable("missing", "dcid:v3")
 
     # Renaming to an existing MCF node name raises ValueError
-    manager.add_variable_to_mcf(Node="dcid:v3", name="Var3")
+    manager.add_variable_to_mcf(dcid="dcid:v3", name="Var3")
     with pytest.raises(ValueError):
         manager.rename_variable("dcid:v2", "dcid:v3")
 
@@ -760,19 +760,19 @@ def test_rename_variable_mints_bare_tokens():
     never matched the stored dcid:-prefixed Node), so minting both is strictly an
     improvement, not a behaviour change any test pinned."""
     manager = CustomDataManager()
-    manager.add_variable_to_mcf(Node="dcid:v1", name="Var1")
+    manager.add_variable_to_mcf(dcid="dcid:v1", name="Var1")
 
     manager.rename_variable("v1", "v2")
 
     for nodes in manager._mcf_nodes.values():
-        assert any(n.Node == "dcid:v2" for n in nodes.nodes)
-        assert all(n.Node != "dcid:v1" for n in nodes.nodes)
+        assert any(n.dcid == "dcid:v2" for n in nodes.nodes)
+        assert all(n.dcid != "dcid:v1" for n in nodes.nodes)
 
 
 def test_rename_variable_keeps_lookup_index_consistent():
     """A renamed node is addressable by its new name, and its old name is freed."""
     manager = CustomDataManager()
-    manager.add_variable_to_mcf(Node="dcid:v1", name="Var1")
+    manager.add_variable_to_mcf(dcid="dcid:v1", name="Var1")
     manager.rename_variable("dcid:v1", "dcid:v2")
 
     # The old name no longer resolves...
@@ -782,18 +782,18 @@ def test_rename_variable_keeps_lookup_index_consistent():
     # ...and the new one does.
     manager.remove_indicator("dcid:v2")
     for nodes in manager._mcf_nodes.values():
-        assert all(n.Node not in {"dcid:v1", "dcid:v2"} for n in nodes.nodes)
+        assert all(n.dcid not in {"dcid:v1", "dcid:v2"} for n in nodes.nodes)
 
 
 def test_rename_variable_frees_the_old_name_for_reuse():
     """After a rename the old name is available again, and both nodes survive."""
     manager = CustomDataManager()
-    manager.add_variable_to_mcf(Node="dcid:v1", name="Var1")
+    manager.add_variable_to_mcf(dcid="dcid:v1", name="Var1")
     manager.rename_variable("dcid:v1", "dcid:v2")
 
-    manager.add_variable_to_mcf(Node="dcid:v1", name="A different Var1")
+    manager.add_variable_to_mcf(dcid="dcid:v1", name="A different Var1")
 
-    stored = {n.Node for nodes in manager._mcf_nodes.values() for n in nodes.nodes}
+    stored = {n.dcid for nodes in manager._mcf_nodes.values() for n in nodes.nodes}
     assert {"dcid:v1", "dcid:v2"} <= stored
 
 
@@ -995,16 +995,16 @@ def test_column_mappings_rejects_malformed_custom_dimension_names(dimension_name
 def test_add_variable_to_mcf_normalizes_bare_node():
     """add_variable_to_mcf normalizes a bare Node to dcid:, matching the other builders."""
     manager = CustomDataManager()
-    manager.add_variable_to_mcf(Node="StatVar", name="Variable Name")
+    manager.add_variable_to_mcf(dcid="StatVar", name="Variable Name")
     node = manager._mcf_nodes[DEFAULT_STATVAR_MCF_NAME].nodes[0]
-    assert node.Node == "dcid:StatVar"
+    assert node.dcid == "dcid:StatVar"
 
 
 def test_add_variable_to_mcf_normalizes_bare_reference_fields():
     """The Dcid-typed reference kwargs accept bare tokens too, like Node."""
     manager = CustomDataManager()
     manager.add_variable_to_mcf(
-        Node="StatVar",
+        dcid="StatVar",
         name="Variable Name",
         populationType="Person",
         measuredProperty="count",
@@ -1022,13 +1022,13 @@ def test_add_variable_to_mcf_passes_prefixed_reference_fields_through():
     """Already dcid:-prefixed values are not double-prefixed."""
     manager = CustomDataManager()
     manager.add_variable_to_mcf(
-        Node="dcid:StatVar",
+        dcid="dcid:StatVar",
         name="Variable Name",
         populationType="dcid:Person",
         measuredProperty="dcid:count",
     )
     node = manager._mcf_nodes[DEFAULT_STATVAR_MCF_NAME].nodes[0]
-    assert node.Node == "dcid:StatVar"
+    assert node.dcid == "dcid:StatVar"
     assert node.populationType == "dcid:Person"
     assert node.measuredProperty == "dcid:count"
 
@@ -1036,26 +1036,26 @@ def test_add_variable_to_mcf_passes_prefixed_reference_fields_through():
 def test_add_entity_type_lands_node():
     """add_entity_type normalizes bare Node to dcid: and sets typeOf."""
     manager = CustomDataManager()
-    manager.add_entity_type(Node="MyClass", name="My Class")
+    manager.add_entity_type(dcid="MyClass", name="My Class")
     nodes = manager._mcf_nodes["custom_nodes.mcf"].nodes
     node = next(n for n in nodes if getattr(n, "typeOf", None) == "dcid:Class")
-    assert node.Node == "dcid:MyClass"
+    assert node.dcid == "dcid:MyClass"
     assert node.typeOf == "dcid:Class"
 
 
 def test_add_entity_type_dcid_prefixed_node_verbatim():
     """An already dcid:-prefixed Node is passed through verbatim."""
     manager = CustomDataManager()
-    manager.add_entity_type(Node="dcid:Already", name="x")
+    manager.add_entity_type(dcid="dcid:Already", name="x")
     nodes = manager._mcf_nodes["custom_nodes.mcf"].nodes
     node = nodes[0]
-    assert node.Node == "dcid:Already"
+    assert node.dcid == "dcid:Already"
 
 
 def test_add_event_type_default_subclassof():
     """add_event_type defaults subClassOf to dcid:Event."""
     manager = CustomDataManager()
-    manager.add_event_type(Node="Quake", name="Q")
+    manager.add_event_type(dcid="Quake", name="Q")
     nodes = manager._mcf_nodes["custom_nodes.mcf"].nodes
     node = nodes[0]
     assert node.typeOf == "dcid:Class"
@@ -1065,7 +1065,7 @@ def test_add_event_type_default_subclassof():
 def test_add_event_type_subclassof_override():
     """A bare subClassOf override is normalized to dcid:."""
     manager = CustomDataManager()
-    manager.add_event_type(Node="Quake", name="Q", subClassOf="DisasterEvent")
+    manager.add_event_type(dcid="Quake", name="Q", subClassOf="DisasterEvent")
     node = manager._mcf_nodes["custom_nodes.mcf"].nodes[0]
     assert node.subClassOf == "dcid:DisasterEvent"
 
@@ -1074,13 +1074,13 @@ def test_add_property_lands_node():
     """add_property emits a Property node with dcid:Property typeOf."""
     manager = CustomDataManager()
     manager.add_property(
-        Node="myProp",
+        dcid="myProp",
         name="My Prop",
         domainIncludes="dcid:Person",
         rangeIncludes="dcid:Number",
     )
     node = manager._mcf_nodes["custom_nodes.mcf"].nodes[0]
-    assert node.Node == "dcid:myProp"
+    assert node.dcid == "dcid:myProp"
     assert node.typeOf == "dcid:Property"
     assert isinstance(node, PropertyMCFNode)
     assert node.domainIncludes == "dcid:Person"
@@ -1091,7 +1091,7 @@ def test_add_property_normalizes_bare_refs():
     """Bare domainIncludes/rangeIncludes/subPropertyOf refs are normalized to dcid:."""
     manager = CustomDataManager()
     manager.add_property(
-        Node="myProp",
+        dcid="myProp",
         name="x",
         domainIncludes="Person",
         rangeIncludes=["Number", "dcid:Already"],
@@ -1107,7 +1107,7 @@ def test_add_unit_lands_node_and_typeof_override():
     """add_unit normalizes bare typeOf override and stores shortDisplayName."""
     manager = CustomDataManager()
     manager.add_unit(
-        Node="USD",
+        dcid="USD",
         name="US Dollar",
         shortDisplayName="$",
         typeOf="CurrencyUnitOfMeasure",
@@ -1120,7 +1120,7 @@ def test_add_unit_lands_node_and_typeof_override():
 def test_add_measurement_method_lands_node_and_typeof_override():
     """add_measurement_method normalizes bare typeOf and allows absent name."""
     manager = CustomDataManager()
-    manager.add_measurement_method(Node="MyCensus", typeOf="CensusSurveyEnum")
+    manager.add_measurement_method(dcid="MyCensus", typeOf="CensusSurveyEnum")
     node = manager._mcf_nodes["custom_nodes.mcf"].nodes[0]
     assert node.typeOf == "dcid:CensusSurveyEnum"
     assert node.name is None
@@ -1131,7 +1131,7 @@ def test_included_in_expands_to_provenance_and_source():
     manager = CustomDataManager()
     manager.add_source(name="src", url="http://s")
     manager.add_provenance(name="prov", url="http://p", source="src")
-    manager.add_entity_type(Node="T", name="T", includedIn="prov")
+    manager.add_entity_type(dcid="T", name="T", includedIn="prov")
 
     entity_node = manager._mcf_nodes["custom_nodes.mcf"].nodes[0]
     assert entity_node.includedIn == ["dcid:provenance/prov", "dcid:source/src"]
@@ -1148,7 +1148,7 @@ def test_included_in_accepts_list_of_provenances():
     manager.add_source(name="srcB", url="http://b")
     manager.add_provenance(name="provA", url="http://pa", source="srcA")
     manager.add_provenance(name="provB", url="http://pb", source="srcB")
-    manager.add_entity_type(Node="T", name="T", includedIn=["provA", "provB"])
+    manager.add_entity_type(dcid="T", name="T", includedIn=["provA", "provB"])
 
     node = manager._mcf_nodes["custom_nodes.mcf"].nodes[0]
     assert node.includedIn == [
@@ -1165,7 +1165,7 @@ def test_included_in_dedups_shared_source():
     manager.add_source(name="src", url="http://s")
     manager.add_provenance(name="provA", url="http://pa", source="src")
     manager.add_provenance(name="provB", url="http://pb", source="src")
-    manager.add_entity_type(Node="T", name="T", includedIn=["provA", "provB"])
+    manager.add_entity_type(dcid="T", name="T", includedIn=["provA", "provB"])
 
     node = manager._mcf_nodes["custom_nodes.mcf"].nodes[0]
     # provA is processed first: emits provenance/provA then source/src.
@@ -1181,16 +1181,16 @@ def test_included_in_raises_for_missing_provenance():
     """includedIn referencing an unregistered provenance raises ValueError."""
     manager = CustomDataManager()
     with pytest.raises(ValueError, match="ghost"):
-        manager.add_event_type(Node="E", name="E", includedIn="ghost")
+        manager.add_event_type(dcid="E", name="E", includedIn="ghost")
 
 
 def test_add_entity_type_override():
     """Duplicate Node without override raises; with override=True replaces."""
     manager = CustomDataManager()
-    manager.add_entity_type(Node="T", name="First")
+    manager.add_entity_type(dcid="T", name="First")
     with pytest.raises(ValueError):
-        manager.add_entity_type(Node="T", name="Second")
-    manager.add_entity_type(Node="T", name="Updated", override=True)
+        manager.add_entity_type(dcid="T", name="Second")
+    manager.add_entity_type(dcid="T", name="Updated", override=True)
     node = manager._mcf_nodes["custom_nodes.mcf"].nodes[0]
     assert node.name == "Updated"
 
@@ -1198,13 +1198,13 @@ def test_add_entity_type_override():
 def test_add_unit_custom_mcf_file_name():
     """add_unit with mcf_file_name lands the node in the specified file."""
     manager = CustomDataManager()
-    manager.add_unit(Node="MyUnit", name="My Unit", mcf_file_name="units.mcf")
+    manager.add_unit(dcid="MyUnit", name="My Unit", mcf_file_name="units.mcf")
     assert "units.mcf" in manager._mcf_nodes
     assert "custom_nodes.mcf" not in manager._mcf_nodes or not any(
-        n.Node == "dcid:MyUnit"
+        n.dcid == "dcid:MyUnit"
         for n in manager._mcf_nodes.get(
             "custom_nodes.mcf", type("", (), {"nodes": []})()
         ).nodes
     )
     node = manager._mcf_nodes["units.mcf"].nodes[0]
-    assert node.Node == "dcid:MyUnit"
+    assert node.dcid == "dcid:MyUnit"

@@ -83,6 +83,8 @@ def _rows_to_stat_var_nodes(
             for k, v in record.items()
             if not pd.isna(v) and v != ""
         }
+        if "Node" in clean:
+            clean["dcid"] = clean.pop("Node")
         nodes.append(constructor[node_type](**clean))
 
     return MCFNodes(nodes=nodes)
@@ -165,7 +167,7 @@ def resolve_group_paths(
                 parent = "dcid:dc/g/Root" if idx == 0 else root + slug_parts[idx - 1]
                 group_nodes.append(
                     StatVarGroupMCFNode(
-                        Node=group_dcid, name=part, specializationOf=parent
+                        dcid=group_dcid, name=part, specializationOf=parent
                     )
                 )
 

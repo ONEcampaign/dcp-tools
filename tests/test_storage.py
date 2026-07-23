@@ -568,4 +568,4 @@ def test_get_bucket_files_multiple_types():
     expected_df = pd.DataFrame({"a": [1], "b": [2]})
     pd.testing.assert_frame_equal(result["a.csv"], expected_df)
     assert result["b.json"] == {"x": 1}
-    assert result["c.mcf"].nodes[0].Node == "dcid:n"
+    assert result["c.mcf"].nodes[0].dcid == "dcid:n"

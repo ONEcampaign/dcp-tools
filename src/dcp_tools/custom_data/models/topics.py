@@ -11,7 +11,7 @@ class TopicMCFNode(MCFNode):
     related to a common concept.
 
     Attributes:
-        Node: Node identifier, must start with 'dcid:' and contain 'topic/'.
+        dcid: Node identifier, must start with 'dcid:' and contain 'topic/'.
         typeOf: Fixed type indicating this is a Topic.
         relevantVariable: Variable or list of variables relevant to a topic.
             Contains a list of ordered values. Must start with 'dcid:'. Accepts
@@ -28,6 +28,6 @@ class TopicMCFNode(MCFNode):
             subClassOf: Optional DCID indicating the 'parent' Node class.
     """
 
-    Node: TopicDcid
+    dcid: TopicDcid
     typeOf: Literal["dcid:Topic"] = "dcid:Topic"
     relevantVariable: DcidOrListDcid

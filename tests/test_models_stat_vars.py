@@ -10,34 +10,34 @@ from dcp_tools.custom_data.schema_tools import _rows_to_stat_var_nodes
 
 
 def test_search_description_serialization_str_and_list():
-    sv_str = StatVarMCFNode(Node="dcid:n1", name="Var", searchDescription="A")
+    sv_str = StatVarMCFNode(dcid="dcid:n1", name="Var", searchDescription="A")
     assert 'searchDescription: "A"' in sv_str.mcf
 
     sv_str = StatVarMCFNode(
-        Node="dcid:n1",
+        dcid="dcid:n1",
         name="Var",
         searchDescription=["A string, or not", "B string, other"],
     )
     assert 'searchDescription: "A string, or not","B string, other"' in sv_str.mcf
 
-    sv_list = StatVarMCFNode(Node="dcid:n2", name="Var", searchDescription=["A", "B"])
+    sv_list = StatVarMCFNode(dcid="dcid:n2", name="Var", searchDescription=["A", "B"])
     assert 'searchDescription: "A","B"' in sv_list.mcf
 
 
 def test_statvarnode_strips_whitespace_and_linebreaks():
     sv = StatVarMCFNode(
-        Node="dcid:n1\n",
+        dcid="dcid:n1\n",
         name="Var \n",
         searchDescription=["First line\n", "Second line "],
     )
-    assert sv.Node == "dcid:n1"
+    assert sv.dcid == "dcid:n1"
     assert sv.name == "Var"
     assert sv.searchDescription == ["First line", "Second line"]
 
 
 def test_statvarnode_omits_observation_properties_by_default():
     sv = StatVarMCFNode(
-        Node="dcid:n1",
+        dcid="dcid:n1",
         name="Var",
     )
     assert "observationProperties" not in sv.mcf
@@ -45,7 +45,7 @@ def test_statvarnode_omits_observation_properties_by_default():
 
 def test_statvarnode_serializes_observation_properties_multi_entity():
     sv = StatVarMCFNode(
-        Node="dcid:n1",
+        dcid="dcid:n1",
         name="Var",
         observationProperties=["dcid:source", "dcid:destination"],
     )
@@ -95,12 +95,12 @@ def test_rows_to_stat_var_nodes_parses_spreadsheet_lists_no_quotes():
 
 def test_observation_properties_normalizes_bare_scalar_and_list():
     sv = StatVarMCFNode(
-        Node="dcid:n1", name="Var", observationProperties="originCountry"
+        dcid="dcid:n1", name="Var", observationProperties="originCountry"
     )
     assert sv.observationProperties == "dcid:originCountry"
 
     sv_list = StatVarMCFNode(
-        Node="dcid:n1",
+        dcid="dcid:n1",
         name="Var",
         observationProperties=["originCountry", "destinationCountry"],
     )
@@ -116,22 +116,22 @@ def test_observation_properties_normalizes_bare_scalar_and_list():
 
 def test_observation_properties_rejects_whitespace_bearing_token():
     with pytest.raises(ValidationError):
-        StatVarMCFNode(Node="dcid:n1", name="Var", observationProperties="has space")
+        StatVarMCFNode(dcid="dcid:n1", name="Var", observationProperties="has space")
 
 
 def test_relevant_variable_normalizes_bare_scalar_and_list():
-    sv = StatVarMCFNode(Node="dcid:n1", name="Var", relevantVariable="otherVar")
+    sv = StatVarMCFNode(dcid="dcid:n1", name="Var", relevantVariable="otherVar")
     assert sv.relevantVariable == "dcid:otherVar"
 
     sv_list = StatVarMCFNode(
-        Node="dcid:n1", name="Var", relevantVariable=["one", "two"]
+        dcid="dcid:n1", name="Var", relevantVariable=["one", "two"]
     )
     assert sv_list.relevantVariable == ["dcid:one", "dcid:two"]
 
 
 def test_relevant_variable_rejects_whitespace_bearing_token():
     with pytest.raises(ValidationError):
-        StatVarMCFNode(Node="dcid:n1", name="Var", relevantVariable="has space")
+        StatVarMCFNode(dcid="dcid:n1", name="Var", relevantVariable="has space")
 
 
 # --- member on StatVarPeerGroupMCFNode is DcidOrListDcid, same normalization ---
@@ -139,7 +139,7 @@ def test_relevant_variable_rejects_whitespace_bearing_token():
 
 def test_peer_group_member_normalizes_bare_scalar_and_list():
     node = StatVarPeerGroupMCFNode(
-        Node="dcid:svpg/x", name="Peers", member=["varOne", "varTwo"]
+        dcid="dcid:svpg/x", name="Peers", member=["varOne", "varTwo"]
     )
     assert node.member == ["dcid:varOne", "dcid:varTwo"]
     assert "member: dcid:varOne, dcid:varTwo" in node.mcf
@@ -147,4 +147,4 @@ def test_peer_group_member_normalizes_bare_scalar_and_list():
 
 def test_peer_group_member_rejects_whitespace_bearing_token():
     with pytest.raises(ValidationError):
-        StatVarPeerGroupMCFNode(Node="dcid:svpg/x", name="Peers", member="has space")
+        StatVarPeerGroupMCFNode(dcid="dcid:svpg/x", name="Peers", member="has space")

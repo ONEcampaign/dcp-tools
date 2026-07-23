@@ -54,18 +54,18 @@ def test_single_level_group():
         "Should create exactly one group node for single-level path"
     )
     group = groups[0]
-    assert group.Node == "dcid:example.org/g/category"
+    assert group.dcid == "dcid:example.org/g/category"
     assert group.name == "Category"
     assert group.specializationOf == "dcid:dc/g/Root"
 
-    assert resolved["Category"] == group.Node
+    assert resolved["Category"] == group.dcid
 
 
 def test_multi_level_group():
     resolved, groups = resolve_group_paths(["A/B/C"], group_namespace="ns")
 
     assert len(groups) == 3
-    slug_map = {g.Node.split("/")[-1]: g for g in groups}
+    slug_map = {g.dcid.split("/")[-1]: g for g in groups}
 
     # Check each group's parent linkage
     assert slug_map["A"].specializationOf == "dcid:dc/g/Root"
@@ -81,7 +81,7 @@ def test_duplicate_paths_do_not_create_duplicates():
 
     # Expect three unique group nodes: X, Y, Z
     assert len(groups) == 3
-    slugs = sorted(g.Node for g in groups)
+    slugs = sorted(g.dcid for g in groups)
     assert "dcid:ns2/g/X" in slugs
     assert "dcid:ns2/g/Y" in slugs
     assert "dcid:ns2/g/Z" in slugs
@@ -108,7 +108,7 @@ def test_csv_metadata_to_nodes_parse_groups(tmp_path):
         str(csv_path), parse_groups=True, group_namespace="ns"
     )
 
-    assert [n.Node for n in nodes.nodes] == [
+    assert [n.dcid for n in nodes.nodes] == [
         "dcid:n1",
         "dcid:n2",
         "dcid:ns/g/economic",
@@ -130,7 +130,7 @@ def test_resolve_group_paths_cleans_raw_path():
     )
 
     assert len(groups) == 2
-    slugs = [g.Node for g in groups]
+    slugs = [g.dcid for g in groups]
     assert slugs == ["dcid:ns/g/economic", "dcid:ns/g/employment"]
     assert resolved["-Economic// Employment / "] == "dcid:ns/g/employment"
 
@@ -155,7 +155,7 @@ def test_resolve_group_paths_drops_whitespace_only_segments(raw, expected):
     """
     resolved, groups = resolve_group_paths([raw], group_namespace="ns")
 
-    assert [g.Node for g in groups] == expected
+    assert [g.dcid for g in groups] == expected
     assert resolved[raw] == expected[-1]
 
 
@@ -229,7 +229,7 @@ def test_csv_metadata_to_nodes_parse_groups_remove_works_on_group_node(tmp_path)
     looks the node up via `_pos`) on a group node from a parse_groups=True result must
     work — the same class of index bug #126 fixed in `rename_variable`."""
     content = (
-        "Node,name,typeOf,memberOf\n"
+        "dcid,name,typeOf,memberOf\n"
         "dcid:n1,Name1,dcid:StatisticalVariable,Economic/Employment\n"
     )
     csv_path = tmp_path / "test.csv"
@@ -240,7 +240,7 @@ def test_csv_metadata_to_nodes_parse_groups_remove_works_on_group_node(tmp_path)
     )
 
     nodes.remove("dcid:ns/g/employment")
-    assert [n.Node for n in nodes.nodes] == ["dcid:n1", "dcid:ns/g/economic"]
+    assert [n.dcid for n in nodes.nodes] == ["dcid:n1", "dcid:ns/g/economic"]
     # The index was kept consistent, not merely the list.
     assert nodes._expect_present("dcid:ns/g/economic") == 1
 

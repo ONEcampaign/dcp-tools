@@ -31,9 +31,8 @@ class StatVarMCFNode(MCFNode):
 
     Attributes:
         # Inherited from MCFNode
-        Node: Identifier for the Node.
+        dcid: Identifier for the Node.
         name: The human-readable name for the Node.
-        dcid: Optional DCID for uniquely identifying the Node.
         description: Optional human-readable description.
         provenance: Optional provenance information.
         shortDisplayName: Optional human-readable short name for display.
@@ -71,7 +70,7 @@ class StatVarGroupMCFNode(MCFNode):
 
     Attributes:
         # Additional Attributes specific to StatVarGroup
-        Node: Node identifier, must contain '/g'.
+        dcid: Node identifier, must contain '/g'.
         typeOf: Fixed type indicating this is a StatVarGroup.
         specializationOf: DCID of the parent group, must start with 'dcid:' and contain 'g/'.
 
@@ -84,7 +83,7 @@ class StatVarGroupMCFNode(MCFNode):
         subClassOf: Optional DCID indicating the 'parent' Node class.
     """
 
-    Node: GroupDcid
+    dcid: GroupDcid
     typeOf: Literal["dcid:StatVarGroup"] = "dcid:StatVarGroup"
     specializationOf: GroupDcid
 
@@ -95,19 +94,18 @@ class StatVarPeerGroupMCFNode(MCFNode):
 
     Attributes:
         # Additional Attributes specific to StatVarPeerGroup
-        Node: Node identifier, must contain '/svpg'.
+        dcid: Node identifier, must contain '/svpg'.
         typeOf: Fixed type indicating this is a StatVarPeerGroup.
         member: DCID of the parent group, must start with 'dcid:' and contain 'g/'.
 
          # Inherits from MCFNode
         name: The human-readable name for the Node.
-        dcid: Optional DCID for uniquely identifying the Node.
         description: Optional human-readable description.
         provenance: Optional provenance information.
         shortDisplayName: Optional human-readable short name for display.
         subClassOf: Optional DCID indicating the 'parent' Node class.
     """
 
-    Node: PeerGroupDcid
+    dcid: PeerGroupDcid
     typeOf: Literal["dcid:StatVarPeerGroup"] = "dcid:StatVarPeerGroup"
     member: DcidOrListDcid

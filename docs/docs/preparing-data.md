@@ -171,7 +171,7 @@ manager.add_input_file(
 )
 
 manager.add_variable_to_mcf(
-    Node="climateFinanceBilateralFlow",
+    dcid="climateFinanceBilateralFlow",
     name="Climate finance bilateral flow",
     description="Bilateral climate finance commitments between a provider and a recipient country.",
     statType="dcid:measuredValue",
@@ -216,7 +216,7 @@ Declaring the StatVar the single-entity input file from earlier references:
 
 ```python
 manager.add_variable_to_mcf(
-    Node="climateFinanceProvidedCommitments",
+    dcid="climateFinanceProvidedCommitments",
     name="Climate finance committed",
     description="Bilateral climate finance commitments provided by a country.",
     statType="dcid:measuredValue",
@@ -233,14 +233,14 @@ Declaring the two properties the multi-entity StatVar from the previous section 
 
 ```python
 manager.add_property(
-    Node="providerCountry",
+    dcid="providerCountry",
     name="provider country",
     description="The country providing climate finance in a bilateral flow.",
     domainIncludes="StatisticalVariable",
     rangeIncludes="Country",
 )
 manager.add_property(
-    Node="recipientCountry",
+    dcid="recipientCountry",
     name="recipient country",
     description="The country receiving climate finance in a bilateral flow.",
     domainIncludes="StatisticalVariable",
@@ -256,7 +256,7 @@ name, not a dcid, unlike every other ref parameter on these builders:
 
 ```python
 manager.add_entity_type(
-    Node="ClimateFinanceProgram",
+    dcid="ClimateFinanceProgram",
     name="Climate finance program",
     description="A named climate finance program or initiative tracked by ONE.",
     includedIn="ONEClimateFinance",
@@ -273,7 +273,7 @@ Add a top-level StatVarGroup for all of an organization's custom variables:
 
 ```python
 manager.add_variable_group_to_mcf(
-    Node="dcid:one/g/ONEData",
+    dcid="dcid:one/g/ONEData",
     name="ONE Data",
     specializationOf="dcid:dc/g/Root",
 )

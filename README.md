@@ -65,7 +65,7 @@ manager.add_input_file(
 )
 
 manager.add_variable_to_mcf(
-    Node="climateFinanceProvidedCommitments",
+    dcid="climateFinanceProvidedCommitments",
     name="Climate finance commitments (bilateral)",
     description="Funding committed for climate adaptation and mitigation projects",
     statType="dcid:measuredValue",

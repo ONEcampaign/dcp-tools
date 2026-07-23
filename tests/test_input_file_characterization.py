@@ -190,7 +190,7 @@ def test_config_to_dict_shape():
 def test_export_mcf_file(tmp_path):
     """variable added via add_variable_to_mcf appears in exported MCF."""
     manager, _ = _manager()
-    manager.add_variable_to_mcf(Node="dcid:vX", name="VX")
+    manager.add_variable_to_mcf(dcid="dcid:vX", name="VX")
 
     manager.export_mcf_file(tmp_path, mcf_file_name="custom_nodes.mcf")
 

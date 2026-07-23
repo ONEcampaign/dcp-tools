@@ -1,13 +1,13 @@
 # dcp-tools
 
-__Manage and load data to custom Data Commons instances__
+__Manage and load data to Data Commons Platform instances__
 
 [![PyPI](https://img.shields.io/pypi/v/dcp-tools.svg)](https://pypi.org/project/dcp-tools/)
 [![PyPI - Python Version](https://img.shields.io/pypi/pyversions/dcp-tools.svg)](https://pypi.org/project/dcp-tools/)
 [![Docs](https://img.shields.io/badge/docs-bblocks-blue)](https://docs.one.org/tools/bblocks/datacommons-tools/)
 [![Lint/format: Ruff](https://img.shields.io/badge/lint%2Fformat-ruff-46a758.svg)](https://github.com/astral-sh/ruff)
 
-A [custom Data Commons](https://docs.datacommons.org/custom_dc/custom_data.html) instance takes
+A [Data Commons Platform](https://docs.datacommons.org/custom_dc/custom_data.html) instance takes
 your data as CSVs in a fixed variable-per-row shape, plus a `config.json` that maps each CSV's
 columns onto the Data Commons schema. If you're defining your own statistical variables,
 entities, or properties rather than reusing existing ones, you also need MCF (Meta Content

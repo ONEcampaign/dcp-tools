@@ -1,10 +1,10 @@
-# How to upload and load data into a custom Data Commons instance
+# How to upload and load data into a Data Commons Platform instance
 
 Upload an exported data bundle to Google Cloud Storage, then trigger the Data Commons Platform (DCP) job that loads it into your custom knowledge graph and serves it.
 
 ## Before you start
 
-- A custom Data Commons instance with the DCP ingestion pipeline already deployed. `dcp-tools` doesn't provision instances. Follow Google's [guide to deploying a custom instance ↗](https://docs.datacommons.org/custom_dc/deploy_cloud.html) first.
+- A Data Commons Platform instance with the DCP ingestion pipeline already deployed. `dcp-tools` doesn't provision instances. Follow Google's [guide to deploying a custom instance ↗](https://docs.datacommons.org/custom_dc/deploy_cloud.html) first.
 - An exported bundle: a local directory holding `config.json`, your CSV data files, and any `.mcf` files, built with `CustomDataManager.export_all` (see [Preparing data](preparing-data.md)).
 - The settings `dcp-tools` needs to reach GCP and your load job, gathered into a `KGSettings` object:
 

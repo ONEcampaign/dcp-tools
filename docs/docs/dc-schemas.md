@@ -20,9 +20,9 @@ in `config.json` uses `observationAbout` for a row about one entity, and `custom
 row about several. That split exists because a single dcid reference can't represent a bilateral
 relationship.
 
-## Background: what a custom Data Commons deployment needs
+## Background: what a Data Commons Platform deployment needs
 
-A custom Data Commons instance serves an organization's own data next to the base Data Commons
+A Data Commons Platform instance serves an organization's own data next to the base Data Commons
 knowledge graph. Getting data in isn't a matter of writing rows into a database table. The
 platform's ingestion job reads a declarative bundle (config, CSVs, MCF) and turns it into graph
 nodes and observations. `dcp-tools` builds that bundle. It doesn't talk to a database and it

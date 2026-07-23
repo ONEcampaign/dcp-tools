@@ -1,10 +1,10 @@
-# Build your first custom Data Commons import
+# Build your first Data Commons Platform import
 
-> A working import bundle for a custom Data Commons instance, built with `dcp-tools` and verified by loading it back.
+> A working import bundle for a Data Commons Platform instance, built with `dcp-tools` and verified by loading it back.
 
 ## What you'll build
 
-By the end, you'll have a complete import bundle on disk: a `config.json`, two MCF files, and a CSV of climate finance data, generated entirely from Python. This is the same shape of bundle a custom Data Commons instance loads from Google Cloud Storage.
+By the end, you'll have a complete import bundle on disk: a `config.json`, two MCF files, and a CSV of climate finance data, generated entirely from Python. This is the same shape of bundle a Data Commons Platform instance loads from Google Cloud Storage.
 
 ```
 one_climate_finance/

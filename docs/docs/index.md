@@ -1,12 +1,12 @@
 # dcp-tools
 
-**Prepare and load data for custom Data Commons instances.**
+**Prepare and load data for Data Commons Platform instances.**
 
-`dcp-tools` is a Python package for building the config, metadata, and data files a custom Data
-Commons instance needs, then uploading them and triggering ingestion. Use it as a library or
+`dcp-tools` is a Python package for building the config, metadata, and data files a Data Commons
+Platform instance needs, then uploading them and triggering ingestion. Use it as a library or
 through the `dcp-tools` command-line tool.
 
-A custom Data Commons instance lets an organization combine its own datasets with the public
+A Data Commons Platform instance lets an organization combine its own datasets with the public
 knowledge graph at [datacommons.org](https://datacommons.org/), while reusing the platform's
 search and visualization tools. The official
 [Custom Data Commons documentation](https://docs.datacommons.org/custom_dc/index.html) covers how

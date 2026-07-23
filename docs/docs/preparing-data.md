@@ -1,6 +1,6 @@
 # Preparing data
 
-`CustomDataManager` builds a custom Data Commons import bundle (a `config.json` file, CSV data,
+`CustomDataManager` builds a Data Commons Platform import bundle (a `config.json` file, CSV data,
 and `.mcf` files) without hand-editing any of the three. Each section below is a standalone
 recipe. Jump to the one you need.
 

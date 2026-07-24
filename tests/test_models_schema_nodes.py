@@ -15,7 +15,7 @@ from dcp_tools.custom_data.models.schema_nodes import (
 def test_entity_type_default_typeof():
     node = EntityTypeNode(dcid="dcid:MyClass", name="My Class")
     assert node.typeOf == "dcid:Class"
-    assert "typeOf: dcid:Class" in node.mcf
+    assert "typeOf: dcid:Class" in node.to_mcf()
 
 
 def test_entity_type_accepts_included_in_list():
@@ -24,7 +24,7 @@ def test_entity_type_accepts_included_in_list():
         name="My Class",
         includedIn=["dcid:provenance/p", "dcid:source/s"],
     )
-    assert "includedIn: dcid:provenance/p, dcid:source/s" in node.mcf
+    assert "includedIn: dcid:provenance/p, dcid:source/s" in node.to_mcf()
 
 
 def test_entity_type_rejects_malformed_node():
@@ -53,7 +53,7 @@ def test_event_type_subclassof_override():
         dcid="dcid:MyEvent", name="My Event", subClassOf="dcid:DisasterEvent"
     )
     assert node.subClassOf == "dcid:DisasterEvent"
-    assert "subClassOf: dcid:DisasterEvent" in node.mcf
+    assert "subClassOf: dcid:DisasterEvent" in node.to_mcf()
 
 
 def test_event_type_subclassof_normalizes_bare_token():
@@ -80,9 +80,9 @@ def test_property_optional_refs_serialize():
         rangeIncludes="dcid:Number",
         subPropertyOf="dcid:baseProp",
     )
-    assert "domainIncludes: dcid:Person" in node.mcf
-    assert "rangeIncludes: dcid:Number" in node.mcf
-    assert "subPropertyOf: dcid:baseProp" in node.mcf
+    assert "domainIncludes: dcid:Person" in node.to_mcf()
+    assert "rangeIncludes: dcid:Number" in node.to_mcf()
+    assert "subPropertyOf: dcid:baseProp" in node.to_mcf()
 
 
 def test_property_model_normalizes_bare_ref():
@@ -123,12 +123,12 @@ def test_unit_typeof_override_validates():
         dcid="dcid:USD", name="US Dollar", typeOf="dcid:CurrencyUnitOfMeasure"
     )
     assert node.typeOf == "dcid:CurrencyUnitOfMeasure"
-    assert "typeOf: dcid:CurrencyUnitOfMeasure" in node.mcf
+    assert "typeOf: dcid:CurrencyUnitOfMeasure" in node.to_mcf()
 
 
 def test_unit_inherits_short_display_name():
     node = UnitOfMeasureNode(dcid="dcid:USD", name="US Dollar", shortDisplayName="$")
-    assert 'shortDisplayName: "$"' in node.mcf
+    assert 'shortDisplayName: "$"' in node.to_mcf()
 
 
 # --- MeasurementMethodNode ---
@@ -142,9 +142,9 @@ def test_measurement_method_default_typeof():
 def test_measurement_method_typeof_override_validates():
     node = MeasurementMethodNode(dcid="dcid:MyCensus", typeOf="dcid:CensusSurveyEnum")
     assert node.typeOf == "dcid:CensusSurveyEnum"
-    assert "typeOf: dcid:CensusSurveyEnum" in node.mcf
+    assert "typeOf: dcid:CensusSurveyEnum" in node.to_mcf()
 
 
 def test_measurement_method_allows_missing_name():
     node = MeasurementMethodNode(dcid="dcid:MyMethod")
-    assert "name:" not in node.mcf
+    assert "name:" not in node.to_mcf()

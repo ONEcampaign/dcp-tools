@@ -91,8 +91,7 @@ class Node(BaseModel):
         """
         super().__setattr__(name, self._clean_value(value))
 
-    @property
-    def mcf(self) -> str:
+    def to_mcf(self) -> str:
         """Generates an MCF-formatted string representing this node.
 
         Returns:
@@ -252,6 +251,6 @@ class Nodes(BaseModel):
 
         with open(file_path, mode) as f:
             for node in self.nodes:
-                f.write(node.mcf)
+                f.write(node.to_mcf())
 
         return self

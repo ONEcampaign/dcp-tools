@@ -9,7 +9,7 @@ from dcp_tools.custom_data.models.stat_vars import StatType, StatVarNode
 
 def test_node_mcf_output_order_and_formatting():
     """
-    Ensures Node.mcf outputs correctly with 'Node:' line first.
+    Ensures Node.to_mcf() outputs correctly with 'Node:' line first.
     """
     node = Node(
         name='"My Name"',
@@ -17,7 +17,7 @@ def test_node_mcf_output_order_and_formatting():
         description='"Desc"',
         dcid="dcid:TestNode",
     )
-    assert node.mcf == (
+    assert node.to_mcf() == (
         "Node: dcid:TestNode\n"
         'name: "My Name"\n'
         "typeOf: dcid:TypeA\n"
@@ -33,7 +33,7 @@ def test_node_typeof_accepts_list_and_serializes(type_of):
     Accepts a list of DCIDs for typeOf and serializes as CSV.
     """
     node = Node(dcid="dcid:TestNode", name='"My Name"', typeOf=type_of)
-    assert node.mcf == (
+    assert node.to_mcf() == (
         'Node: dcid:TestNode\nname: "My Name"\ntypeOf: dcid:TypeA, dcid:TypeB\n\n'
     )
 
@@ -43,7 +43,7 @@ def test_node_allows_missing_name_and_serializes_without_it():
     `name` is optional; when omitted it should not appear in MCF output.
     """
     node = Node(dcid="dcid:NoNameNode", typeOf="dcid:TypeA")
-    assert node.mcf == ("Node: dcid:NoNameNode\ntypeOf: dcid:TypeA\n\n")
+    assert node.to_mcf() == ("Node: dcid:NoNameNode\ntypeOf: dcid:TypeA\n\n")
 
 
 def test_node_strips_linebreaks_and_trailing_spaces():
@@ -52,7 +52,9 @@ def test_node_strips_linebreaks_and_trailing_spaces():
         name="My name\n ",
         typeOf="dcid:TypeA \n",
     )
-    assert node.mcf == ('Node: dcid:TestNode\nname: "My name"\ntypeOf: dcid:TypeA\n\n')
+    assert node.to_mcf() == (
+        'Node: dcid:TestNode\nname: "My name"\ntypeOf: dcid:TypeA\n\n'
+    )
 
 
 def test_nodes_load_from_file_without_name(tmp_path):
@@ -141,7 +143,7 @@ def test_node_assignment_cleans_the_assigned_value():
 
     node.customProperty = "extra\nvalue  "
     assert node.customProperty == "extravalue"
-    assert "customProperty: extravalue\n" in node.mcf
+    assert "customProperty: extravalue\n" in node.to_mcf()
 
 
 def test_stat_type_survives_assignment():
@@ -173,7 +175,7 @@ def test_enum_carrying_a_line_break_is_still_cleaned():
     node = Node(dcid="dcid:n1", typeOf="dcid:T1", custom=Dirty.BAD)
 
     assert node.custom == "linebreak"
-    assert "custom: linebreak\n" in node.mcf
+    assert "custom: linebreak\n" in node.to_mcf()
 
 
 def test_nodes_rename_rejected_leaves_index_intact():

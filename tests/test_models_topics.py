@@ -38,7 +38,7 @@ def test_topic_relevant_variable_accepts_list():
         relevantVariable=["varOne", "varTwo"],
     )
     assert node.relevantVariable == ["dcid:varOne", "dcid:varTwo"]
-    assert "relevantVariable: dcid:varOne, dcid:varTwo" in node.mcf
+    assert "relevantVariable: dcid:varOne, dcid:varTwo" in node.to_mcf()
 
 
 def test_topic_node_rejects_missing_slug():
@@ -81,7 +81,7 @@ def test_topic_csv_conversion_rejects_bare_node(tmp_path):
     nodes = csv_metadata_to_nodes(str(csv_path), node_type="Topic")
 
     assert nodes.nodes[0].dcid == "dcid:topic/x"
-    assert "Node: dcid:topic/x\n" in nodes.nodes[0].mcf
+    assert "Node: dcid:topic/x\n" in nodes.nodes[0].to_mcf()
 
 
 def test_topic_relevant_variable_rejects_whitespace_bearing_token():

@@ -55,20 +55,20 @@ manager.add_input_file(
     file_name="climate_finance/one_cf_provider_commitments.csv",
     provenance="ONEClimateFinance",
     data=data,
-    columnMappings={
+    column_mappings={
         "observationAbout": "country",
         "date": "year",
         "variable": "variable",
         "value": "value",
     },
-    observationProperties={"unit": "USDollar"},
+    observation_properties={"unit": "USDollar"},
 )
 
 manager.add_variable_to_mcf(
     dcid="climateFinanceProvidedCommitments",
     name="Climate finance commitments (bilateral)",
     description="Funding committed for climate adaptation and mitigation projects",
-    statType="dcid:measuredValue",
+    stat_type="dcid:measuredValue",
 )
 
 out_dir = Path("export/climate_finance")

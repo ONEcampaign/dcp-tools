@@ -35,34 +35,34 @@ class StatVarNode(Node):
         name: The human-readable name for the Node.
         description: Optional human-readable description.
         provenance: Optional provenance information.
-        shortDisplayName: Optional human-readable short name for display.
-        subClassOf: Optional DCID indicating the 'parent' Node class.
+        short_display_name: Optional human-readable short name for display.
+        sub_class_of: Optional DCID indicating the 'parent' Node class.
 
         # Additional Attributes specific to StatisticalVariable
-        statType: Type of statistical measurement represented by the variable.
-        typeOf: Fixed type indicating this is a StatisticalVariable.
-        memberOf: Optional DCID indicating group membership.
-        relevantVariable: Optional DCID of a related variable.
-        searchDescription: Optional descriptions enhancing NL search capabilities.
-        populationType: Optional DCID of the population entity type being measured.
-        measuredProperty: Optional DCID of the property being measured.
-        measurementQualifier: Optional qualifier describing measurement specifics.
-        measurementDenominator: Optional denominator for ratio-type statistical measures.
+        stat_type: Type of statistical measurement represented by the variable.
+        type_of: Fixed type indicating this is a StatisticalVariable.
+        member_of: Optional DCID indicating group membership.
+        relevant_variable: Optional DCID of a related variable.
+        search_description: Optional descriptions enhancing NL search capabilities.
+        population_type: Optional DCID of the population entity type being measured.
+        measured_property: Optional DCID of the property being measured.
+        measurement_qualifier: Optional qualifier describing measurement specifics.
+        measurement_denominator: Optional denominator for ratio-type statistical measures.
         footnote: Optional footnotes providing additional context or information.
-        observationProperties: Optional observation properties for multi-entity data.
+        observation_properties: Optional observation properties for multi-entity data.
     """
 
-    statType: StatType | None = StatType.MEASURED_VALUE
-    typeOf: Literal["dcid:StatisticalVariable"] = "dcid:StatisticalVariable"
-    memberOf: GroupDcidOrListGroupDcid | None = None
-    relevantVariable: DcidOrListDcid | None = None
-    searchDescription: QuotedStrListOrStr | None = None
-    populationType: Dcid | None = None
-    measuredProperty: Dcid | None = None
-    measurementQualifier: Dcid | None = None
-    measurementDenominator: Dcid | None = None
+    stat_type: StatType | None = StatType.MEASURED_VALUE
+    type_of: Literal["dcid:StatisticalVariable"] = "dcid:StatisticalVariable"
+    member_of: GroupDcidOrListGroupDcid | None = None
+    relevant_variable: DcidOrListDcid | None = None
+    search_description: QuotedStrListOrStr | None = None
+    population_type: Dcid | None = None
+    measured_property: Dcid | None = None
+    measurement_qualifier: Dcid | None = None
+    measurement_denominator: Dcid | None = None
     footnote: QuotedStrListOrStr | None = None
-    observationProperties: DcidOrListDcid | None = None
+    observation_properties: DcidOrListDcid | None = None
 
 
 class StatVarGroupNode(Node):
@@ -71,21 +71,21 @@ class StatVarGroupNode(Node):
     Attributes:
         # Additional Attributes specific to StatVarGroup
         dcid: Node identifier, must contain '/g'.
-        typeOf: Fixed type indicating this is a StatVarGroup.
-        specializationOf: DCID of the parent group, must start with 'dcid:' and contain 'g/'.
+        type_of: Fixed type indicating this is a StatVarGroup.
+        specialization_of: DCID of the parent group, must start with 'dcid:' and contain 'g/'.
 
          # Inherits from Node
         name: The human-readable name for the Node.
         dcid: Optional DCID for uniquely identifying the Node.
         description: Optional human-readable description.
         provenance: Optional provenance information.
-        shortDisplayName: Optional human-readable short name for display.
-        subClassOf: Optional DCID indicating the 'parent' Node class.
+        short_display_name: Optional human-readable short name for display.
+        sub_class_of: Optional DCID indicating the 'parent' Node class.
     """
 
     dcid: GroupDcid
-    typeOf: Literal["dcid:StatVarGroup"] = "dcid:StatVarGroup"
-    specializationOf: GroupDcid
+    type_of: Literal["dcid:StatVarGroup"] = "dcid:StatVarGroup"
+    specialization_of: GroupDcid
 
 
 class StatVarPeerGroupNode(Node):
@@ -95,17 +95,17 @@ class StatVarPeerGroupNode(Node):
     Attributes:
         # Additional Attributes specific to StatVarPeerGroup
         dcid: Node identifier, must contain '/svpg'.
-        typeOf: Fixed type indicating this is a StatVarPeerGroup.
+        type_of: Fixed type indicating this is a StatVarPeerGroup.
         member: DCID of the parent group, must start with 'dcid:' and contain 'g/'.
 
          # Inherits from Node
         name: The human-readable name for the Node.
         description: Optional human-readable description.
         provenance: Optional provenance information.
-        shortDisplayName: Optional human-readable short name for display.
-        subClassOf: Optional DCID indicating the 'parent' Node class.
+        short_display_name: Optional human-readable short name for display.
+        sub_class_of: Optional DCID indicating the 'parent' Node class.
     """
 
     dcid: PeerGroupDcid
-    typeOf: Literal["dcid:StatVarPeerGroup"] = "dcid:StatVarPeerGroup"
+    type_of: Literal["dcid:StatVarPeerGroup"] = "dcid:StatVarPeerGroup"
     member: DcidOrListDcid

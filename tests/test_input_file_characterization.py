@@ -36,7 +36,11 @@ def _manager(file_name="input.csv", *, with_data=True):
         file_name=file_name,
         provenance="p1",
         data=df if with_data else None,
-        columnMappings={"observationAbout": "entity", "date": "Year", "value": "Value"},
+        column_mappings={
+            "observationAbout": "entity",
+            "date": "Year",
+            "value": "Value",
+        },
     )
     return mgr, df
 
@@ -56,16 +60,16 @@ def _make_cfg(
             filename=key,
             provenance=prov,
             columnMappings=ColumnMappings(
-                observationAbout="Country", date="Year", value="Val"
+                observation_about="Country", date="Year", value="Val"
             ),
         )
     ]
     return Config(
-        inputFiles=input_files,
-        includeInputSubdirs=include_subdirs,
-        customIdNamespace=custom_namespace,
-        customSvgPrefix=custom_svg_prefix,
-        svHierarchyPropsBlocklist=sv_blocklist,
+        input_files=input_files,
+        include_input_subdirs=include_subdirs,
+        custom_id_namespace=custom_namespace,
+        custom_svg_prefix=custom_svg_prefix,
+        sv_hierarchy_props_blocklist=sv_blocklist,
     )
 
 
@@ -78,12 +82,12 @@ def test_add_input_file_registers_in_config_and_data():
     """add_input_file registers file in config and data store."""
     manager, df = _manager()
 
-    entry = next(e for e in manager._config.inputFiles if e.filename == "input.csv")
+    entry = next(e for e in manager._config.input_files if e.filename == "input.csv")
     assert isinstance(entry, InputFile)
     assert entry.provenance == "dcid:provenance/p1"
-    assert entry.columnMappings.observationAbout == "entity"
-    assert entry.columnMappings.date == "Year"
-    assert entry.columnMappings.value == "Value"
+    assert entry.column_mappings.observation_about == "entity"
+    assert entry.column_mappings.date == "Year"
+    assert entry.column_mappings.value == "Value"
     assert entry.data_format == "variablePerRow"
 
     assert "input.csv" in manager._data
@@ -106,7 +110,11 @@ def test_add_input_file_override_and_duplicate_error():
         file_name="input.csv",
         provenance="p1",
         data=df_new,
-        columnMappings={"observationAbout": "entity", "date": "Year", "value": "Value"},
+        column_mappings={
+            "observationAbout": "entity",
+            "date": "Year",
+            "value": "Value",
+        },
         override=True,
     )
     pd.testing.assert_frame_equal(manager._data["input.csv"], df_new)
@@ -151,12 +159,12 @@ def test_export_config_round_trip(tmp_path):
     loaded = Config.from_json(str(config_file))
     assert isinstance(loaded, Config)
 
-    entry = next(e for e in loaded.inputFiles if e.filename == "input.csv")
-    mappings = entry.columnMappings
+    entry = next(e for e in loaded.input_files if e.filename == "input.csv")
+    mappings = entry.column_mappings
     assert mappings.model_dump(exclude_none=True) == {
-        "observationAbout": "entity",
-        "date": "Year",
-        "value": "Value",
+        "dcid:observationAbout": "entity",
+        "dcid:observationDate": "Year",
+        "dcid:value": "Value",
     }
     assert entry.data_format == "variablePerRow"
 
@@ -210,7 +218,7 @@ def test_input_file_default_format():
     entry = InputFile(
         filename="a.csv",
         provenance="p",
-        columnMappings=ColumnMappings(),
+        column_mappings=ColumnMappings(),
     )
 
     assert entry.data_format == "variablePerRow"
@@ -220,12 +228,12 @@ def test_input_file_default_format():
 def test_config_build_and_from_json_round_trip(tmp_path):
     """A Config with one InputFile survives a serialize → deserialize cycle."""
     cfg = Config(
-        inputFiles=[
+        input_files=[
             InputFile(
                 filename="a.csv",
                 provenance="p",
-                columnMappings=ColumnMappings(
-                    observationAbout="Country", date="Year", value="Val"
+                column_mappings=ColumnMappings(
+                    observation_about="Country", date="Year", value="Val"
                 ),
             )
         ],
@@ -265,7 +273,7 @@ def test_merge_configs_from_directory(tmp_path):
 
     manager = CustomDataManager.from_config_files_in_directory(tmp_path)
 
-    filenames = {e.filename for e in manager._config.inputFiles}
+    filenames = {e.filename for e in manager._config.input_files}
     assert filenames == {"a.csv", "b.csv"}
 
 
@@ -293,12 +301,12 @@ def test_get_unregistered_and_missing_csv_files():
     """get_unregistered_csv_files and get_missing_csv_files work with
     a Config that has one InputFile (they depend only on inputFiles)."""
     cfg = Config(
-        inputFiles=[
+        input_files=[
             InputFile(
                 filename="a.csv",
                 provenance="p",
-                columnMappings=ColumnMappings(
-                    observationAbout="Country", date="Year", value="Val"
+                column_mappings=ColumnMappings(
+                    observation_about="Country", date="Year", value="Val"
                 ),
             )
         ],
@@ -317,12 +325,12 @@ def test_get_unregistered_and_missing_csv_files():
     assert unregistered == ["extra.csv"]
 
     # --- get_missing_csv_files ---
-    cfg.inputFiles.append(
+    cfg.input_files.append(
         InputFile(
             filename="extra.csv",
             provenance="p",
-            columnMappings=ColumnMappings(
-                observationAbout="Country", date="Year", value="Val"
+            column_mappings=ColumnMappings(
+                observation_about="Country", date="Year", value="Val"
             ),
         )
     )

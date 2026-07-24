@@ -100,13 +100,13 @@ manager.add_input_file(
     file_name="climate_finance_commitments.csv",
     provenance="ONEClimateFinance",
     data=df,
-    columnMappings={
+    column_mappings={
         "observationAbout": "country",
         "date": "year",
         "variable": "variable",
         "value": "value",
     },
-    observationProperties={"unit": "USDollar"},
+    observation_properties={"unit": "USDollar"},
 )
 ```
 
@@ -126,7 +126,7 @@ Data is optional at registration:
 manager.add_input_file(
     file_name="climate_finance_disbursements.csv",
     provenance="ONEClimateFinance",
-    columnMappings={
+    column_mappings={
         "observationAbout": "country",
         "date": "year",
         "variable": "variable",
@@ -161,7 +161,7 @@ manager.add_input_file(
     file_name="bilateral_climate_finance_flows.csv",
     provenance="ONEClimateFinance",
     data=flows,
-    columnMappings={
+    column_mappings={
         "variable": "variable",
         "date": "year",
         "value": "value",
@@ -174,8 +174,8 @@ manager.add_variable_to_mcf(
     dcid="climateFinanceBilateralFlow",
     name="Climate finance bilateral flow",
     description="Bilateral climate finance commitments between a provider and a recipient country.",
-    statType="dcid:measuredValue",
-    observationProperties=["dcid:providerCountry", "dcid:recipientCountry"],
+    stat_type="dcid:measuredValue",
+    observation_properties=["dcid:providerCountry", "dcid:recipientCountry"],
 )
 ```
 
@@ -219,9 +219,9 @@ manager.add_variable_to_mcf(
     dcid="climateFinanceProvidedCommitments",
     name="Climate finance committed",
     description="Bilateral climate finance commitments provided by a country.",
-    statType="dcid:measuredValue",
-    populationType="Country",
-    measuredProperty="amount",
+    stat_type="dcid:measuredValue",
+    population_type="Country",
+    measured_property="amount",
 )
 ```
 
@@ -236,15 +236,15 @@ manager.add_property(
     dcid="providerCountry",
     name="provider country",
     description="The country providing climate finance in a bilateral flow.",
-    domainIncludes="StatisticalVariable",
-    rangeIncludes="Country",
+    domain_includes="StatisticalVariable",
+    range_includes="Country",
 )
 manager.add_property(
     dcid="recipientCountry",
     name="recipient country",
     description="The country receiving climate finance in a bilateral flow.",
-    domainIncludes="StatisticalVariable",
-    rangeIncludes="Country",
+    domain_includes="StatisticalVariable",
+    range_includes="Country",
 )
 ```
 
@@ -259,7 +259,7 @@ manager.add_entity_type(
     dcid="ClimateFinanceProgram",
     name="Climate finance program",
     description="A named climate finance program or initiative tracked by ONE.",
-    includedIn="ONEClimateFinance",
+    included_in="ONEClimateFinance",
 )
 ```
 
@@ -275,7 +275,7 @@ Add a top-level StatVarGroup for all of an organization's custom variables:
 manager.add_variable_group_to_mcf(
     dcid="dcid:one/g/ONEData",
     name="ONE Data",
-    specializationOf="dcid:dc/g/Root",
+    specialization_of="dcid:dc/g/Root",
 )
 ```
 
@@ -377,7 +377,7 @@ Vertical specs tell the importer which top-level groups to file matching StatVar
 `groupStatVarsByProperty` is set. Skip this unless you're using that setting.
 
 ```python
-manager.set_groupStatVarsByProperty(True)
+manager.set_group_stat_vars_by_property(True)
 manager.add_vertical_spec(
     verticals=["ClimateFinanceVertical"],
     population_type="Country",

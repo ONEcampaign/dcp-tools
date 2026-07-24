@@ -22,11 +22,11 @@ from dcp_tools.gcp_utilities.storage import (
 
 def _minimal_config(key: str = "a.csv") -> Config:
     return Config(
-        inputFiles=[
+        input_files=[
             InputFile(
                 filename=key,
                 provenance="prov",
-                columnMappings=ColumnMappings(),
+                column_mappings=ColumnMappings(),
             )
         ]
     )
@@ -324,11 +324,11 @@ def test_get_unregistered_csv_files_honors_patterns():
     bucket.name = "my-bucket"
 
     cfg = Config(
-        inputFiles=[
+        input_files=[
             InputFile(
                 pattern="data_*.csv",
                 provenance="prov",
-                columnMappings=ColumnMappings(),
+                column_mappings=ColumnMappings(),
             )
         ]
     )
@@ -361,11 +361,11 @@ def test_get_missing_csv_files():
     bucket.list_blobs.return_value = [blob_a]
 
     cfg = _minimal_config()
-    cfg.inputFiles.append(
+    cfg.input_files.append(
         InputFile(
             filename="extra.csv",
             provenance="prov",
-            columnMappings=ColumnMappings(),
+            column_mappings=ColumnMappings(),
         )
     )
 
@@ -381,11 +381,11 @@ def test_get_missing_csv_files_with_prefix_added():
     bucket.list_blobs.return_value = [blob_a]
 
     cfg = _minimal_config("sub/a.csv")
-    cfg.inputFiles.append(
+    cfg.input_files.append(
         InputFile(
             filename="sub/b.csv",
             provenance="prov",
-            columnMappings=ColumnMappings(),
+            column_mappings=ColumnMappings(),
         )
     )
 
@@ -423,11 +423,11 @@ def test_get_missing_csv_files_per_import():
     bucket.name = "my-bucket"
 
     cfg = _minimal_config("a.csv")
-    cfg.inputFiles.append(
+    cfg.input_files.append(
         InputFile(
             filename="b.csv",
             provenance="prov",
-            columnMappings=ColumnMappings(),
+            column_mappings=ColumnMappings(),
         )
     )
 
@@ -446,11 +446,11 @@ def test_registration_checks_fresh_import_empty_prefix():
     bucket.name = "my-bucket"
 
     cfg = _minimal_config("a.csv")
-    cfg.inputFiles.append(
+    cfg.input_files.append(
         InputFile(
             filename="b.csv",
             provenance="prov",
-            columnMappings=ColumnMappings(),
+            column_mappings=ColumnMappings(),
         )
     )
 

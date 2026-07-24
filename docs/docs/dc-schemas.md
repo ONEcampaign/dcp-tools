@@ -65,11 +65,11 @@ manager.add_input_file(
     "climate-finance/commitments.csv",
     provenance="ONEClimateFinance",
     data=commitments,
-    columnMappings={
-        "observationAbout": "country",
-        "date": "year",
-        "variable": "variable",
-        "value": "value",
+    column_mappings={
+      "observationAbout": "country",
+      "date": "year",
+      "variable": "variable",
+      "value": "value",
     },
 )
 ```
@@ -126,20 +126,20 @@ flows = pd.DataFrame({
 manager.add_variable_to_mcf(
     dcid="climateFinanceProvidedFlows",
     name="Climate finance provided (bilateral flow)",
-    statType="dcid:measuredValue",
-    observationProperties=["dcid:providerCountry", "dcid:recipientCountry"],
+    stat_type="dcid:measuredValue",
+    observation_properties=["dcid:providerCountry", "dcid:recipientCountry"],
 )
 
 manager.add_input_file(
     "climate-finance/flows.csv",
     provenance="ONEClimateFinance",
     data=flows,
-    columnMappings={
-        "variable": "variable",
-        "date": "year",
-        "value": "value",
-        "custom:providerCountry": "provider",
-        "custom:recipientCountry": "recipient",
+    column_mappings={
+      "variable": "variable",
+      "date": "year",
+      "value": "value",
+      "custom:providerCountry": "provider",
+      "custom:recipientCountry": "recipient",
     },
 )
 ```

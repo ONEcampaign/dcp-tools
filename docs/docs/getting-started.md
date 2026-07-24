@@ -111,7 +111,7 @@ manager.add_input_file(
     file_name="climate_finance/one_cf_provider_commitments.csv",
     provenance="ONEClimateFinance",
     data=data,
-    columnMappings={
+    column_mappings={
         "observationAbout": "country",
         "date": "year",
         "variable": "variable",
@@ -156,8 +156,8 @@ manager.add_variable_to_mcf(
     name="Climate finance provided (commitments)",
     description="Bilateral climate finance commitments reported by the provider country.",
     provenance="ONEClimateFinance",
-    populationType="Thing",
-    measuredProperty="amount",
+    population_type="Thing",
+    measured_property="amount",
 )
 ```
 

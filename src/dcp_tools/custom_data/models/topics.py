@@ -12,8 +12,8 @@ class TopicNode(Node):
 
     Attributes:
         dcid: Node identifier, must start with 'dcid:' and contain 'topic/'.
-        typeOf: Fixed type indicating this is a Topic.
-        relevantVariable: Variable or list of variables relevant to a topic.
+        type_of: Fixed type indicating this is a Topic.
+        relevant_variable: Variable or list of variables relevant to a topic.
             Contains a list of ordered values. Must start with 'dcid:'. Accepts
             plain StatVar dcids as well as group (``.../g/...``) and topic
             (``.../topic/...``) dcids: both are already valid ``dcid:\\S+`` tokens,
@@ -24,10 +24,10 @@ class TopicNode(Node):
             dcid: Optional DCID for uniquely identifying the Node.
             description: Optional human-readable description.
             provenance: Optional provenance information.
-            shortDisplayName: Optional human-readable short name for display.
-            subClassOf: Optional DCID indicating the 'parent' Node class.
+            short_display_name: Optional human-readable short name for display.
+            sub_class_of: Optional DCID indicating the 'parent' Node class.
     """
 
     dcid: TopicDcid
-    typeOf: Literal["dcid:Topic"] = "dcid:Topic"
-    relevantVariable: DcidOrListDcid
+    type_of: Literal["dcid:Topic"] = "dcid:Topic"
+    relevant_variable: DcidOrListDcid

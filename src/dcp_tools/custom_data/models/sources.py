@@ -14,16 +14,16 @@ class SourceNode(Node):
         description: Optional human-readable description.
 
         # Source-specific
-        typeOf: Fixed type indicating this is a Source (``dcid:Source``).
+        type_of: Fixed type indicating this is a Source (``dcid:Source``).
         url: URL of the data source.
         license: Optional license information.
-        isPartOf: Optional DCID of a parent source.
+        is_part_of: Optional DCID of a parent source.
     """
 
-    typeOf: Literal["dcid:Source"] = "dcid:Source"
+    type_of: Literal["dcid:Source"] = "dcid:Source"
     url: QuotedStr | None = None
     license: QuotedStr | None = None
-    isPartOf: Dcid | None = None
+    is_part_of: Dcid | None = None
 
 
 class ProvenanceNode(Node):
@@ -36,31 +36,31 @@ class ProvenanceNode(Node):
         description: Optional human-readable description.
 
         # Provenance-specific
-        typeOf: Fixed type indicating this is a Provenance (``dcid:Provenance``).
+        type_of: Fixed type indicating this is a Provenance (``dcid:Provenance``).
         url: URL of the provenance dataset.
-        sourceLink: DCID of the parent Source node.
+        source_link: DCID of the parent Source node.
         license: Optional license information.
-        licenseType: Optional license type.
-        lastDataRefreshDate: Optional date of last data refresh.
-        nextDataRefreshDate: Optional date of next expected data refresh.
-        nextSourceReleaseDate: Optional date of next source release.
-        sourceReleaseFrequency: Optional frequency of source releases.
-        earliestObservationDate: Optional earliest observation date in the dataset.
-        latestObservationDate: Optional latest observation date in the dataset.
+        license_type: Optional license type.
+        last_data_refresh_date: Optional date of last data refresh.
+        next_data_refresh_date: Optional date of next expected data refresh.
+        next_source_release_date: Optional date of next source release.
+        source_release_frequency: Optional frequency of source releases.
+        earliest_observation_date: Optional earliest observation date in the dataset.
+        latest_observation_date: Optional latest observation date in the dataset.
         curator: Optional curator of the dataset.
-        isPartOf: Optional DCID of a parent provenance.
+        is_part_of: Optional DCID of a parent provenance.
     """
 
-    typeOf: Literal["dcid:Provenance"] = "dcid:Provenance"
+    type_of: Literal["dcid:Provenance"] = "dcid:Provenance"
     url: QuotedStr | None = None
-    sourceLink: Dcid | None = None
+    source_link: Dcid | None = None
     license: QuotedStr | None = None
-    licenseType: QuotedStr | None = None
-    lastDataRefreshDate: QuotedStr | None = None
-    nextDataRefreshDate: QuotedStr | None = None
-    nextSourceReleaseDate: QuotedStr | None = None
-    sourceReleaseFrequency: QuotedStr | None = None
-    earliestObservationDate: QuotedStr | None = None
-    latestObservationDate: QuotedStr | None = None
+    license_type: QuotedStr | None = None
+    last_data_refresh_date: QuotedStr | None = None
+    next_data_refresh_date: QuotedStr | None = None
+    next_source_release_date: QuotedStr | None = None
+    source_release_frequency: QuotedStr | None = None
+    earliest_observation_date: QuotedStr | None = None
+    latest_observation_date: QuotedStr | None = None
     curator: QuotedStr | None = None
-    isPartOf: Dcid | None = None
+    is_part_of: Dcid | None = None

@@ -291,8 +291,8 @@ def get_unregistered_csv_files(
     if isinstance(config, dict):
         config = Config.model_validate(config)
 
-    registered = {e.filename for e in config.inputFiles if e.filename}
-    patterns = [e.pattern for e in config.inputFiles if e.pattern]
+    registered = {e.filename for e in config.input_files if e.filename}
+    patterns = [e.pattern for e in config.input_files if e.pattern]
     return [
         name
         for name in csv_files
@@ -338,7 +338,7 @@ def get_missing_csv_files(
         config = Config.model_validate(config)
 
     missing: list[str] = []
-    for entry in config.inputFiles:
+    for entry in config.input_files:
         name = entry.filename
         if name is None:
             # Pattern entries are globs, not single files — skip them.

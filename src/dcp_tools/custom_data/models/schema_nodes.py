@@ -17,12 +17,12 @@ class EntityTypeNode(Node):
         description: Optional human-readable description.
 
         # EntityType-specific
-        typeOf: Fixed type indicating this is a Class (``dcid:Class``).
-        includedIn: Optional provenance/source DCID(s) the entity type is defined in.
+        type_of: Fixed type indicating this is a Class (``dcid:Class``).
+        included_in: Optional provenance/source DCID(s) the entity type is defined in.
     """
 
-    typeOf: Literal["dcid:Class"] = "dcid:Class"
-    includedIn: DcidOrListDcid | None = None
+    type_of: Literal["dcid:Class"] = "dcid:Class"
+    included_in: DcidOrListDcid | None = None
 
 
 class EventTypeNode(Node):
@@ -38,14 +38,14 @@ class EventTypeNode(Node):
         description: Optional human-readable description.
 
         # EventType-specific
-        typeOf: Fixed type indicating this is a Class (``dcid:Class``).
-        subClassOf: Parent class; defaults to ``dcid:Event`` (overridable).
-        includedIn: Optional provenance/source DCID(s) the event type is defined in.
+        type_of: Fixed type indicating this is a Class (``dcid:Class``).
+        sub_class_of: Parent class; defaults to ``dcid:Event`` (overridable).
+        included_in: Optional provenance/source DCID(s) the event type is defined in.
     """
 
-    typeOf: Literal["dcid:Class"] = "dcid:Class"
-    subClassOf: DcidOrListDcid = "dcid:Event"
-    includedIn: DcidOrListDcid | None = None
+    type_of: Literal["dcid:Class"] = "dcid:Class"
+    sub_class_of: DcidOrListDcid = "dcid:Event"
+    included_in: DcidOrListDcid | None = None
 
 
 class PropertyNode(Node):
@@ -61,16 +61,16 @@ class PropertyNode(Node):
         description: Optional human-readable description.
 
         # Property-specific
-        typeOf: Fixed type indicating this is a Property (``dcid:Property``).
-        domainIncludes: Optional DCID(s) of classes the property applies to.
-        rangeIncludes: Optional DCID(s) of classes that are the value type.
-        subPropertyOf: Optional DCID(s) of parent properties.
+        type_of: Fixed type indicating this is a Property (``dcid:Property``).
+        domain_includes: Optional DCID(s) of classes the property applies to.
+        range_includes: Optional DCID(s) of classes that are the value type.
+        sub_property_of: Optional DCID(s) of parent properties.
     """
 
-    typeOf: Literal["dcid:Property"] = "dcid:Property"
-    domainIncludes: DcidOrListDcid | None = None
-    rangeIncludes: DcidOrListDcid | None = None
-    subPropertyOf: DcidOrListDcid | None = None
+    type_of: Literal["dcid:Property"] = "dcid:Property"
+    domain_includes: DcidOrListDcid | None = None
+    range_includes: DcidOrListDcid | None = None
+    sub_property_of: DcidOrListDcid | None = None
 
 
 class UnitOfMeasureNode(Node):
@@ -84,14 +84,14 @@ class UnitOfMeasureNode(Node):
         # Inherited from Node
         dcid: Identifier for the Node (e.g. ``dcid:MyUnit``).
         name: The human-readable name for the Node.
-        shortDisplayName: Optional short display name (e.g. ``"$"``).
+        short_display_name: Optional short display name (e.g. ``"$"``).
         description: Optional human-readable description.
 
         # UnitOfMeasure-specific
-        typeOf: Type of unit; defaults to ``dcid:UnitOfMeasure`` (overridable).
+        type_of: Type of unit; defaults to ``dcid:UnitOfMeasure`` (overridable).
     """
 
-    typeOf: DcidOrListDcid = "dcid:UnitOfMeasure"
+    type_of: DcidOrListDcid = "dcid:UnitOfMeasure"
 
 
 class MeasurementMethodNode(Node):
@@ -107,8 +107,8 @@ class MeasurementMethodNode(Node):
         description: Optional human-readable description.
 
         # MeasurementMethod-specific
-        typeOf: Measurement method enum type; defaults to ``dcid:MeasurementMethodEnum``
+        type_of: Measurement method enum type; defaults to ``dcid:MeasurementMethodEnum``
             (overridable).
     """
 
-    typeOf: DcidOrListDcid = "dcid:MeasurementMethodEnum"
+    type_of: DcidOrListDcid = "dcid:MeasurementMethodEnum"

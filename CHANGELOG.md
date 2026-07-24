@@ -48,6 +48,20 @@
   is unchanged.
 - `rename_variable` normalizes a bare `old_name`/`new_name` to `dcid:<token>`, the same rule
   `add_variable_to_mcf` applies to `Node`.
+- **Renamed the node model classes to drop the `MCF` qualifier**, treating MCF as one
+  serialization of a Data Commons graph node rather than the model's identity: `MCFNode` →
+  `Node`, `MCFNodes` → `Nodes`, and every subclass.
+- **Collapsed a node's duplicate `Node`/`dcid` properties into a single `dcid`.** A node's
+  identifier is now `node.dcid`, which still serializes to the mandatory `Node:` line in MCF;
+  the separate optional `dcid` property is removed.
+- **`Node.mcf` is now the `Node.to_mcf()` method** (and `Nodes.to_mcf()`), matching the
+  `to_dict()`/`to_json()` convention and leaving room for a future `to_jsonld()`.
+- **The Python API is now snake_case throughout.** Node and `Config` attributes,
+  `CustomDataManager` builder keyword arguments, and the `set_*` methods use snake_case
+  (`node.type_of`, `add_variable_to_mcf(measured_property=...)`, `set_import_name(...)`). The
+  serialized `config.json` and MCF wire format are unchanged: camelCase keys are preserved via
+  pydantic aliases (`alias_generator=to_camel`). CSV column headers (e.g. `memberOf`) keep the
+  Data Commons camelCase convention.
 
 ### Fixed
 - `rename_variable` left the `MCFNodes` lookup index keyed by the old name, so
@@ -142,6 +156,13 @@
   the MCF as-is.
 - Replace direct calls to `build_stat_var_groups_from_strings` with either
   `csv_metadata_to_nodes(..., parse_groups=True, group_namespace=...)` or `resolve_group_paths`.
+- Drop the `MCF` infix from node model class names (`MCFNode` → `Node`, `StatVarMCFNode` →
+  `StatVarNode`, and so on) and the `MCFNodes` container → `Nodes`.
+- Read a node's id via `.dcid` (not `.Node`); the separate `dcid` property is gone.
+- Call `node.to_mcf()` instead of `node.mcf`.
+- Convert builder keyword arguments, node/`Config` attributes and `set_*` methods to
+  snake_case (`measuredProperty` → `measured_property`, `typeOf` → `type_of`, `set_importName`
+  → `set_import_name`, and so on). The exported `config.json` and MCF are unchanged.
 
 ## [0.1.1] - 2026-02-19
 

@@ -28,4 +28,4 @@ def test_vertical_spec_round_trips():
 
 def test_vertical_spec_rejects_unknown_field():
     with pytest.raises(ValidationError):
-        VerticalSpec(verticals=["v"], unexpected="x")
+        VerticalSpec.model_validate({"verticals": ["v"], "unexpected": "x"})

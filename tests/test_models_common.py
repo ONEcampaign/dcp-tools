@@ -176,11 +176,11 @@ def test_dcid_or_list_dcid_rejects_non_string_input():
         field: DcidOrListDcid
 
     with pytest.raises(ValidationError):
-        Dummy(field=123)
+        Dummy.model_validate({"field": 123})
     with pytest.raises(ValidationError):
-        Dummy(field=["dcid:ok", 5])
+        Dummy.model_validate({"field": ["dcid:ok", 5]})
     with pytest.raises(ValidationError):
-        Dummy(field={"a": "b"})
+        Dummy.model_validate({"field": {"a": "b"}})
 
 
 # --- GroupDcidOrListGroupDcid (regression test for #131) ---

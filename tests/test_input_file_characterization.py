@@ -59,7 +59,7 @@ def _make_cfg(
         InputFile(
             filename=key,
             provenance=prov,
-            columnMappings=ColumnMappings(
+            column_mappings=ColumnMappings(
                 observation_about="Country", date="Year", value="Val"
             ),
         )

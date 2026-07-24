@@ -92,7 +92,8 @@ def test_config_round_trips_import_name(tmp_path):
 
 def test_observation_properties_preserves_custom_keys():
     """ObservationProperties with a custom key round-trips with the key intact."""
-    op = ObservationProperties(unit="USD", customKey="v")
+    # **{} keeps the extra key opaque to ty
+    op = ObservationProperties(unit="USD", **{"customKey": "v"})
     dumped = op.model_dump(exclude_none=True, by_alias=True)
     assert dumped == {"unit": "USD", "customKey": "v"}
 
@@ -149,7 +150,7 @@ def test_input_file_observation_properties_roundtrip():
         filename="data.csv",
         provenance="prov1",
         column_mappings=ColumnMappings(observation_about="Country", date="Year"),
-        observation_properties=ObservationProperties(unit="USD", customProp="x"),
+        observation_properties=ObservationProperties(unit="USD", **{"customProp": "x"}),
     )
     dumped = entry.model_dump(exclude_none=True, by_alias=True)
     assert "observationProperties" in dumped
@@ -161,4 +162,5 @@ def test_input_file_observation_properties_roundtrip():
     reloaded = InputFile.model_validate(dumped)
     assert reloaded.observation_properties is not None
     assert reloaded.observation_properties.unit == "USD"
-    assert reloaded.observation_properties.__pydantic_extra__["customProp"] == "x"
+    assert reloaded.observation_properties.model_extra is not None
+    assert reloaded.observation_properties.model_extra["customProp"] == "x"

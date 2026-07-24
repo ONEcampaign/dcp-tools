@@ -112,7 +112,7 @@ line-ending = "auto"
 python-version = "3.13"
 
 [tool.ty.src]
-include = ["src/dcp_tools"]
+include = ["src/dcp_tools", "tests"]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]

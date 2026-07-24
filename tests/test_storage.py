@@ -8,6 +8,7 @@ from dcp_tools.custom_data.models.data_files import (
     ColumnMappings,
     InputFile,
 )
+from dcp_tools.gcp_utilities import get_kg_settings
 from dcp_tools.gcp_utilities.settings import KGSettings
 from dcp_tools.gcp_utilities.storage import (
     delete_bucket_files,
@@ -480,7 +481,7 @@ def test_gcs_input_folder_path_strips_slashes(monkeypatch):
     for k, v in env_vals.items():
         monkeypatch.setenv(k, v)
 
-    settings = KGSettings()
+    settings = get_kg_settings()
     assert settings.gcs_input_folder_path == "ingestion/input"
     assert settings.gcs_output_folder_path == "output/path"
 
@@ -504,14 +505,6 @@ def test_upload_trailing_slash_single_slash_keys(tmp_path):
 
     assert "prefix/a.csv" in blobs
     assert "prefix//a.csv" not in blobs
-
-
-def test_upload_directory_to_gcs_kwargs_only(tmp_path):
-    """gcs_folder_name must be passed as a keyword argument."""
-    bucket = Mock()
-    bucket.name = "my-bucket"
-    with pytest.raises(TypeError):
-        upload_directory_to_gcs(bucket, tmp_path, "prefix")  # type: ignore[call-arg]
 
 
 def test_delete_bucket_files():

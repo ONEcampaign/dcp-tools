@@ -183,19 +183,10 @@ The `provenance` field here is the bare name you passed in, stored as a plain qu
 
 ## Step 5: Export the bundle and verify it
 
-`export_all` writes the config, the data, and any MCF files you name, in one call. It doesn't export MCF files unless you list them.
-
-!!! warning "Heads up"
-    `mcf_file_names` defaults to `None`, which exports no MCF at all. Since the input file from Step 3 references the provenance node in `provenance.mcf`, leaving it off `mcf_file_names` makes `export_all` raise a `ValueError` before writing anything, rather than shipping a config with a dangling reference.
-
-Steps 2 and 4 already wrote `provenance.mcf` and `custom_nodes.mcf` once each as checkpoints, so this final call needs `override=True` to overwrite them instead of appending:
+`export_all` writes the config, the data, and any MCF files you've registered.
 
 ```python
-manager.export_all(
-    "one_climate_finance",
-    mcf_file_names=["provenance.mcf", "custom_nodes.mcf"],
-    override=True,
-)
+manager.export_all("one_climate_finance")
 ```
 
 List the directory to confirm the full bundle landed:

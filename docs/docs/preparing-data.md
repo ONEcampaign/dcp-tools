@@ -70,18 +70,6 @@ Both methods take `description`, `license`, and `isPartOf`. `add_provenance` add
 `additional_properties={"someProperty": "value"}` for anything else. Pass `override=True` to
 replace a node that's already registered under the same name.
 
-!!! warning "Heads up"
-    `provenance.mcf` isn't exported automatically. List it explicitly when you export:
-
-    ```python
-    manager.export_all("output", mcf_file_names=["provenance.mcf"])
-    ```
-
-    If a registered input file references a provenance whose MCF file isn't in
-    `mcf_file_names`, `export_all` raises before writing anything, rather than shipping a
-    `config.json` with a dangling reference. See
-    [How to validate and export the bundle](#how-to-validate-and-export-the-bundle).
-
 ## How to register a single-entity input file
 
 Use this when each row of data is about one entity (a country, a facility, a person).
@@ -405,32 +393,19 @@ input file references a provenance that was never registered.
 Export everything in one call:
 
 ```python
-manager.export_all(
-    "output_directory",
-    mcf_file_names=["provenance.mcf", "custom_nodes.mcf", "custom_groups.mcf"],
-)
+manager.export_all("output_directory")
 ```
 
-`export_all` writes `config.json` always, data CSVs if any DataFrames are registered,
-`vertical_specs.json` if any specs were added, and each file in `mcf_file_names`. `mcf_file_names`
-defaults to `None`, which exports **no MCF file at all**. Omitting it is the most common way to
-end up with a `config.json` that references StatVars and provenances nobody wrote to disk.
+`export_all` writes the full bundle, overwriting anything already in the directory: `config.json`
+always, the data CSVs for any registered DataFrames, `vertical_specs.json` if any specs were added,
+and every MCF file you've added nodes to. To write only part of the bundle, use the individual
+`export_*` methods below.
 
-Before writing anything, `export_all` checks that every provenance an input file references (and
-that provenance's linked source) lives in one of the MCF files you're exporting. If not, it raises
-rather than shipping an incomplete bundle:
-
-```text
-ValueError: export_all() would write a config.json referencing source/provenance node(s)
-defined in MCF file(s) not being exported: ['provenance.mcf']. Add them to mcf_file_names
-(e.g. mcf_file_names=['provenance.mcf']) so the bundle is complete.
-```
-
-Pass `validate_data=True` to also raise if any declared input file has no registered DataFrame
+Pass `validate_data=True` to raise if any declared input file has no registered DataFrame
 (pattern entries are exempt, since they carry no local data by design):
 
 ```python
-manager.export_all("output_directory", mcf_file_names=["provenance.mcf"], validate_data=True)
+manager.export_all("output_directory", validate_data=True)
 ```
 
 To export pieces individually instead of all at once:

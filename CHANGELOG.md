@@ -62,6 +62,16 @@
   serialized `config.json` and MCF wire format are unchanged: camelCase keys are preserved via
   pydantic aliases (`alias_generator=to_camel`). CSV column headers (e.g. `memberOf`) keep the
   Data Commons camelCase convention.
+- **`export_all` writes and overwrites the complete bundle.** It no longer takes `mcf_file_names`
+  or `override`. It writes `config.json`, the data CSVs, `vertical_specs.json` (when specs were
+  added), and every MCF file you've added nodes to, overwriting anything already in the directory.
+  Pass nothing for the full bundle; use `export_mcf_file` to write a single file.
+- **Renamed `override` to `overwrite` on the export helpers and flipped the default to `True`**
+  (overwrite). Affects `CustomDataManager.export_mcf_file`, `Nodes.export_to_mcf_file`, and
+  `csv_metadata_to_mcf_file`.
+- **Replaced `csv2mcf`'s `--override` flag with `--append`.** `csv2mcf` now overwrites the output
+  file by default; pass `--append` to add to an existing file instead (which can produce duplicate
+  `Node:` blocks on repeated runs).
 
 ### Fixed
 - `rename_variable` left the `MCFNodes` lookup index keyed by the old name, so
@@ -163,6 +173,12 @@
 - Convert builder keyword arguments, node/`Config` attributes and `set_*` methods to
   snake_case (`measuredProperty` → `measured_property`, `typeOf` → `type_of`, `set_importName`
   → `set_import_name`, and so on). The exported `config.json` and MCF are unchanged.
+- Drop `mcf_file_names` and `override` from `export_all` calls: pass nothing for the full bundle,
+  and use `export_mcf_file` for a single file. `export_all` now overwrites what's already there.
+- Rename `override=` → `overwrite=` on `export_mcf_file`, `Nodes.export_to_mcf_file` and
+  `csv_metadata_to_mcf_file` (all now overwrite by default).
+- Replace `csv2mcf --override` with the default (overwrite), or `--append` to add to an existing
+  file.
 
 ## [0.1.1] - 2026-02-19
 

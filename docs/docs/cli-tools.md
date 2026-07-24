@@ -69,7 +69,7 @@ dcp-tools csv2mcf <CSV> <MCF>
                   [--column-mapping CSV_COL=MCF_PROP]
                   [--csv-option KEY=VALUE]
                   [--ignore-column COLUMN]
-                  [--override]
+                  [--append]
 ```
 
 **Arguments**
@@ -89,8 +89,8 @@ dcp-tools csv2mcf <CSV> <MCF>
   `pandas.read_csv`, e.g. `--csv-option delimiter=";"`.
 - **`--ignore-column COLUMN`** (repeatable) — drop a CSV column before building nodes. Pass the
   flag once per column.
-- **`--override`** — controls how `<MCF>` is written when it already exists. Without it, new nodes
-  are appended to the file. With it, the file is truncated and written fresh.
+- **`--append`** — append to `<MCF>` if it already exists instead of overwriting it. Without this
+  flag, `csv2mcf` overwrites the file (or creates it if it doesn't exist).
 
 CSV values that map to a `dcid:`-typed field (`Node`, `populationType`, `measuredProperty`,
 `measurementQualifier`, `measurementDenominator`) must already carry the `dcid:` prefix. `csv2mcf`
@@ -102,11 +102,6 @@ does not mint the prefix for you. A bare value such as `climateFinanceProvidedCo
 is minted to `dcid:<value>` automatically; for the other four node types it defaults to a fixed
 value (`dcid:StatisticalVariable`, `dcid:StatVarGroup`, `dcid:Topic`, `dcid:StatVarPeerGroup`) that
 a CSV `typeOf` column doesn't need to repeat.
-
-!!! warning "Heads up"
-    Without `--override`, `csv2mcf` appends to `<MCF>` if it already exists rather than replacing
-    it. Running the same command twice against the same output path writes duplicate `Node:`
-    blocks. Pass `--override` to truncate the file first, or write to a fresh path each run.
 
 **Example**
 

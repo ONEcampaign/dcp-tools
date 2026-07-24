@@ -102,6 +102,14 @@
 - **Breaking:** the Python API is snake_case throughout — node/`Config` attributes, builder
   keyword arguments and the `set_*` methods. Serialisation still uses camelCase using
   pydantic's `alias_generator=to_camel`.
+- **Breaking:** `export_all` writes and overwrites the complete bundle, and no longer takes
+  `mcf_file_names` or `override`. It writes `config.json`, the data CSVs, `vertical_specs.json`
+  (when specs were added), and every MCF file you've added nodes to, overwriting what's already
+  there. Pass nothing for the full bundle; use `export_mcf_file` for a single file.
+- **Breaking:** `override` is renamed to `overwrite` on `export_mcf_file`, `Nodes.export_to_mcf_file`
+  and `csv_metadata_to_mcf_file`, and now defaults to overwriting.
+- **Breaking:** `csv2mcf` replaces `--override` with `--append`. It overwrites the output file by
+  default; pass `--append` to add to an existing file instead.
 
 ## v0.1.0 (in development)
 - Initial release of the `dcp-tools` package for external preview and testing

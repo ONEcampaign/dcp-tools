@@ -73,10 +73,10 @@ manager.add_variable_to_mcf(
 
 out_dir = Path("export/climate_finance")
 out_dir.mkdir(parents=True, exist_ok=True)
-manager.export_all(out_dir, mcf_file_names=["provenance.mcf", "custom_nodes.mcf"])
+manager.export_all(out_dir)
 ```
 
-`export_all` writes `config.json`, the CSV, and both named MCF files under `out_dir`. Since we
+`export_all` writes `config.json`, the CSV, and both MCF files under `out_dir`. Since we
 never called `set_importName`, `config.json` defaults `importName` to the export directory's
 name, and column mappings and the provenance name are resolved to full dcids:
 
@@ -99,11 +99,6 @@ name, and column mappings and the provenance name are resolved to full dcids:
     ]
 }
 ```
-
-!!! warning "Heads up"
-    `provenance.mcf` (source and provenance nodes) is never exported by default. If an input
-    file references a provenance and its MCF file isn't in `mcf_file_names`, `export_all` raises
-    before writing anything, so you can't ship a bundle with a dangling reference.
 
 ## Loading it
 

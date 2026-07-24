@@ -77,7 +77,7 @@ manager.export_all(out_dir)
 ```
 
 `export_all` writes `config.json`, the CSV, and both MCF files under `out_dir`. Since we
-never called `set_importName`, `config.json` defaults `importName` to the export directory's
+never called `set_import_name`, `config.json` defaults `importName` to the export directory's
 name, and column mappings and the provenance name are resolved to full dcids:
 
 ```json

@@ -357,7 +357,7 @@ merged by `filename`/`pattern`. Everything else (`importName`, `customIdNamespac
     `export_config` defaults an unset `importName` to the export directory's name. If two configs
     were each exported without an explicit `importName`, merging them raises a conflict on
     `importName` (`"climate"` vs. `"health"`) even though neither config set it on purpose. Call
-    `set_importName` explicitly on configs you intend to merge later.
+    `set_import_name` explicitly on configs you intend to merge later.
 
 ## How to add vertical specs to guide the StatVar hierarchy
 
@@ -375,7 +375,7 @@ manager.add_vertical_spec(
 
 Each call appends one spec matching StatVars about `population_type` with the given
 `measured_properties` to `verticals`. The first call also sets the config's `verticalSpecsFile` to
-`"vertical_specs.json"`, unless you already set one with `set_verticalSpecsFile` or passed
+`"vertical_specs.json"`, unless you already set one with `set_vertical_specs_file` or passed
 `file_name=` here. `export_all` (or `export_vertical_specs` directly) writes the accumulated specs
 as `{"specs": [...]}` JSON. Exporting with no specs added raises `ValueError`.
 

@@ -315,11 +315,8 @@ name isn't found or the new name is already taken. Scope the search to one file 
 `mcf_file_name=`. Omit it and all loaded MCF files are searched.
 
 ```python
-manager.remove_indicator("dcid:climateFinanceCommitmentsProvided")
+manager.remove_variable("dcid:climateFinanceCommitmentsProvided")
 ```
-
-!!! warning "Heads up"
-    There's no `remove_variable` method. The real name is `remove_indicator`.
 
 ## How to merge config files
 

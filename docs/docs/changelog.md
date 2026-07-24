@@ -113,6 +113,8 @@
 - **Breaking:** `add_source` and `add_provenance` take separate `dcid` (identifier, minted with the
   slug prefix), optional `name` (label), and `description` parameters. Previously `name` was the
   identifier and no `name` property was set — pass the identifier as `dcid=` now.
+- **Breaking:** `CustomDataManager.remove_indicator` is renamed to `remove_variable` (parameter
+  `indicator_id` → `dcid`), matching the `variable` terminology used elsewhere.
 
 ## v0.1.0 (in development)
 - Initial release of the `dcp-tools` package for external preview and testing

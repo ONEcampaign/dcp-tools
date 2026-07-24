@@ -357,7 +357,7 @@ def test_export_all_overwrites_correctly(tmp_path):
         "statType: dcid:measuredValue\n\n"
     )
 
-    manager.remove_indicator("dcid:MyVariable")
+    manager.remove_variable("dcid:MyVariable")
     manager.export_all(tmp_path)
     assert (tmp_path / "custom_nodes.mcf").read_text() == ""
 
@@ -461,7 +461,7 @@ def test_custom_data_manager_repr():
     assert "1 variables" in r
 
 
-def test_remove_indicator():
+def test_remove_variable():
     manager = CustomDataManager()
     manager.add_source(dcid="s1", url="http://src")
     manager.add_provenance(dcid="p1", url="http://prov", source="s1")
@@ -475,12 +475,12 @@ def test_remove_indicator():
     )
     manager.add_variable_to_mcf(dcid="dcid:sv1", name="Var", provenance="p1")
 
-    manager.remove_indicator("dcid:sv1")
+    manager.remove_variable("dcid:sv1")
     for nodes in manager._mcf_nodes.values():
         assert all(n.dcid != "dcid:sv1" for n in nodes.nodes)
 
     with pytest.raises(ValueError):
-        manager.remove_indicator("missing")
+        manager.remove_variable("missing")
 
 
 def _make_cfg(
@@ -817,10 +817,10 @@ def test_rename_variable_keeps_lookup_index_consistent():
 
     # The old name no longer resolves...
     with pytest.raises(ValueError):
-        manager.remove_indicator("dcid:v1")
+        manager.remove_variable("dcid:v1")
 
     # ...and the new one does.
-    manager.remove_indicator("dcid:v2")
+    manager.remove_variable("dcid:v2")
     for nodes in manager._mcf_nodes.values():
         assert all(n.dcid not in {"dcid:v1", "dcid:v2"} for n in nodes.nodes)
 

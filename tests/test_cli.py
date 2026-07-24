@@ -63,18 +63,18 @@ def test_csv2mcf_node_type_statvar_group(tmp_path: Path) -> None:
     assert "specializationOf: dcid:dc/g/Root" in content
 
 
-def test_csv2mcf_append_and_override(tmp_path: Path) -> None:
+def test_csv2mcf_append_then_overwrite(tmp_path: Path) -> None:
     csv1 = tmp_path / "first.csv"
     csv1.write_text("Node,name,typeOf\ndcid:sv1,SV1,dcid:StatisticalVariable\n")
     csv2 = tmp_path / "second.csv"
     csv2.write_text("Node,name,typeOf\ndcid:sv2,SV2,dcid:StatisticalVariable\n")
     out_mcf = tmp_path / "out_append.mcf"
-    main(["csv2mcf", str(csv1), str(out_mcf)])
-    main(["csv2mcf", str(csv2), str(out_mcf)])
+    main(["csv2mcf", str(csv1), str(out_mcf), "--append"])
+    main(["csv2mcf", str(csv2), str(out_mcf), "--append"])
     content = out_mcf.read_text()
     assert content.count("Node: dcid:sv1") == 1
     assert content.count("Node: dcid:sv2") == 1
-    main(["csv2mcf", str(csv1), str(out_mcf), "--override"])
+    main(["csv2mcf", str(csv1), str(out_mcf)])
     content_over = out_mcf.read_text()
     assert "Node: dcid:sv1" in content_over
     assert "Node: dcid:sv2" not in content_over

@@ -68,9 +68,7 @@ def add_parser(subparsers: argparse._SubParsersAction) -> None:
     )
 
     parser.add_argument(
-        "--override",
-        action="store_true",
-        help="Overwrite the output file if it exists",
+        "--append", action="store_true", help="Append to the output file if it exists."
     )
 
     parser.set_defaults(func=run)
@@ -88,6 +86,6 @@ def run(args: argparse.Namespace) -> int:
         column_to_property_mapping=column_mapping,
         csv_options=csv_options,
         ignore_columns=args.ignore_column,
-        override=args.override,
+        overwrite=not args.append,
     )
     return 0

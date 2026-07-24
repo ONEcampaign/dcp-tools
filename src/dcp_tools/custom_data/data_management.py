@@ -1263,54 +1263,6 @@ class CustomDataManager:
                     f"Call add_provenance(name={bare!r}, url=..., source=...) first."
                 )
 
-    def _validate_provenance_files_exported(self, exported_mcf: set[str]) -> None:
-        """Raise if an inputFile references a provenance — or its linked Source —
-        defined in an MCF file that is not being exported.
-
-        ``export_all`` writes a complete bundle, so every provenance an input file
-        references must be defined in an exported MCF file, and so must the Source it
-        links to via ``sourceLink``. Without this check a forgotten
-        ``mcf_file_names=["provenance.mcf"]`` (or a Source kept in a separate, unexported
-        MCF file) would write a config.json pointing at nodes absent from the bundle —
-        references the DCP importer rejects. Unknown provenances (no node at all) are
-        left to ``_validate_provenances``.
-        """
-        prov_file: dict[str, str] = {}
-        prov_source: dict[str, str | None] = {}
-        source_file: dict[str, str] = {}
-        for fname, nodes in self._mcf_nodes.items():
-            for n in nodes.nodes:
-                node_type = n.type_of
-                if node_type == "dcid:Provenance":
-                    prov_file[n.dcid] = fname
-                    prov_source[n.dcid] = getattr(n, "source_link", None)
-                elif node_type == "dcid:Source":
-                    source_file[n.dcid] = fname
-
-        missing: dict[str, str] = {}
-        for entry in self._config.input_files:
-            ref = entry.provenance
-            owning = prov_file.get(ref)
-            if owning is None:
-                continue  # unknown provenance -> _validate_provenances reports it
-            if owning not in exported_mcf:
-                missing.setdefault(owning, ref)
-                continue
-            # The provenance is exported; the Source it links to must be too.
-            link = prov_source.get(ref)
-            if link is not None:
-                src_owner = source_file.get(link)
-                if src_owner is not None and src_owner not in exported_mcf:
-                    missing.setdefault(src_owner, link)
-
-        if missing:
-            files = sorted(missing)
-            raise ValueError(
-                f"export_all() would write a config.json referencing source/provenance "
-                f"node(s) defined in MCF file(s) not being exported: {files}. Add them to "
-                f"mcf_file_names (e.g. mcf_file_names={files!r}) so the bundle is complete."
-            )
-
     def export_config(self, dir_path: str | PathLike[str]) -> None:
         """Export the config to a JSON file
 
@@ -1342,14 +1294,14 @@ class CustomDataManager:
         self,
         dir_path: str | PathLike[str],
         mcf_file_name: str = DEFAULT_STATVAR_MCF_NAME,
-        override: bool = False,
+        overwrite: bool = True,
     ) -> None:
         """Export the MCF file to a file
 
         Args:
             dir_path: Path to the directory where the MCF file will be exported.
             mcf_file_name: Name of the MCF file (must end in .mcf). Defaults to "custom_nodes.mcf".
-            override: If True, overwrite the file if it exists. Defaults to False.
+            overwrite: If True, overwrite the file if it exists. Defaults to True.
         """
         mcf_file_name = validate_mcf_file_name(mcf_file_name)
 
@@ -1360,7 +1312,7 @@ class CustomDataManager:
             raise ValueError(f"No data available for '{mcf_file_name}'")
 
         output_path.parent.mkdir(parents=True, exist_ok=True)
-        nodes.export_to_mcf_file(file_path=output_path, override=override)
+        nodes.export_to_mcf_file(file_path=output_path, overwrite=overwrite)
 
     def config_to_dict(self) -> dict:
         """Export the config to a dictionary
@@ -1450,41 +1402,26 @@ class CustomDataManager:
     def export_all(
         self,
         dir_path: str | PathLike[str],
-        override: bool = False,
-        mcf_file_names: str | list[str] | None = None,
         validate_data: bool = False,
     ) -> None:
         """Export the config, MCF file, and data to a directory
 
-        ``export_all`` writes a complete bundle and enforces it: if an input file
-        references a provenance whose MCF file is not listed in ``mcf_file_names``,
-        it raises before writing anything (so no partial bundle lands on disk). To
-        export only the config (deferring MCF export), use ``export_config`` directly.
+        ``export_all`` overwrites the complete bundle. To export only the config
+        (deferring MCF export), use ``export_config`` directly. To export a single MCF
+        file, use `export_mcf_file`.
 
         Args:
             dir_path: Path to the directory where the config and data will be exported.
-            override: If True, overwrite the files if they exist. Defaults to False.
-            mcf_file_names: Name of the MCF file(s) to export (must end in .mcf).
-                Defaults to None, which means no MCF file will be exported.
-                Source and Provenance nodes live in ``provenance.mcf`` by default and
-                must be listed here to be written (e.g.
-                ``mcf_file_names=["provenance.mcf"]``).
             validate_data: If True, raise a ValueError before exporting if any input
                 file declared in the config does not have a corresponding data entry.
                 Defaults to False.
 
         Raises:
-            ValueError: If an input file references a provenance defined in an MCF
-                file not included in ``mcf_file_names`` (the bundle would be incomplete).
+            ValueError: If an input file has no data entry.
         """
-
-        if isinstance(mcf_file_names, str):
-            mcf_file_names = [mcf_file_names]
 
         if validate_data:
             self.validate_all_input_files_have_data()
-
-        self._validate_provenance_files_exported(set(mcf_file_names or ()))
 
         self.export_config(dir_path)
 
@@ -1494,9 +1431,9 @@ class CustomDataManager:
         if self._vertical_specs:
             self.export_vertical_specs(dir_path)
 
-        for mcf_file_name in mcf_file_names or ():
+        for mcf_file_name in self._mcf_nodes:
             self.export_mcf_file(
-                dir_path=dir_path, mcf_file_name=mcf_file_name, override=override
+                dir_path=dir_path, mcf_file_name=mcf_file_name, overwrite=True
             )
 
     def validate_config(self) -> CustomDataManager:

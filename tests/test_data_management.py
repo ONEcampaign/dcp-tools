@@ -29,11 +29,11 @@ def test_custom_data_manager_add_provenance_and_override():
 
     # add_provenance without a prior add_source must raise
     with pytest.raises(ValueError):
-        manager.add_provenance(name="pA", url="http://prov", source="new_source")
+        manager.add_provenance(dcid="pA", url="http://prov", source="new_source")
 
     # add_source then add_provenance succeeds
-    manager.add_source(name="new_source", url="http://src")
-    manager.add_provenance(name="pA", url="http://prov", source="new_source")
+    manager.add_source(dcid="new_source", url="http://src")
+    manager.add_provenance(dcid="pA", url="http://prov", source="new_source")
 
     prov_nodes = manager._mcf_nodes["provenance.mcf"].nodes
     source_node = next(n for n in prov_nodes if n.type_of == "dcid:Source")
@@ -46,11 +46,11 @@ def test_custom_data_manager_add_provenance_and_override():
 
     # duplicate provenance without override raises
     with pytest.raises(ValueError):
-        manager.add_provenance(name="pA", url="http://prov2", source="new_source")
+        manager.add_provenance(dcid="pA", url="http://prov2", source="new_source")
 
     # override replaces the node
     manager.add_provenance(
-        name="pA", url="http://prov2", source="new_source", override=True
+        dcid="pA", url="http://prov2", source="new_source", override=True
     )
     updated_prov = next(
         n
@@ -66,14 +66,17 @@ def test_add_source_metadata_lands_on_node():
     """Metadata kwargs on add_source are stored on the Source node."""
     manager = CustomDataManager()
     manager.add_source(
-        name="MySource",
+        dcid="MySource",
+        name="My Source",
         url="http://mysource.org",
         description="A test source",
         license="CC-BY-4.0",
     )
     nodes = manager._mcf_nodes["provenance.mcf"].nodes
     node = next(n for n in nodes if n.type_of == "dcid:Source")
+    assert isinstance(node, SourceNode)
     assert node.dcid == "dcid:source/MySource"
+    assert node.name == "My Source"
     # QuotedStr fields are stored raw; quotes applied at serialization
     assert node.description == "A test source"
     assert node.license == "CC-BY-4.0"
@@ -82,9 +85,10 @@ def test_add_source_metadata_lands_on_node():
 def test_add_provenance_metadata_lands_on_node():
     """Metadata kwargs on add_provenance are stored on the Provenance node."""
     manager = CustomDataManager()
-    manager.add_source(name="SrcX", url="http://srcx.org")
+    manager.add_source(dcid="SrcX", url="http://srcx.org")
     manager.add_provenance(
-        name="ProvX",
+        dcid="ProvX",
+        name="Prov X",
         url="http://provx.org",
         source="SrcX",
         description="Prov desc",
@@ -94,6 +98,8 @@ def test_add_provenance_metadata_lands_on_node():
     prov_node = next(n for n in nodes if n.type_of == "dcid:Provenance")
     assert isinstance(prov_node, ProvenanceNode)
     # QuotedStr fields are stored raw; quotes applied at serialization
+    assert prov_node.dcid == "dcid:provenance/ProvX"
+    assert prov_node.name == "Prov X"
     assert prov_node.description == "Prov desc"
     assert prov_node.last_data_refresh_date == "2024-01-01"
 
@@ -171,8 +177,8 @@ def test_add_input_file_registration_and_override(tmp_path):
     and override/error behaviors.
     """
     manager = CustomDataManager()
-    manager.add_source(name="s1", url="http://src")
-    manager.add_provenance(name="p1", url="http://prov", source="s1")
+    manager.add_source(dcid="s1", url="http://src")
+    manager.add_provenance(dcid="p1", url="http://prov", source="s1")
 
     df3 = pd.DataFrame({"entity": ["e1"], "Year": [2020], "Value": [100]})
     manager.add_input_file(
@@ -211,8 +217,8 @@ def test_add_input_file_registration_and_override(tmp_path):
 def test_add_input_file_without_column_mappings():
     """Ensure missing columnMappings defaults to empty dict without error."""
     manager = CustomDataManager()
-    manager.add_source(name="s1", url="http://src")
-    manager.add_provenance(name="p1", url="http://prov", source="s1")
+    manager.add_source(dcid="s1", url="http://src")
+    manager.add_provenance(dcid="p1", url="http://prov", source="s1")
 
     df = pd.DataFrame({"A": [1]})
     manager.add_input_file(file_name="input.csv", provenance="p1", data=df)
@@ -226,8 +232,8 @@ def test_add_input_file_without_column_mappings():
 def test_add_input_file_pattern_xor_filename():
     """add_input_file raises when neither or both of file_name/pattern are given."""
     manager = CustomDataManager()
-    manager.add_source(name="s1", url="http://src")
-    manager.add_provenance(name="p1", url="http://prov", source="s1")
+    manager.add_source(dcid="s1", url="http://src")
+    manager.add_provenance(dcid="p1", url="http://prov", source="s1")
 
     with pytest.raises(ValueError, match="Exactly one"):
         manager.add_input_file(provenance="p1")
@@ -241,8 +247,8 @@ def test_export_methods(tmp_path):
     Exercises export_config, export_data, and export_mcf_file.
     """
     manager = CustomDataManager()
-    manager.add_source(name="s1", url="http://src")
-    manager.add_provenance(name="p1", url="http://prov", source="s1")
+    manager.add_source(dcid="s1", url="http://src")
+    manager.add_provenance(dcid="p1", url="http://prov", source="s1")
     df = pd.DataFrame({"A": [1]})
     manager.add_input_file(
         file_name="data.csv",
@@ -271,8 +277,8 @@ def test_export_methods(tmp_path):
 def test_export_data_creates_missing_subdirectory(tmp_path):
     """export_data creates the parent directory for a nested file_name."""
     manager = CustomDataManager()
-    manager.add_source(name="S", url="http://s")
-    manager.add_provenance(name="P", url="http://p", source="S")
+    manager.add_source(dcid="S", url="http://s")
+    manager.add_provenance(dcid="P", url="http://p", source="S")
     manager.set_include_input_subdirs(True)
     manager.add_input_file(
         file_name="sub/gdp.csv",
@@ -314,8 +320,8 @@ def test_export_all_writes_full_bundle_for_subdirectory_input_file(tmp_path):
     """export_all writes the complete bundle when a file_name nests in a subdirectory."""
     manager = CustomDataManager()
     manager.set_include_input_subdirs(True)
-    manager.add_source(name="S", url="http://s")
-    manager.add_provenance(name="P", url="http://p", source="S")
+    manager.add_source(dcid="S", url="http://s")
+    manager.add_provenance(dcid="P", url="http://p", source="S")
     manager.add_entity_type(
         dcid="MyEntityType",
         name="My Entity Type",
@@ -437,8 +443,8 @@ def test_custom_data_manager_repr():
     Sanity-check CustomDataManager.__repr__ for correct counts.
     """
     manager = CustomDataManager()
-    manager.add_source(name="s1", url="http://src")
-    manager.add_provenance(name="p1", url="http://prov", source="s1")
+    manager.add_source(dcid="s1", url="http://src")
+    manager.add_provenance(dcid="p1", url="http://prov", source="s1")
     df = pd.DataFrame({"A": [1]})
     manager.add_input_file(
         file_name="f.csv",
@@ -457,8 +463,8 @@ def test_custom_data_manager_repr():
 
 def test_remove_indicator():
     manager = CustomDataManager()
-    manager.add_source(name="s1", url="http://src")
-    manager.add_provenance(name="p1", url="http://prov", source="s1")
+    manager.add_source(dcid="s1", url="http://src")
+    manager.add_provenance(dcid="p1", url="http://prov", source="s1")
 
     df = pd.DataFrame({"A": [1]})
     manager.add_input_file(
@@ -834,8 +840,8 @@ def test_rename_variable_frees_the_old_name_for_reuse():
 def test_validate_all_input_files_have_data(tmp_path):
     """Verify the optional data-completeness validation on export_all and the standalone method."""
     manager = CustomDataManager()
-    manager.add_source(name="s1", url="http://src")
-    manager.add_provenance(name="p1", url="http://prov", source="s1")
+    manager.add_source(dcid="s1", url="http://src")
+    manager.add_provenance(dcid="p1", url="http://prov", source="s1")
 
     df = pd.DataFrame({"A": [1, 2]})
 
@@ -1124,8 +1130,8 @@ def test_add_measurement_method_lands_node_and_typeof_override():
 def test_included_in_expands_to_provenance_and_source():
     """includedIn expands to both the provenance dcid and its linked source dcid."""
     manager = CustomDataManager()
-    manager.add_source(name="src", url="http://s")
-    manager.add_provenance(name="prov", url="http://p", source="src")
+    manager.add_source(dcid="src", url="http://s")
+    manager.add_provenance(dcid="prov", url="http://p", source="src")
     manager.add_entity_type(dcid="T", name="T", included_in="prov")
 
     entity_node = manager._mcf_nodes["custom_nodes.mcf"].nodes[0]
@@ -1140,10 +1146,10 @@ def test_included_in_expands_to_provenance_and_source():
 def test_included_in_accepts_list_of_provenances():
     """A list of provenance names expands all four dcids in order."""
     manager = CustomDataManager()
-    manager.add_source(name="srcA", url="http://a")
-    manager.add_source(name="srcB", url="http://b")
-    manager.add_provenance(name="provA", url="http://pa", source="srcA")
-    manager.add_provenance(name="provB", url="http://pb", source="srcB")
+    manager.add_source(dcid="srcA", url="http://a")
+    manager.add_source(dcid="srcB", url="http://b")
+    manager.add_provenance(dcid="provA", url="http://pa", source="srcA")
+    manager.add_provenance(dcid="provB", url="http://pb", source="srcB")
     manager.add_entity_type(dcid="T", name="T", included_in=["provA", "provB"])
 
     node = manager._mcf_nodes["custom_nodes.mcf"].nodes[0]
@@ -1159,9 +1165,9 @@ def test_included_in_accepts_list_of_provenances():
 def test_included_in_dedups_shared_source():
     """Two provenances sharing a source emit that source exactly once."""
     manager = CustomDataManager()
-    manager.add_source(name="src", url="http://s")
-    manager.add_provenance(name="provA", url="http://pa", source="src")
-    manager.add_provenance(name="provB", url="http://pb", source="src")
+    manager.add_source(dcid="src", url="http://s")
+    manager.add_provenance(dcid="provA", url="http://pa", source="src")
+    manager.add_provenance(dcid="provB", url="http://pb", source="src")
     manager.add_entity_type(dcid="T", name="T", included_in=["provA", "provB"])
 
     node = manager._mcf_nodes["custom_nodes.mcf"].nodes[0]

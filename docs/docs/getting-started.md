@@ -62,16 +62,16 @@ flags: importName=None, includeInputSubdirs=None, groupStatVarsByProperty=None, 
 Register where the data comes from: a Source (the publishing organization) and a Provenance (this specific dataset). Every input file you register later points back at a Provenance dcid, so it has to exist first.
 
 ```python
-manager.add_source(name="ONEData", url="https://data.one.org")
+manager.add_source(dcid="ONEData", url="https://data.one.org")
 manager.add_provenance(
-    name="ONEClimateFinance",
+    dcid="ONEClimateFinance",
     url="https://datacommons.one.org/data/climate-finance-files",
     source="ONEData",
 )
 ```
 
 !!! note
-    `name` becomes part of the node's dcid, so it can't contain spaces. `add_source` turns `"ONEData"` into `dcid:source/ONEData`. If you want a spaced-out label, put it in `description` instead.
+    `dcid` is the node's identifier, so it can't contain spaces — `add_source` mints `"ONEData"` into `dcid:source/ONEData`. For a human-readable label (spaces allowed), pass `name`; it's optional.
 
 Both calls add MCF nodes in memory. Export them to see what they'll look like on disk:
 

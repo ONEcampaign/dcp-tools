@@ -31,9 +31,9 @@ def test_config_json_snapshot(tmp_path):
     manager.set_import_name("test_import")
     manager.set_include_input_subdirs(True).set_group_stat_vars_by_property(False)
 
-    manager.add_source(name="S1", url="http://source1")
-    manager.add_provenance(name="provA", url="http://prova", source="S1")
-    manager.add_provenance(name="provB", url="http://provb", source="S1")
+    manager.add_source(dcid="S1", name="S 1", url="http://source1")
+    manager.add_provenance(dcid="provA", name="Prov A", url="http://prova", source="S1")
+    manager.add_provenance(dcid="provB", name="Prov B", url="http://provb", source="S1")
 
     manager.add_input_file(
         "a.csv",
@@ -57,8 +57,8 @@ def test_config_json_snapshot(tmp_path):
 def test_config_json_snapshot_multi_entity(tmp_path):
     manager = CustomDataManager()
     manager.set_import_name("test_import_multi_entity")
-    manager.add_source(name="S1", url="http://source1")
-    manager.add_provenance(name="provC", url="http://provc", source="S1")
+    manager.add_source(dcid="S1", name="S 1", url="http://source1")
+    manager.add_provenance(dcid="provC", name="Prov C", url="http://provc", source="S1")
     manager.add_input_file(
         "c.csv",
         provenance="provC",
@@ -79,9 +79,26 @@ def test_config_json_snapshot_multi_entity(tmp_path):
 
 def test_provenance_mcf_snapshot(tmp_path):
     manager = CustomDataManager()
-    manager.add_source(name="S1", url="http://source1")
-    manager.add_provenance(name="provA", url="http://prova", source="S1")
-    manager.add_provenance(name="provB", url="http://provb", source="S1")
+    manager.add_source(
+        dcid="S1",
+        name="S 1",
+        description="A source that publishes data.",
+        url="http://source1",
+    )
+    manager.add_provenance(
+        dcid="provA",
+        name="Prov A",
+        description="An example provenance.",
+        url="http://prova",
+        source="S1",
+    )
+    manager.add_provenance(
+        dcid="provB",
+        name="Prov B",
+        description="Another example provenance.",
+        url="http://provb",
+        source="S1",
+    )
 
     manager.export_mcf_file(str(tmp_path), mcf_file_name="provenance.mcf")
     got = (tmp_path / "provenance.mcf").read_text()

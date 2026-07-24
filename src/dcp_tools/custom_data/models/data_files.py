@@ -180,7 +180,7 @@ class InputFile(BaseModel):
     @field_validator("provenance", mode="after")
     @classmethod
     def _mint_provenance(cls, value: str) -> str:
-        return mint_dcid(prefix="provenance", name=value)
+        return mint_dcid(prefix="provenance", token=value)
 
     @model_validator(mode="after")
     def _validate_filename_or_pattern(self) -> "InputFile":

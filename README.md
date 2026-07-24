@@ -38,9 +38,9 @@ import pandas as pd
 from dcp_tools import CustomDataManager
 
 manager = CustomDataManager()
-manager.add_source(name="ONEData", url="https://data.one.org")
+manager.add_source(dcid="ONEData", url="https://data.one.org")
 manager.add_provenance(
-    name="ONEClimateFinance",
+    dcid="ONEClimateFinance",
     url="https://datacommons.one.org/data/climate-finance-files",
     source="ONEData",
 )

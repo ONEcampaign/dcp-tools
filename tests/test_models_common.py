@@ -99,27 +99,29 @@ def test_ensure_dcid_maps_over_list():
 def test_mint_dcid_three_way_rule():
     """Covers each branch of the canonical minting rule."""
     # Bare name -> dcid:<prefix>/<name> (the real source/provenance callers)
-    assert mint_dcid(prefix="source", name="CustomSource") == "dcid:source/CustomSource"
     assert (
-        mint_dcid(prefix="provenance", name="CustomProv")
+        mint_dcid(prefix="source", token="CustomSource") == "dcid:source/CustomSource"
+    )
+    assert (
+        mint_dcid(prefix="provenance", token="CustomProv")
         == "dcid:provenance/CustomProv"
     )
     # Already dcid:-prefixed -> returned verbatim (escape hatch)
-    assert mint_dcid(prefix="source", name="dcid:bio/y") == "dcid:bio/y"
+    assert mint_dcid(prefix="source", token="dcid:bio/y") == "dcid:bio/y"
     # Contains "/" but no dcid: -> prepended with dcid:
-    assert mint_dcid(prefix="source", name="source/Foo") == "dcid:source/Foo"
+    assert mint_dcid(prefix="source", token="source/Foo") == "dcid:source/Foo"
 
 
 def test_mint_dcid_rejects_empty_or_whitespace_names():
     """Empty or whitespace-bearing names violate the strict contract."""
     with pytest.raises(ValueError):
-        mint_dcid(prefix="source", name="")
+        mint_dcid(prefix="source", token="")
     with pytest.raises(ValueError):
-        mint_dcid(prefix="source", name="has space")
+        mint_dcid(prefix="source", token="has space")
     with pytest.raises(ValueError):
-        mint_dcid(prefix="source", name="  leading")
+        mint_dcid(prefix="source", token="  leading")
     with pytest.raises(ValueError):
-        mint_dcid(prefix="source", name="trailing\t")
+        mint_dcid(prefix="source", token="trailing\t")
 
 
 # --- DcidOrListDcid and friends (regression test for #126) ---

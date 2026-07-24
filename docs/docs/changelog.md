@@ -110,6 +110,9 @@
   and `csv_metadata_to_mcf_file`, and now defaults to overwriting.
 - **Breaking:** `csv2mcf` replaces `--override` with `--append`. It overwrites the output file by
   default; pass `--append` to add to an existing file instead.
+- **Breaking:** `add_source` and `add_provenance` take separate `dcid` (identifier, minted with the
+  slug prefix), optional `name` (label), and `description` parameters. Previously `name` was the
+  identifier and no `name` property was set — pass the identifier as `dcid=` now.
 
 ## v0.1.0 (in development)
 - Initial release of the `dcp-tools` package for external preview and testing

@@ -29,8 +29,8 @@ from dcp_tools.gcp_utilities.storage import (
 def _manager(file_name="input.csv", *, with_data=True):
     """Manager with one source + one input file (optionally with data)."""
     mgr = CustomDataManager()
-    mgr.add_source(name="s1", url="http://src")
-    mgr.add_provenance(name="p1", url="http://prov", source="s1")
+    mgr.add_source(dcid="s1", url="http://src")
+    mgr.add_provenance(dcid="p1", url="http://prov", source="s1")
     df = pd.DataFrame({"entity": ["e1"], "Year": [2020], "Value": [100]})
     mgr.add_input_file(
         file_name=file_name,

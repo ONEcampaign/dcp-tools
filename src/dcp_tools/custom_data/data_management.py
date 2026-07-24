@@ -1135,22 +1135,22 @@ class CustomDataManager:
 
         return self
 
-    def remove_indicator(
-        self, indicator_id: str, *, mcf_file_name: str | None = None
+    def remove_variable(
+        self, dcid: str, *, mcf_file_name: str | None = None
     ) -> CustomDataManager:
-        """Remove a single indicator from the manager.
+        """Remove a single variable from the manager.
 
-        This removes the indicator from any loaded MCF files. If
+        This removes the variable from any loaded MCF files. If
         ``mcf_file_name`` is provided, only that MCF file is searched;
         otherwise all MCF files will be inspected.
 
         Args:
-            indicator_id: Identifier of the indicator/StatVar to remove.
+            dcid: DCID of the StatVar to remove.
             mcf_file_name: Optional name of the MCF file from which to remove the
                 node. If omitted, all managed MCF files are searched.
 
         Raises:
-            ValueError: If the indicator is not found in any MCF file.
+            ValueError: If the variable is not found in any MCF file.
         """
 
         found = False
@@ -1171,13 +1171,13 @@ class CustomDataManager:
             if not nodes:
                 continue
             try:
-                nodes.remove(indicator_id)
+                nodes.remove(dcid)
                 found = True
             except ValueError:
                 pass
 
         if not found:
-            raise ValueError(f"Indicator '{indicator_id}' not found")
+            raise ValueError(f"Statistical variable '{dcid}' not found")
 
         return self
 

@@ -76,6 +76,9 @@
   `dcid` is the identifier (minted with the `source/`/`provenance/` slug prefix); `name` is an
   optional human-readable label; `description` is optional longer text. Previously `name` was used
   as the identifier and the node's own `name` property was never set.
+- **Renamed `CustomDataManager.remove_indicator` to `remove_variable`** (parameter `indicator_id`
+  → `dcid`), matching the `variable` terminology used elsewhere (`rename_variable`,
+  `add_variable_to_mcf`).
 
 ### Fixed
 - `rename_variable` left the `MCFNodes` lookup index keyed by the old name, so
@@ -185,6 +188,8 @@
   file.
 - In `add_source`/`add_provenance` calls, pass the identifier as `dcid=` (was `name=`); optionally
   pass `name=` for a human-readable label.
+- Rename `remove_indicator(...)` calls to `remove_variable(...)`; the positional id argument is
+  unchanged, and the keyword is now `dcid` (was `indicator_id`).
 
 ## [0.1.1] - 2026-02-19
 

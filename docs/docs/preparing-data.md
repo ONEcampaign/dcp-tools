@@ -43,11 +43,11 @@ from dcp_tools import CustomDataManager
 manager = CustomDataManager()
 
 manager.add_source(
-    name="ONEData",
+    dcid="ONEData",
     url="https://data.one.org",
 )
 manager.add_provenance(
-    name="ONEClimateFinance",
+    dcid="ONEClimateFinance",
     url="https://datacommons.one.org/data/climate-finance-files",
     source="ONEData",
 )
@@ -58,11 +58,10 @@ node at `dcid:source/ONEData`, and a `dcid:Provenance` node at `dcid:provenance/
 linking to it. `add_provenance` raises `ValueError` if `source` isn't registered yet.
 
 !!! note
-    `name` mints part of a dcid. A bare name becomes `dcid:source/<name>` or
-    `dcid:provenance/<name>`. An already `dcid:`-prefixed name is used as-is. Names can't
-    contain whitespace (`"ONEData"`, not `"ONE Data"`). Put a whitespace-friendly display string
-    in `description=` instead. See [Why config.json and MCF](dc-schemas.md) for why the importer
-    needs dcids shaped this way.
+    `dcid` is the node's identifier and gets minted: a bare token becomes `dcid:source/<token>`
+    or `dcid:provenance/<token>` (an already `dcid:`-prefixed value is used as-is), so it can't
+    contain whitespace. `name` is the optional human-readable label, where spaces are fine. See
+    [Why config.json and MCF](dc-schemas.md) for why the importer needs dcids shaped this way.
 
 Both methods take `description`, `license`, and `isPartOf`. `add_provenance` additionally takes
 `licenseType`, `lastDataRefreshDate`, `nextDataRefreshDate`, `nextSourceReleaseDate`,

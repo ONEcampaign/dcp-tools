@@ -47,9 +47,9 @@ from dcp_tools import CustomDataManager
 import pandas as pd
 
 manager = CustomDataManager()
-manager.add_source(name="ONEData", url="https://data.one.org")
+manager.add_source(dcid="ONEData", url="https://data.one.org")
 manager.add_provenance(
-    name="ONEClimateFinance",
+    dcid="ONEClimateFinance",
     url="https://datacommons.one.org/data/climate-finance-files",
     source="ONEData",
 )
@@ -160,7 +160,7 @@ names you pass to `add_entity_type`, `add_property`, `add_unit`, or `Node`/`popu
 on `add_variable_to_mcf`. Both rules turn a bare token into a `dcid:`-prefixed one, but only one
 of them inserts a namespace segment:
 
-- `add_source(name="ONEData", ...)` mints `dcid:source/ONEData`.
+- `add_source(dcid="ONEData", ...)` mints `dcid:source/ONEData`.
 - `add_property(dcid="providerCountry", ...)` mints `dcid:providerCountry`, no `property/`
   segment.
 

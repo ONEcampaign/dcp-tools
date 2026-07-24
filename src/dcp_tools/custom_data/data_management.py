@@ -86,15 +86,16 @@ class CustomDataManager:
 
     To add a Source and Provenance (emitted as MCF nodes to ``provenance.mcf`` by default),
     use the ``add_source`` and ``add_provenance`` methods:
-    >>> dc_manager.add_source(name="ONE Data", url="https://data.one.org")
+    >>> dc_manager.add_source(dcid="ONEData", name="ONE Data", url="https://data.one.org")
     >>> dc_manager.add_provenance(
+    >>>     dcid="ONEClimateFinance",
     >>>     name="ONE Climate Finance",
     >>>     url="https://datacommons.one.org/data/climate-finance-files",
-    >>>     source="ONE Data",
+    >>>     source="ONEData",
     >>> )
 
     To add a variable for export to an MCF file, use the add_variable_to_mcf method.
-    ``Node`` accepts a bare or ``dcid:``-prefixed token, as the schema-node builders below do:
+    ``dcid`` accepts a bare or ``dcid:``-prefixed token, as the schema-node builders below do:
     >>> dc_manager.add_variable_to_mcf(
     >>>    dcid="StatVar",
     >>>    name="Variable Name",
@@ -106,8 +107,8 @@ class CustomDataManager:
 
     To add custom schema nodes (entity types, event types, properties, units, and
     measurement methods), use the five typed builders. All five accept bare or
-    ``dcid:``-prefixed ``Node`` tokens. Note: ``add_measurement_method`` is the only
-    builder where ``name`` is optional — only ``Node`` is required.
+    ``dcid:``-prefixed ``dcid`` tokens. Note: ``add_measurement_method`` is the only
+    builder where ``name`` is optional — only ``dcid`` is required.
     >>> dc_manager.add_entity_type(dcid="MyClass", name="My Class")
     >>> dc_manager.add_event_type(dcid="MyEvent", name="My Event")
     >>> dc_manager.add_property(
@@ -160,8 +161,8 @@ class CustomDataManager:
     Note: To add data, the input file must already be registered in the config file
     >>> dc_manager.add_data(<data>, "input_file.csv")
 
-    To set the includeInputSubdirs and the groupStatVarsByProperty fields of the config, use
-    the set_includeInputSubdirs and set_groupStatVarsByProperty methods
+    To set the ``include_input_subdirs`` and ``group_stat_vars_by_property`` config fields, use
+    the set_include_input_subdirs and set_group_stat_vars_by_property methods
     >>> dc_manager.set_include_input_subdirs(True)
     >>> dc_manager.set_group_stat_vars_by_property(True)
 
@@ -397,8 +398,9 @@ class CustomDataManager:
     def add_source(
         self,
         *,
-        name: str,
+        dcid: str,
         url: str,
+        name: str | None = None,
         description: str | None = None,
         license: str | None = None,
         is_part_of: str | None = None,
@@ -409,13 +411,15 @@ class CustomDataManager:
         """Add a Source MCF node.
 
         Emits a ``dcid:Source`` node to the MCF collection (default: ``provenance.mcf``).
-        The node is referenced by ``add_provenance`` via the same bare ``name``.
+        The node is referenced by ``add_provenance`` via the same bare ``dcid`` token
+        (passed to its ``source`` argument).
 
         Args:
-            name: Bare name for the source. Minting rule: bare name →
-                ``dcid:source/<name>``; pass an already ``dcid:``-prefixed value to use
-                it verbatim. Names must be valid dcid tokens (no whitespace).
+            dcid: Identifier for the source node. Minting rule: bare token →
+                ``dcid:source/<token>``; pass an already ``dcid:``-prefixed value to use
+                it verbatim. Must be a valid dcid token (no whitespace).
             url: URL of the data source.
+            name: Optional human-readable name of the source. (Optional)
             description: Optional human-readable description. (Optional)
             license: Optional license information. (Optional)
             is_part_of: Optional DCID of a parent source. (Optional)
@@ -429,13 +433,13 @@ class CustomDataManager:
             CustomDataManager object
 
         Raises:
-            ValueError: If the name contains whitespace, if a node with the same id
-                already exists and ``override`` is False, or if the file name is invalid.
+            ValueError: If the ``dcid`` token contains whitespace, if a node with the same
+                id already exists and ``override`` is False, or if the file name is invalid.
         """
 
-        dcid = mint_dcid(prefix="source", name=name)
+        dcid = mint_dcid(prefix="source", token=dcid)
         url = str(url)
-        props = _parse_kwargs_into_properties(locals(), extra_exclude={"name"})
+        props = _parse_kwargs_into_properties(locals())
         node = SourceNode(**props)
 
         mcf_name = validate_mcf_file_name(mcf_file_name)
@@ -446,9 +450,10 @@ class CustomDataManager:
     def add_provenance(
         self,
         *,
-        name: str,
+        dcid: str,
         url: str,
         source: str,
+        name: str | None = None,
         description: str | None = None,
         license: str | None = None,
         license_type: str | None = None,
@@ -470,13 +475,14 @@ class CustomDataManager:
         The corresponding Source must already be registered via ``add_source``.
 
         Args:
-            name: Bare name for the provenance. Minting rule: bare name →
-                ``dcid:provenance/<name>``; pass an already ``dcid:``-prefixed value to
-                use it verbatim. Names must be valid dcid tokens (no whitespace).
+            dcid: Identifier for the provenance node. Minting rule: bare token →
+                ``dcid:provenance/<token>``; pass an already ``dcid:``-prefixed value to
+                use it verbatim. Must be a valid dcid token (no whitespace).
             url: URL of the provenance dataset.
             source: Bare name of the parent Source (must already have been added via
                 ``add_source``). The same minting rule applies: bare name →
                 ``dcid:source/<source>``; ``dcid:``-prefixed → verbatim.
+            name: Optional human-readable name of the provenance. (Optional)
             description: Optional human-readable description. (Optional)
             license: Optional license information. (Optional)
             license_type: Optional license type. (Optional)
@@ -498,18 +504,16 @@ class CustomDataManager:
             CustomDataManager object
 
         Raises:
-            ValueError: If the ``source`` has not been added yet, if either name
-                contains whitespace, if a node with the same id already exists and
-                ``override`` is False, or if the file name is invalid.
+            ValueError: If the ``source`` has not been added yet, if the ``dcid`` or
+                ``source`` token contains whitespace, if a node with the same id already
+                exists and ``override`` is False, or if the file name is invalid.
         """
 
-        dcid = mint_dcid(prefix="provenance", name=name)
+        dcid = mint_dcid(prefix="provenance", token=dcid)
         url = str(url)
-        source_link = mint_dcid(prefix="source", name=source)
+        source_link = mint_dcid(prefix="source", token=source)
         self._require_source_exists(source, source_link)
-        props = _parse_kwargs_into_properties(
-            locals(), extra_exclude={"name", "source"}
-        )
+        props = _parse_kwargs_into_properties(locals(), extra_exclude={"source"})
         node = ProvenanceNode(**props)
 
         mcf_name = validate_mcf_file_name(mcf_file_name)
@@ -1190,7 +1194,7 @@ class CustomDataManager:
                     return n
         raise ValueError(
             f"Provenance '{provenance}' not found. "
-            f"Call add_provenance(name={provenance!r}, url=..., source=...) "
+            f"Call add_provenance(dcid={provenance!r}, url=..., source=...) "
             f"before referencing it in includedIn."
         )
 
@@ -1217,7 +1221,7 @@ class CustomDataManager:
         expanded: list[str] = []
         seen: set[str] = set()
         for ref in refs:
-            prov_link = mint_dcid(prefix="provenance", name=ref)
+            prov_link = mint_dcid(prefix="provenance", token=ref)
             prov_node = self._require_provenance_exists(ref, prov_link)
             for dcid in (prov_link, getattr(prov_node, "source_link", None)):
                 if dcid is not None and dcid not in seen:
@@ -1239,7 +1243,7 @@ class CustomDataManager:
         ):
             raise ValueError(
                 f"Source '{source}' not found. "
-                f"Call add_source(name={source!r}, url=...) before add_provenance()."
+                f"Call add_source(dcid={source!r}, url=...) before add_provenance()."
             )
 
     def _validate_provenances(self) -> None:
@@ -1260,7 +1264,7 @@ class CustomDataManager:
                 raise ValueError(
                     f"Input file references unknown provenance '{bare}' "
                     f"('{entry.provenance}'). "
-                    f"Call add_provenance(name={bare!r}, url=..., source=...) first."
+                    f"Call add_provenance(dcid={bare!r}, url=..., source=...) first."
                 )
 
     def export_config(self, dir_path: str | PathLike[str]) -> None:

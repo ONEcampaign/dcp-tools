@@ -72,6 +72,10 @@
 - **Replaced `csv2mcf`'s `--override` flag with `--append`.** `csv2mcf` now overwrites the output
   file by default; pass `--append` to add to an existing file instead (which can produce duplicate
   `Node:` blocks on repeated runs).
+- **`add_source` and `add_provenance` take separate `dcid`, `name`, and `description` parameters.**
+  `dcid` is the identifier (minted with the `source/`/`provenance/` slug prefix); `name` is an
+  optional human-readable label; `description` is optional longer text. Previously `name` was used
+  as the identifier and the node's own `name` property was never set.
 
 ### Fixed
 - `rename_variable` left the `MCFNodes` lookup index keyed by the old name, so
@@ -179,6 +183,8 @@
   `csv_metadata_to_mcf_file` (all now overwrite by default).
 - Replace `csv2mcf --override` with the default (overwrite), or `--append` to add to an existing
   file.
+- In `add_source`/`add_provenance` calls, pass the identifier as `dcid=` (was `name=`); optionally
+  pass `name=` for a human-readable label.
 
 ## [0.1.1] - 2026-02-19
 

@@ -216,35 +216,35 @@ def ensure_dcid(value: str | list[str]) -> str | list[str]:
     return f"dcid:{value}"
 
 
-def mint_dcid(*, prefix: str, name: str) -> str:
+def mint_dcid(*, prefix: str, token: str) -> str:
     """Mint a dcid for a source/provenance node id or reference.
 
     Three-way minting rule (canonical):
-        Bare name                     -> ``dcid:<prefix>/<name>``
+        Bare token                     -> ``dcid:<prefix>/<token>``
                                          e.g. ``'CustomSource'`` -> ``'dcid:source/CustomSource'``
         Already ``dcid:``-prefixed    -> returned verbatim (power-user escape hatch)
                                          e.g. ``'dcid:bio/y'`` -> ``'dcid:bio/y'``
         Contains ``/`` (no ``dcid:``) -> prepended with ``dcid:``
                                          e.g. ``'source/Foo'`` -> ``'dcid:source/Foo'``
-        Whitespace or empty name      -> ``ValueError`` (strict contract; no slugify)
+        Whitespace or empty token      -> ``ValueError`` (strict contract; no slugify)
 
     Args:
         prefix: Namespace prefix used when minting a bare name (e.g. ``'source'``,
             ``'provenance'``).
-        name: The bare name, partially-qualified path, or already-minted dcid.
+        token: The bare token, partially-qualified path, or already-minted dcid.
 
     Returns:
         A fully-qualified dcid string.
 
     Raises:
-        ValueError: If *name* is empty or contains any whitespace character.
+        ValueError: If *token* is empty or contains any whitespace character.
     """
-    if not name or any(c.isspace() for c in name):
+    if not token or any(c.isspace() for c in token):
         raise ValueError(
-            f"mint_dcid: name must be a non-empty token with no whitespace; got {name!r}"
+            f"mint_dcid: token must be non-empty with no whitespace; got {token!r}"
         )
-    if name.startswith("dcid:"):
-        return name
-    if "/" in name:
-        return f"dcid:{name}"
-    return f"dcid:{prefix}/{name}"
+    if token.startswith("dcid:"):
+        return token
+    if "/" in token:
+        return f"dcid:{token}"
+    return f"dcid:{prefix}/{token}"

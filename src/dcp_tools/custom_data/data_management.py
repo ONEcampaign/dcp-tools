@@ -222,12 +222,8 @@ class CustomDataManager:
         input_files_count = len(self._config.inputFiles)
 
         all_nodes = [n for nodes in self._mcf_nodes.values() for n in nodes.nodes]
-        sources_count = sum(
-            1 for n in all_nodes if getattr(n, "typeOf", None) == "dcid:Source"
-        )
-        provenances_count = sum(
-            1 for n in all_nodes if getattr(n, "typeOf", None) == "dcid:Provenance"
-        )
+        sources_count = sum(1 for n in all_nodes if n.typeOf == "dcid:Source")
+        provenances_count = sum(1 for n in all_nodes if n.typeOf == "dcid:Provenance")
         variables_count = len(all_nodes) - sources_count - provenances_count
 
         dataframes_count = len(self._data)
@@ -1190,10 +1186,7 @@ class CustomDataManager:
         """
         for nodes in self._mcf_nodes.values():
             for n in nodes.nodes:
-                if (
-                    getattr(n, "typeOf", None) == "dcid:Provenance"
-                    and n.dcid == provenance_link
-                ):
+                if n.typeOf == "dcid:Provenance" and n.dcid == provenance_link:
                     return n
         raise ValueError(
             f"Provenance '{provenance}' not found. "
@@ -1240,7 +1233,7 @@ class CustomDataManager:
             source_link: The minted dcid for the source (used for the lookup).
         """
         if not any(
-            getattr(n, "typeOf", None) == "dcid:Source" and n.dcid == source_link
+            n.typeOf == "dcid:Source" and n.dcid == source_link
             for nodes in self._mcf_nodes.values()
             for n in nodes.nodes
         ):
@@ -1259,7 +1252,7 @@ class CustomDataManager:
             n.dcid
             for nodes in self._mcf_nodes.values()
             for n in nodes.nodes
-            if getattr(n, "typeOf", None) == "dcid:Provenance"
+            if n.typeOf == "dcid:Provenance"
         }
         for entry in self._config.inputFiles:
             if entry.provenance and entry.provenance not in known:
@@ -1287,7 +1280,7 @@ class CustomDataManager:
         source_file: dict[str, str] = {}
         for fname, nodes in self._mcf_nodes.items():
             for n in nodes.nodes:
-                node_type = getattr(n, "typeOf", None)
+                node_type = n.typeOf
                 if node_type == "dcid:Provenance":
                     prov_file[n.dcid] = fname
                     prov_source[n.dcid] = getattr(n, "sourceLink", None)

@@ -34,12 +34,8 @@ def test_custom_data_manager_add_provenance_and_override():
     manager.add_provenance(name="pA", url="http://prov", source="new_source")
 
     prov_nodes = manager._mcf_nodes["provenance.mcf"].nodes
-    source_node = next(
-        n for n in prov_nodes if getattr(n, "typeOf", None) == "dcid:Source"
-    )
-    prov_node = next(
-        n for n in prov_nodes if getattr(n, "typeOf", None) == "dcid:Provenance"
-    )
+    source_node = next(n for n in prov_nodes if n.typeOf == "dcid:Source")
+    prov_node = next(n for n in prov_nodes if n.typeOf == "dcid:Provenance")
     assert source_node.dcid == "dcid:source/new_source"
     assert prov_node.dcid == "dcid:provenance/pA"
     assert prov_node.sourceLink == "dcid:source/new_source"
@@ -55,7 +51,7 @@ def test_custom_data_manager_add_provenance_and_override():
     updated_prov = next(
         n
         for n in manager._mcf_nodes["provenance.mcf"].nodes
-        if getattr(n, "typeOf", None) == "dcid:Provenance"
+        if n.typeOf == "dcid:Provenance"
     )
     # url is stored raw; QuotedStr serialization wraps it in quotes at dump time
     assert updated_prov.url == "http://prov2"
@@ -72,7 +68,7 @@ def test_add_source_metadata_lands_on_node():
         license="CC-BY-4.0",
     )
     nodes = manager._mcf_nodes["provenance.mcf"].nodes
-    node = next(n for n in nodes if getattr(n, "typeOf", None) == "dcid:Source")
+    node = next(n for n in nodes if n.typeOf == "dcid:Source")
     assert node.dcid == "dcid:source/MySource"
     # QuotedStr fields are stored raw; quotes applied at serialization
     assert node.description == "A test source"
@@ -91,9 +87,7 @@ def test_add_provenance_metadata_lands_on_node():
         lastDataRefreshDate="2024-01-01",
     )
     nodes = manager._mcf_nodes["provenance.mcf"].nodes
-    prov_node = next(
-        n for n in nodes if getattr(n, "typeOf", None) == "dcid:Provenance"
-    )
+    prov_node = next(n for n in nodes if n.typeOf == "dcid:Provenance")
     # QuotedStr fields are stored raw; quotes applied at serialization
     assert prov_node.description == "Prov desc"
     assert prov_node.lastDataRefreshDate == "2024-01-01"
@@ -1038,7 +1032,7 @@ def test_add_entity_type_lands_node():
     manager = CustomDataManager()
     manager.add_entity_type(dcid="MyClass", name="My Class")
     nodes = manager._mcf_nodes["custom_nodes.mcf"].nodes
-    node = next(n for n in nodes if getattr(n, "typeOf", None) == "dcid:Class")
+    node = next(n for n in nodes if n.typeOf == "dcid:Class")
     assert node.dcid == "dcid:MyClass"
     assert node.typeOf == "dcid:Class"
 

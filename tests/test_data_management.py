@@ -316,6 +316,10 @@ def test_export_all_writes_full_bundle_for_subdirectory_input_file(tmp_path):
     manager.set_include_input_subdirs(True)
     manager.add_source(name="S", url="http://s")
     manager.add_provenance(name="P", url="http://p", source="S")
+    manager.add_entity_type(
+        dcid="MyEntityType",
+        name="My Entity Type",
+    )
     manager.add_input_file(
         file_name="sub/gdp.csv",
         provenance="P",
@@ -323,11 +327,33 @@ def test_export_all_writes_full_bundle_for_subdirectory_input_file(tmp_path):
         column_mappings={"value": "a"},
     )
 
-    manager.export_all(tmp_path, mcf_file_names=["provenance.mcf"])
+    manager.export_all(tmp_path)
 
     assert (tmp_path / "sub" / "gdp.csv").exists()
     assert (tmp_path / "config.json").exists()
     assert (tmp_path / "provenance.mcf").exists()
+    assert (tmp_path / "custom_nodes.mcf").exists()
+
+
+def test_export_all_overwrites_correctly(tmp_path):
+    """export_all overwrites correctly."""
+    manager = CustomDataManager()
+
+    manager.add_variable_to_mcf(
+        dcid="MyVariable",
+        name="My Variable",
+    )
+    manager.export_all(tmp_path)
+    assert (tmp_path / "custom_nodes.mcf").read_text() == (
+        "Node: dcid:MyVariable\n"
+        'name: "My Variable"\n'
+        "typeOf: dcid:StatisticalVariable\n"
+        "statType: dcid:measuredValue\n\n"
+    )
+
+    manager.remove_indicator("dcid:MyVariable")
+    manager.export_all(tmp_path)
+    assert (tmp_path / "custom_nodes.mcf").read_text() == ""
 
 
 def test_add_variable_group_to_mcf_and_override():
@@ -829,7 +855,7 @@ def test_validate_all_input_files_have_data(tmp_path):
         manager.validate_all_input_files_have_data()
 
     # validate_data=False does not surface the missing-data error
-    manager.export_all(tmp_path, validate_data=False, mcf_file_names=["provenance.mcf"])
+    manager.export_all(tmp_path, validate_data=False)
 
     # export_all with validate_data=True should raise before writing anything
     with pytest.raises(ValueError, match=r"no_data\.csv"):
@@ -839,52 +865,10 @@ def test_validate_all_input_files_have_data(tmp_path):
     manager.add_data(df, "no_data.csv")
     manager.validate_all_input_files_have_data()  # should not raise
 
-    manager.export_all(
-        tmp_path, validate_data=True, mcf_file_names=["provenance.mcf"]
-    )  # should not raise
+    manager.export_all(tmp_path, validate_data=True)  # should not raise
     assert (tmp_path / "config.json").exists()
     assert (tmp_path / "with_data.csv").exists()
     assert (tmp_path / "no_data.csv").exists()
-
-
-def test_export_all_requires_provenance_mcf(tmp_path):
-    """export_all raises (before writing) if a referenced provenance's MCF file is omitted."""
-    manager = CustomDataManager()
-    manager.add_source(name="s1", url="http://src")
-    manager.add_provenance(name="p1", url="http://prov", source="s1")
-    manager.add_input_file(
-        file_name="data.csv", provenance="p1", data=pd.DataFrame({"A": [1]})
-    )
-
-    # Omitting mcf_file_names would ship a config.json referencing a node not on disk.
-    with pytest.raises(ValueError, match=r"provenance\.mcf"):
-        manager.export_all(tmp_path)
-    assert not (tmp_path / "config.json").exists(), "must not write a partial bundle"
-
-    # Listing the provenance MCF file makes the bundle complete.
-    manager.export_all(tmp_path, mcf_file_names=["provenance.mcf"])
-    assert (tmp_path / "config.json").exists()
-    assert (tmp_path / "provenance.mcf").exists()
-
-
-def test_export_all_requires_linked_source_mcf(tmp_path):
-    """The guard follows sourceLink: a Source kept in a separate MCF file must be exported too."""
-    manager = CustomDataManager()
-    manager.add_source(name="s1", url="http://src", mcf_file_name="sources.mcf")
-    manager.add_provenance(name="p1", url="http://prov", source="s1")
-    manager.add_input_file(
-        file_name="data.csv", provenance="p1", data=pd.DataFrame({"A": [1]})
-    )
-
-    # Exporting only provenance.mcf leaves the sourceLink dangling -> raises, names sources.mcf.
-    with pytest.raises(ValueError, match=r"sources\.mcf"):
-        manager.export_all(tmp_path, mcf_file_names=["provenance.mcf"])
-    assert not (tmp_path / "config.json").exists(), "must not write a partial bundle"
-
-    # Exporting both the provenance and its source file makes the bundle complete.
-    manager.export_all(tmp_path, mcf_file_names=["provenance.mcf", "sources.mcf"])
-    assert (tmp_path / "provenance.mcf").exists()
-    assert (tmp_path / "sources.mcf").exists()
 
 
 def test_loading_legacy_variable_per_column_config_raises_with_message():

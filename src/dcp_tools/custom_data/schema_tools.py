@@ -268,7 +268,7 @@ def csv_metadata_to_mcf_file(
     column_to_property_mapping: dict[str, str] | None = None,
     csv_options: dict[str, Any] | None = None,
     ignore_columns: list[str] | None = None,
-    override: bool = False,
+    overwrite: bool = True,
 ) -> None:
     """Convert a CSV of Node metadata to an MCF file.
 
@@ -279,7 +279,7 @@ def csv_metadata_to_mcf_file(
         column_to_property_mapping: Optional mapping from CSV columns to MCF properties.
         csv_options: Extra options for reading the CSV file.
         ignore_columns: List of columns to ignore when reading the CSV.
-        override: If True, overwrite the output file if it exists.
+        overwrite: If True, overwrite the output file if it exists.
 
     """
 
@@ -294,4 +294,4 @@ def csv_metadata_to_mcf_file(
         ignore_columns=ignore_columns,
     )
 
-    nodes.export_to_mcf_file(file_path=mcf_path, override=override)
+    nodes.export_to_mcf_file(file_path=mcf_path, overwrite=overwrite)

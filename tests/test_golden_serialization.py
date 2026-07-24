@@ -23,7 +23,7 @@ def test_node_snapshot():
         shortDisplayName='"F"',
         subClassOf="dcid:Parent",
     )
-    assert node.mcf.strip() == got
+    assert node.to_mcf().strip() == got
 
 
 def test_config_json_snapshot(tmp_path):
@@ -123,9 +123,8 @@ def test_mcf_export_multi_entity(tmp_path):
 
 
 def test_csv_to_mcf_snapshot():
-
     nodes = csv_metadata_to_nodes(GOLDEN_DIR / "sample.csv", ignore_columns=None)
-    got = nodes.mcf if hasattr(nodes, "mcf") else "".join(n.mcf for n in nodes.nodes)
+    got = "".join(n.to_mcf() for n in nodes.nodes)
     expected = (GOLDEN_DIR / "sample_csv_nodes.mcf").read_text()
     assert got == expected
 

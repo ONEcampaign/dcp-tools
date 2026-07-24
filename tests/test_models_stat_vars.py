@@ -11,17 +11,17 @@ from dcp_tools.custom_data.schema_tools import _rows_to_stat_var_nodes
 
 def test_search_description_serialization_str_and_list():
     sv_str = StatVarNode(dcid="dcid:n1", name="Var", searchDescription="A")
-    assert 'searchDescription: "A"' in sv_str.mcf
+    assert 'searchDescription: "A"' in sv_str.to_mcf()
 
     sv_str = StatVarNode(
         dcid="dcid:n1",
         name="Var",
         searchDescription=["A string, or not", "B string, other"],
     )
-    assert 'searchDescription: "A string, or not","B string, other"' in sv_str.mcf
+    assert 'searchDescription: "A string, or not","B string, other"' in sv_str.to_mcf()
 
     sv_list = StatVarNode(dcid="dcid:n2", name="Var", searchDescription=["A", "B"])
-    assert 'searchDescription: "A","B"' in sv_list.mcf
+    assert 'searchDescription: "A","B"' in sv_list.to_mcf()
 
 
 def test_statvarnode_strips_whitespace_and_linebreaks():
@@ -40,7 +40,7 @@ def test_statvarnode_omits_observation_properties_by_default():
         dcid="dcid:n1",
         name="Var",
     )
-    assert "observationProperties" not in sv.mcf
+    assert "observationProperties" not in sv.to_mcf()
 
 
 def test_statvarnode_serializes_observation_properties_multi_entity():
@@ -49,7 +49,7 @@ def test_statvarnode_serializes_observation_properties_multi_entity():
         name="Var",
         observationProperties=["dcid:source", "dcid:destination"],
     )
-    assert "observationProperties: dcid:source, dcid:destination" in sv.mcf
+    assert "observationProperties: dcid:source, dcid:destination" in sv.to_mcf()
 
 
 def test_rows_to_stat_var_nodes_parses_comma_separated():
@@ -57,7 +57,7 @@ def test_rows_to_stat_var_nodes_parses_comma_separated():
         {"Node": ["dcid:n3"], "name": ["Var"], "searchDescription": ["A, B"]}
     )
     nodes = _rows_to_stat_var_nodes(df)
-    mcf = nodes.nodes[0].mcf
+    mcf = nodes.nodes[0].to_mcf()
     assert 'searchDescription: "A","B"' in mcf
 
 
@@ -70,7 +70,7 @@ def test_rows_to_stat_var_nodes_parses_spreadsheet_lists():
         }
     )
     nodes = _rows_to_stat_var_nodes(df)
-    mcf = nodes.nodes[0].mcf
+    mcf = nodes.nodes[0].to_mcf()
     assert 'searchDescription: "A list, comma","second element"' in mcf
 
 
@@ -83,7 +83,7 @@ def test_rows_to_stat_var_nodes_parses_spreadsheet_lists_no_quotes():
         }
     )
     nodes = _rows_to_stat_var_nodes(df)
-    mcf = nodes.nodes[0].mcf
+    mcf = nodes.nodes[0].to_mcf()
     assert "memberOf: dcid:g/oneId, dcid:g/twoId" in mcf
 
 
@@ -108,7 +108,7 @@ def test_observation_properties_normalizes_bare_scalar_and_list():
     ]
     assert (
         "observationProperties: dcid:originCountry, dcid:destinationCountry"
-        in sv_list.mcf
+        in sv_list.to_mcf()
     )
 
 
@@ -138,7 +138,7 @@ def test_peer_group_member_normalizes_bare_scalar_and_list():
         dcid="dcid:svpg/x", name="Peers", member=["varOne", "varTwo"]
     )
     assert node.member == ["dcid:varOne", "dcid:varTwo"]
-    assert "member: dcid:varOne, dcid:varTwo" in node.mcf
+    assert "member: dcid:varOne, dcid:varTwo" in node.to_mcf()
 
 
 def test_peer_group_member_rejects_whitespace_bearing_token():

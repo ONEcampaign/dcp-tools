@@ -1,6 +1,6 @@
 [project]
 name = "dcp-tools"
-version = "1.0.0rc1"
+version = "1.0.0a1"
 description = "Tools to work with the Data Commons Platform."
 authors = [
     { name = "ONE Campaign" },

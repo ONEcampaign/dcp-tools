@@ -1,8 +1,8 @@
 # Changelog
 
-## v1.0.0rc1 (2026-07-23)
+## v1.0.0a1 (2026-07-23)
 
-- Release candidate for the `dcp-tools` package, the first release under the new name.
+- First alpha of the `dcp-tools` package, the first release under the new name.
 - Renamed the package from `bblocks-datacommons-tools` to `dcp-tools`. The import path is
   now `dcp_tools` (was `bblocks.datacommons_tools`). Installing the old
   `bblocks-datacommons-tools` distribution now pulls in `dcp-tools` and re-exports it with a

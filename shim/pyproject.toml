@@ -1,6 +1,6 @@
 [project]
 name = "bblocks-datacommons-tools"
-version = "1.0.0rc1"
+version = "1.0.0a1"
 description = "Deprecated: renamed to dcp-tools. Installs dcp-tools and redirects imports."
 authors = [
     { name = "ONE Campaign" },
@@ -10,7 +10,7 @@ license-files = ["LICENSE"]
 readme = "README.md"
 requires-python = ">=3.13"
 dependencies = [
-    "dcp-tools>=1.0.0rc1",
+    "dcp-tools>=1.0.0a1",
 ]
 classifiers = [
     "Development Status :: 7 - Inactive",

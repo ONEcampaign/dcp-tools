@@ -7,7 +7,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
-## [1.0.0rc1] - 2026-07-23
+## [1.0.0a1] - 2026-07-23
 
 ### Added
 
@@ -185,5 +185,5 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 [0.1.0]: https://github.com/ONEcampaign/dcp-tools/releases/tag/v0.1.0
 [0.1.1]: https://github.com/ONEcampaign/dcp-tools/compare/v0.1.0...v0.1.1
-[1.0.0rc1]: https://github.com/ONEcampaign/dcp-tools/compare/v0.1.1...v1.0.0rc1
-[unreleased]: https://github.com/ONEcampaign/dcp-tools/compare/v1.0.0rc1...HEAD
+[1.0.0a1]: https://github.com/ONEcampaign/dcp-tools/compare/v0.1.1...v1.0.0a1
+[unreleased]: https://github.com/ONEcampaign/dcp-tools/compare/v1.0.0a1...HEAD

@@ -5,8 +5,8 @@ and `.mcf` files) without hand-editing any of the three. Each section below is a
 recipe. Jump to the one you need.
 
 !!! note
-    Assumes `dcp-tools` is installed (`pip install --pre dcp-tools` during the 1.0.0rc1 release
-    candidate). See [Getting started](getting-started.md) if it isn't.
+    Assumes `dcp-tools` is installed (`pip install --pre dcp-tools` while 1.0.0 is
+    still in alpha). See [Getting started](getting-started.md) if it isn't.
 
 ## How to create a `CustomDataManager`
 

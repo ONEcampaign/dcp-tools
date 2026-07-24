@@ -206,7 +206,7 @@ one_climate_finance/provenance.mcf
 one_climate_finance/climate_finance/one_cf_provider_commitments.csv
 ```
 
-`config.json` now has an `importName`, defaulted from the export directory name since we never called `set_importName`:
+`config.json` now has an `importName`, defaulted from the export directory name since we never called `set_import_name`:
 
 ```json
 {

@@ -92,6 +92,16 @@
   `CLOUD_SERVICE_REGION`, `CLOUD_RUN_SERVICE_NAME`, and `DATACOMMONS_SERVICE_IMAGE`.
 - Added an `imports` argument on `run_data_load` and a matching `--imports` flag on the
   `dataload` CLI command, to trigger a load of specific imports rather than all imports.
+- **Breaking:** renamed the node model classes to drop the `MCF` qualifier — `MCFNode` →
+  `Node`, `MCFNodes` → `Nodes`, and every subclass. MCF is now treated as one serialization
+  of a Data Commons graph node.
+- **Breaking:** a node's identifier is now a single `dcid` property — the duplicate
+  `Node`/`dcid` pair is collapsed. Access it via `node.dcid`; it still serializes to the
+  `Node:` line in MCF.
+- **Breaking:** `Node.mcf` is now the `Node.to_mcf()` method.
+- **Breaking:** the Python API is snake_case throughout — node/`Config` attributes, builder
+  keyword arguments and the `set_*` methods. Serialisation still uses camelCase using
+  pydantic's `alias_generator=to_camel`.
 
 ## v0.1.0 (in development)
 - Initial release of the `dcp-tools` package for external preview and testing

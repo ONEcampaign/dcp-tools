@@ -3,7 +3,7 @@ Module for Knowledge Graph pipeline settings.
 """
 
 import json
-from os import PathLike
+import os
 from pathlib import Path
 from typing import Literal
 
@@ -66,7 +66,7 @@ class KGSettings(BaseSettings):
 def get_kg_settings(
     *,
     source: Literal["env", "json"] = "env",
-    env_file: PathLike | Path | None = None,
+    env_file: os.PathLike | Path | None = None,
     file: str | Path | None = None,
 ) -> KGSettings:
     """Return an instance of KGSettings.

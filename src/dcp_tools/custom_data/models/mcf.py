@@ -1,7 +1,7 @@
 from __future__ import annotations
 
+import os
 from enum import Enum
-from os import PathLike
 from pathlib import Path
 from typing import Any
 
@@ -150,7 +150,7 @@ class Nodes(BaseModel):
         self.add(Node(**block))
         block.clear()
 
-    def load_from_mcf_file(self, file_path: str | PathLike) -> Nodes:
+    def load_from_mcf_file(self, file_path: str | os.PathLike) -> Nodes:
         """Parses MCF nodes from a file and populates the collection.
 
         Each node block is expected to start with
@@ -246,7 +246,7 @@ class Nodes(BaseModel):
         return self
 
     def export_to_mcf_file(
-        self, file_path: str | PathLike, *, overwrite: bool = True
+        self, file_path: str | os.PathLike, *, overwrite: bool = True
     ) -> Nodes:
         """Exports the MCF nodes to a file.
 

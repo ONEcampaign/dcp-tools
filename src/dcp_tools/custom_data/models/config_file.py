@@ -1,4 +1,4 @@
-from os import PathLike
+import os
 from typing import Any
 
 from pydantic import BaseModel, ConfigDict, model_validator
@@ -104,7 +104,7 @@ class Config(BaseModel):
         Config.model_validate(self.model_dump())
 
     @classmethod
-    def from_json(cls, file_path: str | PathLike[str]) -> "Config":
+    def from_json(cls, file_path: str | os.PathLike[str]) -> "Config":
         """Read the config from a JSON file
 
         Args:

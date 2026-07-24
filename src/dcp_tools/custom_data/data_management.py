@@ -3,8 +3,8 @@
 from __future__ import annotations
 
 import json
+import os
 from collections.abc import Sequence
-from os import PathLike
 from pathlib import Path
 from typing import Any
 
@@ -189,7 +189,7 @@ class CustomDataManager:
 
     def __init__(
         self,
-        config_file: str | PathLike[str] | None = None,
+        config_file: str | os.PathLike[str] | None = None,
         mcf_files: str | Path | Sequence[str | Path] | None = None,
     ) -> None:
         """
@@ -1267,7 +1267,7 @@ class CustomDataManager:
                     f"Call add_provenance(dcid={bare!r}, url=..., source=...) first."
                 )
 
-    def export_config(self, dir_path: str | PathLike[str]) -> None:
+    def export_config(self, dir_path: str | os.PathLike[str]) -> None:
         """Export the config to a JSON file
 
         Before exporting, the config is validated to ensure that all required fields
@@ -1296,7 +1296,7 @@ class CustomDataManager:
 
     def export_mcf_file(
         self,
-        dir_path: str | PathLike[str],
+        dir_path: str | os.PathLike[str],
         mcf_file_name: str = DEFAULT_STATVAR_MCF_NAME,
         overwrite: bool = True,
     ) -> None:
@@ -1338,7 +1338,7 @@ class CustomDataManager:
 
         return self._config.model_dump(mode="json", exclude_none=True, by_alias=True)
 
-    def export_data(self, dir_path: str | PathLike[str]) -> None:
+    def export_data(self, dir_path: str | os.PathLike[str]) -> None:
         """Export the data to CSV files
 
         Args:
@@ -1353,7 +1353,7 @@ class CustomDataManager:
             path.parent.mkdir(parents=True, exist_ok=True)
             data.to_csv(path, index=False)
 
-    def export_vertical_specs(self, dir_path: str | PathLike[str]) -> None:
+    def export_vertical_specs(self, dir_path: str | os.PathLike[str]) -> None:
         """Export the vertical-specs file as ``{"specs": [...]}`` JSON.
 
         Written to the name in the config's ``verticalSpecsFile`` (falling back to
@@ -1405,7 +1405,7 @@ class CustomDataManager:
 
     def export_all(
         self,
-        dir_path: str | PathLike[str],
+        dir_path: str | os.PathLike[str],
         validate_data: bool = False,
     ) -> None:
         """Export the config, MCF file, and data to a directory
@@ -1456,7 +1456,7 @@ class CustomDataManager:
 
     def merge_config(
         self,
-        config: Config | dict | str | PathLike[str],
+        config: Config | dict | str | os.PathLike[str],
         *,
         policy: DuplicatePolicy = "error",
     ) -> CustomDataManager:
@@ -1473,7 +1473,7 @@ class CustomDataManager:
 
         """
 
-        if isinstance(config, (str, PathLike)):
+        if isinstance(config, (str, os.PathLike)):
             cfg = Config.from_json(str(config))
         elif isinstance(config, dict):
             cfg = Config.model_validate(config)
@@ -1485,7 +1485,7 @@ class CustomDataManager:
 
     def merge_configs_from_directory(
         self,
-        directory: str | PathLike[str],
+        directory: str | os.PathLike[str],
         *,
         policy: DuplicatePolicy = "error",
         replace_loaded_config: bool = True,
@@ -1520,7 +1520,7 @@ class CustomDataManager:
     @classmethod
     def from_config_files_in_directory(
         cls,
-        directory: str | PathLike[str],
+        directory: str | os.PathLike[str],
         *,
         policy: DuplicatePolicy = "error",
         mcf_files: str | Path | Sequence[str | Path] | None = None,

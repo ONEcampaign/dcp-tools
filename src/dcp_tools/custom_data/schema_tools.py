@@ -1,10 +1,10 @@
 from __future__ import annotations
 
 import ast
+import os
 import re
 from collections.abc import Iterable
 from enum import StrEnum
-from os import PathLike
 from pathlib import Path
 from typing import Any
 
@@ -177,7 +177,7 @@ def resolve_group_paths(
 
 
 def csv_metadata_to_nodes(
-    file_path: str | PathLike[str],
+    file_path: str | os.PathLike[str],
     *,
     node_type: NodeTypes | str = "StatVar",
     column_to_property_mapping: dict[str, str] | None = None,
@@ -261,8 +261,8 @@ def validate_mcf_file_name(file_name: str | MCFFileName) -> str:
 
 
 def csv_metadata_to_mcf_file(
-    csv_path: str | PathLike[str],
-    mcf_path: str | PathLike[str],
+    csv_path: str | os.PathLike[str],
+    mcf_path: str | os.PathLike[str],
     node_type: NodeTypes | str,
     *,
     column_to_property_mapping: dict[str, str] | None = None,

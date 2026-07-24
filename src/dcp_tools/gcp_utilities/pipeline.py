@@ -5,7 +5,7 @@ https://colab.research.google.com/github/datacommonsorg/tools/blob/master/notebo
 
 """
 
-from os import PathLike
+import os
 from pathlib import Path
 
 from dcp_tools.gcp_utilities.clients import get_gcs_client
@@ -19,7 +19,7 @@ from dcp_tools.gcp_utilities.storage import (
 
 def upload_to_cloud_storage(
     settings: KGSettings,
-    directory: str | PathLike[str] | None = None,
+    directory: str | os.PathLike[str] | None = None,
     sync: bool = False,
 ) -> None:
     """Upload data to Google Cloud Storage.

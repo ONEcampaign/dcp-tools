@@ -1,7 +1,7 @@
 """Utilities for merging config files."""
 
+import os
 from collections.abc import Iterator
-from os import PathLike
 from pathlib import Path
 from typing import Any, Literal
 
@@ -168,7 +168,7 @@ def merge_configs(
 
 
 def merge_configs_from_directory(
-    directory: str | PathLike[str], *, policy: DuplicatePolicy = "error"
+    directory: str | os.PathLike[str], *, policy: DuplicatePolicy = "error"
 ) -> Config:
     """Return a ``Config`` merging all configs found under ``directory``.
 

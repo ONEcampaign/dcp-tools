@@ -9,7 +9,6 @@ from dcp_tools.custom_data.models.data_files import (
     InputFile,
 )
 from dcp_tools.gcp_utilities import get_kg_settings
-from dcp_tools.gcp_utilities.settings import KGSettings
 from dcp_tools.gcp_utilities.storage import (
     delete_bucket_files,
     get_bucket_files,

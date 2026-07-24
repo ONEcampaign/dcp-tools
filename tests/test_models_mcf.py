@@ -13,7 +13,7 @@ def test_node_mcf_output_order_and_formatting():
     """
     node = Node(
         name='"My Name"',
-        typeOf="dcid:TypeA",
+        type_of="dcid:TypeA",
         description='"Desc"',
         dcid="dcid:TestNode",
     )
@@ -32,7 +32,7 @@ def test_node_typeof_accepts_list_and_serializes(type_of):
     """
     Accepts a list of DCIDs for typeOf and serializes as CSV.
     """
-    node = Node(dcid="dcid:TestNode", name='"My Name"', typeOf=type_of)
+    node = Node(dcid="dcid:TestNode", name='"My Name"', type_of=type_of)
     assert node.to_mcf() == (
         'Node: dcid:TestNode\nname: "My Name"\ntypeOf: dcid:TypeA, dcid:TypeB\n\n'
     )
@@ -42,7 +42,7 @@ def test_node_allows_missing_name_and_serializes_without_it():
     """
     `name` is optional; when omitted it should not appear in MCF output.
     """
-    node = Node(dcid="dcid:NoNameNode", typeOf="dcid:TypeA")
+    node = Node(dcid="dcid:NoNameNode", type_of="dcid:TypeA")
     assert node.to_mcf() == ("Node: dcid:NoNameNode\ntypeOf: dcid:TypeA\n\n")
 
 
@@ -50,7 +50,7 @@ def test_node_strips_linebreaks_and_trailing_spaces():
     node = Node(
         dcid="dcid:TestNode \n",  # newline and trailing space
         name="My name\n ",
-        typeOf="dcid:TypeA \n",
+        type_of="dcid:TypeA \n",
     )
     assert node.to_mcf() == (
         'Node: dcid:TestNode\nname: "My name"\ntypeOf: dcid:TypeA\n\n'
@@ -78,18 +78,18 @@ def test_nodes_load_from_file_without_name(tmp_path):
     first = nodes.nodes[0]
     assert first.dcid == "dcid:NoName"
     assert getattr(first, "name", None) is None
-    assert first.typeOf == "dcid:TypeA"
+    assert first.type_of == "dcid:TypeA"
 
 
 def test_node_typeof_normalizes_bare_token():
     """typeOf is DcidOrListDcid; a bare token is minted to dcid:<token> (regression for #126)."""
-    node = Node(dcid="dcid:TestNode", typeOf="TypeA")
-    assert node.typeOf == "dcid:TypeA"
+    node = Node(dcid="dcid:TestNode", type_of="TypeA")
+    assert node.type_of == "dcid:TypeA"
 
 
 def test_node_typeof_rejects_whitespace_bearing_token():
     with pytest.raises(ValidationError):
-        Node(dcid="dcid:TestNode", typeOf="has space")
+        Node(dcid="dcid:TestNode", type_of="has space")
 
 
 def test_nodes_add_override_and_remove():
@@ -97,12 +97,12 @@ def test_nodes_add_override_and_remove():
     Tests adding nodes, override behavior, and removal from Nodes.
     """
     nodes = Nodes()
-    node1 = Node(dcid="dcid:n1", name='"First"', typeOf="dcid:T1")
+    node1 = Node(dcid="dcid:n1", name='"First"', type_of="dcid:T1")
     nodes.add(node1)
     assert nodes._expect_present("dcid:n1") == 0
 
     # Adding same node without override should error
-    node1b = Node(dcid="dcid:n1", name='"Second"', typeOf="dcid:T1")
+    node1b = Node(dcid="dcid:n1", name='"Second"', type_of="dcid:T1")
     with pytest.raises(ValueError):
         nodes.add(node1b, override=False)
 
@@ -126,9 +126,9 @@ def test_nodes_add_override_and_remove():
 def test_node_assignment_is_validated():
     """An invalid value assigned to a pattern-constrained field raises, the same as
     construction would."""
-    node = Node(dcid="dcid:n1", typeOf="dcid:T1")
+    node = Node(dcid="dcid:n1", type_of="dcid:T1")
     with pytest.raises(ValidationError):
-        node.typeOf = "has space"
+        node.type_of = "has space"
 
 
 def test_node_assignment_cleans_the_assigned_value():
@@ -136,7 +136,7 @@ def test_node_assignment_cleans_the_assigned_value():
     way construction cleans it, for declared fields and for the extra keys that carry
     arbitrary MCF properties. An uncleaned value would emit a line break mid-node and
     break the MCF file (the bug fixed in v0.0.7, for construction only)."""
-    node = Node(dcid="dcid:n1", typeOf="dcid:T1")
+    node = Node(dcid="dcid:n1", type_of="dcid:T1")
 
     node.name = "text\nwith newline  "
     assert node.name == "textwith newline"
@@ -155,12 +155,12 @@ def test_stat_type_survives_assignment():
     assignment. `_clean_value` now keeps an Enum member that cleaning would not
     change."""
     sv = StatVarNode(dcid="dcid:v1")
-    assert isinstance(sv.statType, StatType)
+    assert isinstance(sv.stat_type, StatType)
 
     sv.name = "Var"
 
-    assert isinstance(sv.statType, StatType)
-    assert sv.statType == StatType.MEASURED_VALUE
+    assert isinstance(sv.stat_type, StatType)
+    assert sv.stat_type == StatType.MEASURED_VALUE
 
 
 def test_enum_carrying_a_line_break_is_still_cleaned():
@@ -172,7 +172,7 @@ def test_enum_carrying_a_line_break_is_still_cleaned():
     class Dirty(StrEnum):
         BAD = "line\nbreak  "
 
-    node = Node(dcid="dcid:n1", typeOf="dcid:T1", custom=Dirty.BAD)
+    node = Node(dcid="dcid:n1", type_of="dcid:T1", custom=Dirty.BAD)
 
     assert node.custom == "linebreak"
     assert "custom: linebreak\n" in node.to_mcf()
@@ -183,7 +183,7 @@ def test_nodes_rename_rejected_leaves_index_intact():
     node and the lookup index exactly as they were (assignment happens before
     `_pos` is mutated)."""
     nodes = Nodes()
-    nodes.add(Node(dcid="dcid:n1", typeOf="dcid:T1"))
+    nodes.add(Node(dcid="dcid:n1", type_of="dcid:T1"))
 
     with pytest.raises(ValidationError):
         nodes.rename("dcid:n1", "not-a-dcid")

@@ -17,19 +17,19 @@ def test_node_snapshot():
     node = Node(
         dcid="dcid:X/foo",
         name='"Some Name"',
-        typeOf="dcid:StatisticalVariable",
+        type_of="dcid:StatisticalVariable",
         description='"Foo description',
         provenance='"Some foo provenance"',
-        shortDisplayName='"F"',
-        subClassOf="dcid:Parent",
+        short_display_name='"F"',
+        sub_class_of="dcid:Parent",
     )
     assert node.to_mcf().strip() == got
 
 
 def test_config_json_snapshot(tmp_path):
     manager = CustomDataManager()
-    manager.set_importName("test_import")
-    manager.set_includeInputSubdirs(True).set_groupStatVarsByProperty(False)
+    manager.set_import_name("test_import")
+    manager.set_include_input_subdirs(True).set_group_stat_vars_by_property(False)
 
     manager.add_source(name="S1", url="http://source1")
     manager.add_provenance(name="provA", url="http://prova", source="S1")
@@ -38,12 +38,12 @@ def test_config_json_snapshot(tmp_path):
     manager.add_input_file(
         "a.csv",
         provenance="provA",
-        columnMappings={"observationAbout": "Country", "date": "Year", "value": "Val"},
+        column_mappings={"observationAbout": "Country", "date": "Year", "value": "Val"},
     )
     manager.add_input_file(
         "b.csv",
         provenance="provB",
-        columnMappings={"observationAbout": "Country", "date": "Year", "value": "Val"},
+        column_mappings={"observationAbout": "Country", "date": "Year", "value": "Val"},
     )
 
     # export
@@ -56,13 +56,13 @@ def test_config_json_snapshot(tmp_path):
 
 def test_config_json_snapshot_multi_entity(tmp_path):
     manager = CustomDataManager()
-    manager.set_importName("test_import_multi_entity")
+    manager.set_import_name("test_import_multi_entity")
     manager.add_source(name="S1", url="http://source1")
     manager.add_provenance(name="provC", url="http://provc", source="S1")
     manager.add_input_file(
         "c.csv",
         provenance="provC",
-        columnMappings={
+        column_mappings={
             "dcid:observationDate": "Year",
             "dcid:value": "Val",
             "dcid:variableMeasured": "Var",
@@ -92,13 +92,13 @@ def test_provenance_mcf_snapshot(tmp_path):
 def test_full_mcf_export(tmp_path):
     mgr = CustomDataManager()
     mgr.add_variable_group_to_mcf(
-        dcid="dcid:one/g/group1", name="Group One", specializationOf="dcid:dc/g/Root"
+        dcid="dcid:one/g/group1", name="Group One", specialization_of="dcid:dc/g/Root"
     )
     mgr.add_variable_to_mcf(
         dcid="dcid:var/one",
         name="Test Var",
         description="Test var",
-        memberOf="dcid:one/g/group1",
+        member_of="dcid:one/g/group1",
     )
     mgr.export_mcf_file(str(tmp_path), mcf_file_name="custom_nodes.mcf")
     got = (tmp_path / "custom_nodes.mcf").read_text()
@@ -112,7 +112,7 @@ def test_mcf_export_multi_entity(tmp_path):
         dcid="dcid:var/one",
         name="Test Var",
         description="Test var",
-        observationProperties=["dcid:originCountry", "dcid:destinationCountry"],
+        observation_properties=["dcid:originCountry", "dcid:destinationCountry"],
     )
 
     manager.export_mcf_file(str(tmp_path), mcf_file_name="custom_nodes.mcf")

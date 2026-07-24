@@ -10,17 +10,17 @@ from dcp_tools.custom_data.schema_tools import _rows_to_stat_var_nodes
 
 
 def test_search_description_serialization_str_and_list():
-    sv_str = StatVarNode(dcid="dcid:n1", name="Var", searchDescription="A")
+    sv_str = StatVarNode(dcid="dcid:n1", name="Var", search_description="A")
     assert 'searchDescription: "A"' in sv_str.to_mcf()
 
     sv_str = StatVarNode(
         dcid="dcid:n1",
         name="Var",
-        searchDescription=["A string, or not", "B string, other"],
+        search_description=["A string, or not", "B string, other"],
     )
     assert 'searchDescription: "A string, or not","B string, other"' in sv_str.to_mcf()
 
-    sv_list = StatVarNode(dcid="dcid:n2", name="Var", searchDescription=["A", "B"])
+    sv_list = StatVarNode(dcid="dcid:n2", name="Var", search_description=["A", "B"])
     assert 'searchDescription: "A","B"' in sv_list.to_mcf()
 
 
@@ -28,11 +28,11 @@ def test_statvarnode_strips_whitespace_and_linebreaks():
     sv = StatVarNode(
         dcid="dcid:n1\n",
         name="Var \n",
-        searchDescription=["First line\n", "Second line "],
+        search_description=["First line\n", "Second line "],
     )
     assert sv.dcid == "dcid:n1"
     assert sv.name == "Var"
-    assert sv.searchDescription == ["First line", "Second line"]
+    assert sv.search_description == ["First line", "Second line"]
 
 
 def test_statvarnode_omits_observation_properties_by_default():
@@ -47,7 +47,7 @@ def test_statvarnode_serializes_observation_properties_multi_entity():
     sv = StatVarNode(
         dcid="dcid:n1",
         name="Var",
-        observationProperties=["dcid:source", "dcid:destination"],
+        observation_properties=["dcid:source", "dcid:destination"],
     )
     assert "observationProperties: dcid:source, dcid:destination" in sv.to_mcf()
 
@@ -94,15 +94,15 @@ def test_rows_to_stat_var_nodes_parses_spreadsheet_lists_no_quotes():
 
 
 def test_observation_properties_normalizes_bare_scalar_and_list():
-    sv = StatVarNode(dcid="dcid:n1", name="Var", observationProperties="originCountry")
-    assert sv.observationProperties == "dcid:originCountry"
+    sv = StatVarNode(dcid="dcid:n1", name="Var", observation_properties="originCountry")
+    assert sv.observation_properties == "dcid:originCountry"
 
     sv_list = StatVarNode(
         dcid="dcid:n1",
         name="Var",
-        observationProperties=["originCountry", "destinationCountry"],
+        observation_properties=["originCountry", "destinationCountry"],
     )
-    assert sv_list.observationProperties == [
+    assert sv_list.observation_properties == [
         "dcid:originCountry",
         "dcid:destinationCountry",
     ]
@@ -114,20 +114,20 @@ def test_observation_properties_normalizes_bare_scalar_and_list():
 
 def test_observation_properties_rejects_whitespace_bearing_token():
     with pytest.raises(ValidationError):
-        StatVarNode(dcid="dcid:n1", name="Var", observationProperties="has space")
+        StatVarNode(dcid="dcid:n1", name="Var", observation_properties="has space")
 
 
 def test_relevant_variable_normalizes_bare_scalar_and_list():
-    sv = StatVarNode(dcid="dcid:n1", name="Var", relevantVariable="otherVar")
-    assert sv.relevantVariable == "dcid:otherVar"
+    sv = StatVarNode(dcid="dcid:n1", name="Var", relevant_variable="otherVar")
+    assert sv.relevant_variable == "dcid:otherVar"
 
-    sv_list = StatVarNode(dcid="dcid:n1", name="Var", relevantVariable=["one", "two"])
-    assert sv_list.relevantVariable == ["dcid:one", "dcid:two"]
+    sv_list = StatVarNode(dcid="dcid:n1", name="Var", relevant_variable=["one", "two"])
+    assert sv_list.relevant_variable == ["dcid:one", "dcid:two"]
 
 
 def test_relevant_variable_rejects_whitespace_bearing_token():
     with pytest.raises(ValidationError):
-        StatVarNode(dcid="dcid:n1", name="Var", relevantVariable="has space")
+        StatVarNode(dcid="dcid:n1", name="Var", relevant_variable="has space")
 
 
 # --- member on StatVarPeerGroupNode is DcidOrListDcid, same normalization ---

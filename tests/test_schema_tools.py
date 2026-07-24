@@ -8,7 +8,7 @@ from dcp_tools.custom_data.models.stat_vars import (
 from dcp_tools.custom_data.schema_tools import (
     csv_metadata_to_nodes,
     resolve_group_paths,
-    to_camelCase,
+    to_camel_case,
 )
 
 
@@ -34,7 +34,7 @@ def test_csv_metadata_to_nodes(tmp_path):
     mapping = {"extra": "searchDescription"}
     nodes_map = csv_metadata_to_nodes(str(csv_path), column_to_property_mapping=mapping)
     for node in nodes_map.nodes:
-        assert hasattr(node, "searchDescription")
+        assert hasattr(node, "search_description")
 
 
 def get_group_nodes(nodes: Nodes) -> list[StatVarGroupNode]:
@@ -56,7 +56,7 @@ def test_single_level_group():
     group = groups[0]
     assert group.dcid == "dcid:example.org/g/category"
     assert group.name == "Category"
-    assert group.specializationOf == "dcid:dc/g/Root"
+    assert group.specialization_of == "dcid:dc/g/Root"
 
     assert resolved["Category"] == group.dcid
 
@@ -68,9 +68,9 @@ def test_multi_level_group():
     slug_map = {g.dcid.split("/")[-1]: g for g in groups}
 
     # Check each group's parent linkage
-    assert slug_map["A"].specializationOf == "dcid:dc/g/Root"
-    assert slug_map["B"].specializationOf == "dcid:ns/g/A"
-    assert slug_map["C"].specializationOf == "dcid:ns/g/B"
+    assert slug_map["A"].specialization_of == "dcid:dc/g/Root"
+    assert slug_map["B"].specialization_of == "dcid:ns/g/A"
+    assert slug_map["C"].specialization_of == "dcid:ns/g/B"
 
     # Check the path resolves to the deepest group
     assert resolved["A/B/C"] == "dcid:ns/g/C"
@@ -117,8 +117,8 @@ def test_csv_metadata_to_nodes_parse_groups(tmp_path):
     ]
 
     statvars = get_statvar_nodes(nodes)
-    assert statvars[0].memberOf == "dcid:ns/g/employment"
-    assert statvars[1].memberOf == "dcid:ns/g/health"
+    assert statvars[0].member_of == "dcid:ns/g/employment"
+    assert statvars[1].member_of == "dcid:ns/g/health"
 
 
 def test_resolve_group_paths_cleans_raw_path():
@@ -193,8 +193,8 @@ def test_csv_metadata_to_nodes_parse_groups_leaves_missing_memberof_unset(tmp_pa
     )
     statvars = get_statvar_nodes(nodes)
 
-    assert statvars[0].memberOf == "dcid:ns/g/employment"
-    assert statvars[1].memberOf is None
+    assert statvars[0].member_of == "dcid:ns/g/employment"
+    assert statvars[1].member_of is None
 
 
 def test_csv_metadata_to_nodes_parse_groups_leaves_segmentless_memberof_unset(tmp_path):
@@ -218,9 +218,9 @@ def test_csv_metadata_to_nodes_parse_groups_leaves_segmentless_memberof_unset(tm
     )
     statvars = get_statvar_nodes(nodes)
 
-    assert statvars[0].memberOf is None
-    assert statvars[1].memberOf is None
-    assert statvars[2].memberOf == "dcid:ns/g/employment"
+    assert statvars[0].member_of is None
+    assert statvars[1].member_of is None
+    assert statvars[2].member_of == "dcid:ns/g/employment"
 
 
 def test_csv_metadata_to_nodes_parse_groups_remove_works_on_group_node(tmp_path):
@@ -247,19 +247,19 @@ def test_csv_metadata_to_nodes_parse_groups_remove_works_on_group_node(tmp_path)
 
 def test_to_camelcase_multi_word():
     assert (
-        to_camelCase("Official Development Assistance")
+        to_camel_case("Official Development Assistance")
         == "officialDevelopmentAssistance"
     )
 
 
 def test_to_camelcase_all_uppercase_preserved():
-    assert to_camelCase("ODA") == "ODA"
-    assert to_camelCase("DAC1") == "DAC1"
+    assert to_camel_case("ODA") == "ODA"
+    assert to_camel_case("DAC1") == "DAC1"
 
 
 def test_to_camelcase_returns_already_camel():
-    assert to_camelCase("alreadyCamel") == "alreadyCamel"
+    assert to_camel_case("alreadyCamel") == "alreadyCamel"
 
 
 def test_to_camelcase_colon_comma_replacement():
-    assert to_camelCase("GDP: PPP, Constant 2017 USD") == "gdp_Ppp_Constant2017Usd"
+    assert to_camel_case("GDP: PPP, Constant 2017 USD") == "gdp_Ppp_Constant2017Usd"

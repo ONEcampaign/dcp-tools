@@ -6,6 +6,7 @@ from pathlib import Path
 from typing import Any
 
 from pydantic import BaseModel, ConfigDict, Field, PrivateAttr, model_validator
+from pydantic.alias_generators import to_camel
 
 from dcp_tools.custom_data.models.common import (
     Dcid,
@@ -21,27 +22,33 @@ class Node(BaseModel):
     Attributes:
         dcid: Unique identifier for the Node.
         name: The human-readable name for the Node.
-        typeOf: The DCID representing the typeOf this Node. It can be a single DCID
+        type_of: The DCID representing the typeOf this Node. It can be a single DCID
             or a list of DCIDs if the Node belongs to multiple types.
         description: Optional human-readable description.
         provenance: Optional provenance information.
-        shortDisplayName: Optional human-readable short name for display.
-        subClassOf: Optional DCID indicating the 'parent' Node class.
+        short_display_name: Optional human-readable short name for display.
+        sub_class_of: Optional DCID indicating the 'parent' Node class.
     """
 
     dcid: Dcid
     name: QuotedStr | None = None
-    typeOf: DcidOrListDcid
+    type_of: DcidOrListDcid
     description: QuotedStr | None = None
     provenance: QuotedStr | None = None
-    shortDisplayName: QuotedStr | None = None
-    subClassOf: StrOrListStr | None = None
+    short_display_name: QuotedStr | None = None
+    sub_class_of: StrOrListStr | None = None
 
     # Allow extra fields since nodes can have arbitrary properties and this
     # class is not comprehensive of all possible node properties. Assignments are
     # validated too, so patterns like Dcid/GroupDcid are enforced on `Nodes.rename`
     # (which assigns `.dcid`), not just on construction.
-    model_config = ConfigDict(extra="allow", validate_assignment=True)
+    model_config = ConfigDict(
+        alias_generator=to_camel,
+        extra="allow",
+        populate_by_name=True,
+        serialize_by_alias=True,
+        validate_assignment=True,
+    )
 
     @staticmethod
     def _clean_str(value: str) -> str:

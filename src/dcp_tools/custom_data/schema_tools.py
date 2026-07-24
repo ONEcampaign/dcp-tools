@@ -90,7 +90,7 @@ def _rows_to_stat_var_nodes(
     return Nodes(nodes=nodes)
 
 
-def to_camelCase(segment: str) -> str:
+def to_camel_case(segment: str) -> str:
     """
     Turn a segment like 'Official Development Assistance' into 'officialDevelopmentAssistance'.
     Keep all-upper or already-camel segments (e.g. DAC1, ODA) unchanged.
@@ -157,7 +157,7 @@ def resolve_group_paths(
         parts = [p for p in cleaned.split("/") if p.strip()]
         if not parts:
             continue
-        slug_parts = [to_camelCase(part) for part in parts]
+        slug_parts = [to_camel_case(part) for part in parts]
 
         for idx, part in enumerate(parts):
             group_dcid = root + slug_parts[idx]
@@ -167,7 +167,7 @@ def resolve_group_paths(
                 parent = "dcid:dc/g/Root" if idx == 0 else root + slug_parts[idx - 1]
                 group_nodes.append(
                     StatVarGroupNode(
-                        dcid=group_dcid, name=part, specializationOf=parent
+                        dcid=group_dcid, name=part, specialization_of=parent
                     )
                 )
 

@@ -48,7 +48,7 @@ def _parse_maybe_list(s: str | Any) -> str | list[str]:
 
 def _rows_to_stat_var_nodes(
     data: pd.DataFrame, node_type: str | NodeTypes = "StatVar"
-) -> Nodes[StatVarNode]:
+) -> Nodes:
     """Convert a DataFrame into a collection of Node objects (of the type selected).
 
     Empty/NA values are removed from each row before constructing the node.
@@ -185,7 +185,7 @@ def csv_metadata_to_nodes(
     ignore_columns: list[str] | None = None,
     parse_groups: bool = False,
     group_namespace: str | None = None,
-) -> Nodes[StatVarNode]:
+) -> Nodes:
     """Read a CSV of StatVar metadata and return the corresponding MCF StatVar nodes.
 
     Args:

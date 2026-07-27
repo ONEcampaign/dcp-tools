@@ -5,105 +5,107 @@ Upload an exported data bundle to Google Cloud Storage, then trigger the Data Co
 ## Before you start
 
 - A Data Commons Platform instance with the DCP ingestion pipeline already deployed. `dcp-tools` doesn't provision instances. Follow Google's [guide to deploying a custom instance ↗](https://docs.datacommons.org/custom_dc/deploy_cloud.html) first.
+
 - An exported bundle: a local directory holding `config.json`, your CSV data files, and any `.mcf` files, built with `CustomDataManager.export_all` (see [Preparing data](preparing-data.md)).
+
 - The settings `dcp-tools` needs to reach GCP and your load job, gathered into a `KGSettings` object:
 
-    - `local_path` (`LOCAL_PATH`): local directory to export and upload. This is the bundle directory from the step above.
-    - `gcp_project_id` (`GCP_PROJECT_ID`): your GCP project ID.
-    - `gcp_credentials` (`GCP_CREDENTIALS`, optional): GCP service account credentials as a JSON string. Leave unset to use Application Default Credentials (after `gcloud auth application-default login`).
-    - `gcs_bucket_name` (`GCS_BUCKET_NAME`): the Cloud Storage bucket the DCP pipeline reads from.
-    - `gcs_input_folder_path` (`GCS_INPUT_FOLDER_PATH`): folder in that bucket to upload the bundle to.
-    - `gcs_output_folder_path` (`GCS_OUTPUT_FOLDER_PATH`): folder the pipeline writes its output to.
-    - `load_job_region` (`LOAD_JOB_REGION`): region of the Cloud Run load job.
-    - `load_job_name` (`LOAD_JOB_NAME`): name of the Cloud Run load job.
-    - `load_job_service_account` (`LOAD_JOB_SERVICE_ACCOUNT`, optional): service account to impersonate when triggering the job. Leave unset to use your own credentials.
+  - `local_path` (`LOCAL_PATH`): local directory to export and upload. This is the bundle directory from the step above.
+  - `gcp_project_id` (`GCP_PROJECT_ID`): your GCP project ID.
+  - `gcp_credentials` (`GCP_CREDENTIALS`, optional): GCP service account credentials as a JSON string. Leave unset to use Application Default Credentials (after `gcloud auth application-default login`).
+  - `gcs_bucket_name` (`GCS_BUCKET_NAME`): the Cloud Storage bucket the DCP pipeline reads from.
+  - `gcs_input_folder_path` (`GCS_INPUT_FOLDER_PATH`): folder in that bucket to upload the bundle to.
+  - `gcs_output_folder_path` (`GCS_OUTPUT_FOLDER_PATH`): folder the pipeline writes its output to.
+  - `load_job_region` (`LOAD_JOB_REGION`): region of the Cloud Run load job.
+  - `load_job_name` (`LOAD_JOB_NAME`): name of the Cloud Run load job.
+  - `load_job_service_account` (`LOAD_JOB_SERVICE_ACCOUNT`, optional): service account to impersonate when triggering the job. Leave unset to use your own credentials.
 
 ## Steps
 
 1. **Build a `KGSettings` object.** `dcp-tools` reads these settings through `KGSettings`, a `pydantic-settings` model. Build one from a `.env` file, a JSON file, or directly, whichever fits how you manage secrets.
 
-    ```python title="from a .env file"
-    from dcp_tools.gcp_utilities import get_kg_settings
+   ```python title="from a .env file"
+   from dcp_tools.gcp_utilities import get_kg_settings
 
-    settings = get_kg_settings(source="env", env_file="customDC.env")
-    ```
+   settings = get_kg_settings(source="env", env_file="customDC.env")
+   ```
 
-    ```python title="from a JSON file"
-    from dcp_tools.gcp_utilities import get_kg_settings
+   ```python title="from a JSON file"
+   from dcp_tools.gcp_utilities import get_kg_settings
 
-    settings = get_kg_settings(source="json", file="customDC.json")
-    ```
+   settings = get_kg_settings(source="json", file="customDC.json")
+   ```
 
-    `customDC.json` uses the same names as the environment variables:
+   `customDC.json` uses the same names as the environment variables:
 
-    ```json
-    {
-      "LOCAL_PATH": "path/to/output/folder",
-      "GCP_PROJECT_ID": "one-campaign-dc",
-      "GCS_BUCKET_NAME": "one-campaign-dc-custom-data",
-      "GCS_INPUT_FOLDER_PATH": "customdc/input",
-      "GCS_OUTPUT_FOLDER_PATH": "customdc/output",
-      "LOAD_JOB_REGION": "us-central1",
-      "LOAD_JOB_NAME": "dc-load-job"
-    }
-    ```
+   ```json
+   {
+     "LOCAL_PATH": "path/to/output/folder",
+     "GCP_PROJECT_ID": "one-campaign-dc",
+     "GCS_BUCKET_NAME": "one-campaign-dc-custom-data",
+     "GCS_INPUT_FOLDER_PATH": "customdc/input",
+     "GCS_OUTPUT_FOLDER_PATH": "customdc/output",
+     "LOAD_JOB_REGION": "us-central1",
+     "LOAD_JOB_NAME": "dc-load-job"
+   }
+   ```
 
-    ```python title="constructing KGSettings directly"
-    from pathlib import Path
+   ```python title="constructing KGSettings directly"
+   from pathlib import Path
 
-    from dcp_tools.gcp_utilities import KGSettings
+   from dcp_tools.gcp_utilities import KGSettings
 
-    settings = KGSettings(
-        LOCAL_PATH=Path("path/to/output/folder"),
-        GCP_PROJECT_ID="one-campaign-dc",
-        GCS_BUCKET_NAME="one-campaign-dc-custom-data",
-        GCS_INPUT_FOLDER_PATH="customdc/input",
-        GCS_OUTPUT_FOLDER_PATH="customdc/output",
-        LOAD_JOB_REGION="us-central1",
-        LOAD_JOB_NAME="dc-load-job",
-    )
-    ```
+   settings = KGSettings(
+       LOCAL_PATH=Path("path/to/output/folder"),
+       GCP_PROJECT_ID="one-campaign-dc",
+       GCS_BUCKET_NAME="one-campaign-dc-custom-data",
+       GCS_INPUT_FOLDER_PATH="customdc/input",
+       GCS_OUTPUT_FOLDER_PATH="customdc/output",
+       LOAD_JOB_REGION="us-central1",
+       LOAD_JOB_NAME="dc-load-job",
+   )
+   ```
 
-    Using the CLI instead of the Python API? Skip building a `KGSettings` object yourself and pass `--env-file customDC.env` or `--settings-file customDC.json` to any of the commands in the next two steps.
+   Using the CLI instead of the Python API? Skip building a `KGSettings` object yourself and pass `--env-file customDC.env` or `--settings-file customDC.json` to any of the commands in the next two steps.
 
-2. **Upload the bundle to Cloud Storage.** This pushes every `.csv`, `.json`, and `.mcf` file under `settings.local_path` to `gs://<gcs_bucket_name>/<gcs_input_folder_path>/`, preserving the directory structure. Other file types are skipped with a warning.
+1. **Upload the bundle to Cloud Storage.** This pushes every `.csv`, `.json`, and `.mcf` file under `settings.local_path` to `gs://<gcs_bucket_name>/<gcs_input_folder_path>/`, preserving the directory structure. Other file types are skipped with a warning.
 
-    ```python
-    from dcp_tools.gcp_utilities import upload_to_cloud_storage
+   ```python
+   from dcp_tools.gcp_utilities import upload_to_cloud_storage
 
-    upload_to_cloud_storage(settings=settings)
-    ```
+   upload_to_cloud_storage(settings=settings)
+   ```
 
-    ```bash
-    dcp-tools upload --env-file customDC.env
-    ```
+   ```bash
+   dcp-tools upload --env-file customDC.env
+   ```
 
-    Pass `sync=True` (Python) or `--sync` (CLI) to also delete remote files that no longer have a local counterpart. This is useful when you've removed or renamed a CSV since the last upload. Sync only prunes import subdirectories that are present locally. It won't touch an import that isn't in your local bundle at all.
+   Pass `sync=True` (Python) or `--sync` (CLI) to also delete remote files that no longer have a local counterpart. This is useful when you've removed or renamed a CSV since the last upload. Sync only prunes import subdirectories that are present locally. It won't touch an import that isn't in your local bundle at all.
 
-    ```bash
-    dcp-tools upload --env-file customDC.env --sync
-    ```
+   ```bash
+   dcp-tools upload --env-file customDC.env --sync
+   ```
 
-3. **Trigger ingestion.** This starts the DCP prep job against whatever is currently in `gcs_input_folder_path`.
+1. **Trigger ingestion.** This starts the DCP prep job against whatever is currently in `gcs_input_folder_path`.
 
-    ```python
-    from dcp_tools.gcp_utilities import run_data_load
+   ```python
+   from dcp_tools.gcp_utilities import run_data_load
 
-    run_data_load(settings=settings)                           # every import
-    run_data_load(settings=settings, imports="climateFinance")  # one import
-    ```
+   run_data_load(settings=settings)                           # every import
+   run_data_load(settings=settings, imports="climateFinance")  # one import
+   ```
 
-    ```bash
-    dcp-tools dataload --env-file customDC.env --imports=climateFinance
-    ```
+   ```bash
+   dcp-tools dataload --env-file customDC.env --imports=climateFinance
+   ```
 
-    To upload and trigger ingestion in one call, use `pipeline` instead of running `upload` and `dataload` separately:
+   To upload and trigger ingestion in one call, use `pipeline` instead of running `upload` and `dataload` separately:
 
-    ```bash
-    dcp-tools pipeline --env-file customDC.env --sync
-    ```
+   ```bash
+   dcp-tools pipeline --env-file customDC.env --sync
+   ```
 
-    `pipeline` always loads every import. It has no `--imports` flag. If you need to load a subset, run `upload` then `dataload --imports=...` separately.
+   `pipeline` always loads every import. It has no `--imports` flag. If you need to load a subset, run `upload` then `dataload --imports=...` separately.
 
 `run_data_load` returns as soon as the job starts. It doesn't wait for the job to finish. Under the hood it calls `datacommons-admin`'s `IngestionJobClient`, which starts the DCP prep job. That job ingests the uploaded data and serves it automatically. There's nothing further to trigger from `dcp-tools`.
 

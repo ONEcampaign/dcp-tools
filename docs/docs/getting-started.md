@@ -38,6 +38,8 @@ Install the package, then create a `CustomDataManager`. It's the object you'll r
 pip install dcp-tools
 ```
 
+While 1.0.0 is still in alpha, pip skips pre-releases by default, so this command installs nothing yet. Run `pip install --pre dcp-tools` instead until a stable release is out.
+
 ```python
 from dcp_tools import CustomDataManager
 
@@ -48,7 +50,7 @@ print(manager)
 You should see a manager with nothing registered yet:
 
 ```
-<CustomDataManager config: 
+<CustomDataManager config:
 0 inputFiles, with 0 containing data
 0 sources
 0 provenances
@@ -241,7 +243,7 @@ print(reloaded)
 ```
 
 ```
-<CustomDataManager config: 
+<CustomDataManager config:
 1 inputFiles, with 0 containing data
 1 sources
 1 provenances

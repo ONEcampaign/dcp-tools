@@ -22,12 +22,17 @@ repos:
   - repo: https://github.com/pre-commit/pre-commit-hooks
     rev: v6.0.0
     hooks:
-      # Whitespace & endings
+      # Whitespace & endings.
+      # tests/goldens holds byte-exact fixtures compared against serializer output,
+      # so reformatting them fails the snapshot tests.
       - id: trailing-whitespace
         args: [--markdown-linebreak-ext=md]
+        exclude: ^tests/goldens/
       - id: end-of-file-fixer
+        exclude: ^tests/goldens/
       - id: mixed-line-ending
         args: [--fix=lf]
+        exclude: ^tests/goldens/
 
       # Conflicts & platform quirks
       - id: check-case-conflict
@@ -47,7 +52,8 @@ repos:
         exclude: |
           (?x)^(
             \.idea/.*|
-            \.vscode/.*
+            \.vscode/.*|
+            tests/goldens/.*
           )$
       - id: check-yaml
         args: [--allow-multiple-documents]
@@ -111,5 +117,6 @@ repos:
         additional_dependencies:
           - mdformat-gfm
           - mdformat-frontmatter
+          - mdformat-admon
         # Example: limit to docs if desired
         # files: ^(README\.md|docs/|.*/README\.md)$

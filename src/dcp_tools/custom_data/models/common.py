@@ -113,24 +113,24 @@ def _prepare_dcid_or_list(value: Any) -> str | list[str]:
     return ensure_dcid(value)
 
 
+# A string annotated for serialisation into an MCF-compatible quoted format.
 QuotedStr = Annotated[
     str, PlainSerializer(_ensure_quoted, return_type=str | None, when_used="always")
 ]
-"""A string annotated for serialisation into an MCF-compatible quoted format."""
 
+# Accepts a string or list and serialises to quoted MCF format.
 QuotedStrListOrStr = Annotated[
     str | list[str],
     PlainValidator(parse_str_or_list),
     PlainSerializer(mcf_quoted_str, return_type=str | None, when_used="always"),
 ]
-"""Accepts a string or list and serialises to quoted MCF format."""
 
+# Accepts a string or list and serialises to a comma-separated string.
 StrOrListStr = Annotated[
     str | list[str],
     PlainValidator(parse_str_or_list),
     PlainSerializer(mcf_str, return_type=str | None, when_used="always"),
 ]
-"""Accepts a string or list and serialises to a comma-separated string."""
 
 Dcid = Annotated[
     str,
@@ -150,25 +150,24 @@ TopicDcid = Annotated[
     Dcid, StringConstraints(strip_whitespace=True, pattern=r"^dcid:.*topic/.*")
 ]
 
+# Accepts a bare or dcid:-prefixed string/list (bare tokens are minted via
+# ensure_dcid) and serialises to a comma-separated string.
 DcidOrListDcid = Annotated[
     Dcid | list[Dcid],
     BeforeValidator(_prepare_dcid_or_list),
     PlainSerializer(mcf_str, return_type=Dcid | None, when_used="always"),
 ]
-"""Accepts a bare or dcid:-prefixed string/list (bare tokens are minted via
-ensure_dcid) and serialises to a comma-separated string."""
 
-
+# Accepts a bare or dcid:-prefixed string/list (bare tokens are minted via
+# ensure_dcid) and serialises to a comma-separated string.
 GroupDcidOrListGroupDcid = Annotated[
     GroupDcid | list[GroupDcid],
     BeforeValidator(_prepare_dcid_or_list),
     PlainSerializer(mcf_str, return_type=GroupDcid | None, when_used="always"),
 ]
-"""Accepts a bare or dcid:-prefixed string/list (bare tokens are minted via
-ensure_dcid) and serialises to a comma-separated string."""
 
+# A custom dimension key, becomes `custom:<name>` and `dcid:<name>` downstream.
 CustomDimensionName = Annotated[str, StringConstraints(pattern=r"^\S+$")]
-"""A custom dimension key, becomes `custom:<name>` and `dcid:<name>` downstream."""
 
 
 @overload

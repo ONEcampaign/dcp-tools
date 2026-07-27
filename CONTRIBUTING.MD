@@ -63,7 +63,7 @@ uv run pre-commit install
    standards. CI runs all four (`ruff check`, `ruff format --check`, `ty check`, and `pytest`) on
    every pull request.
 
-1. When you are done developing, open a pull request on the main repository,
+6. When you are done developing, open a pull request on the main repository,
    with a clear description of your changes and any relevant issue numbers.
    One of the maintainers will review your changes and provide feedback.
 

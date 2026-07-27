@@ -6,15 +6,15 @@ from dcp_tools.custom_data.models.vertical_specs import VerticalSpec
 
 def test_vertical_spec_defaults():
     spec = VerticalSpec(verticals=["PersonCountVertical"])
-    assert spec.populationType == "Thing"
-    assert spec.measuredProperties == []
+    assert spec.population_type == "Thing"
+    assert spec.measured_properties == []
     assert spec.verticals == ["PersonCountVertical"]
 
 
 def test_vertical_spec_round_trips():
     spec = VerticalSpec(
-        populationType="Person",
-        measuredProperties=["count"],
+        population_type="Person",
+        measured_properties=["count"],
         verticals=["PersonCountVertical"],
     )
     dumped = spec.model_dump(mode="json")

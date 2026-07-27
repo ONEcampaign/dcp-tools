@@ -43,11 +43,11 @@ from dcp_tools import CustomDataManager
 manager = CustomDataManager()
 
 manager.add_source(
-    name="ONEData",
+    dcid="ONEData",
     url="https://data.one.org",
 )
 manager.add_provenance(
-    name="ONEClimateFinance",
+    dcid="ONEClimateFinance",
     url="https://datacommons.one.org/data/climate-finance-files",
     source="ONEData",
 )
@@ -58,29 +58,16 @@ node at `dcid:source/ONEData`, and a `dcid:Provenance` node at `dcid:provenance/
 linking to it. `add_provenance` raises `ValueError` if `source` isn't registered yet.
 
 !!! note
-    `name` mints part of a dcid. A bare name becomes `dcid:source/<name>` or
-    `dcid:provenance/<name>`. An already `dcid:`-prefixed name is used as-is. Names can't
-    contain whitespace (`"ONEData"`, not `"ONE Data"`). Put a whitespace-friendly display string
-    in `description=` instead. See [Why config.json and MCF](dc-schemas.md) for why the importer
-    needs dcids shaped this way.
+    `dcid` is the node's identifier and gets minted: a bare token becomes `dcid:source/<token>`
+    or `dcid:provenance/<token>` (an already `dcid:`-prefixed value is used as-is), so it can't
+    contain whitespace. `name` is the optional human-readable label, where spaces are fine. See
+    [Why config.json and MCF](dc-schemas.md) for why the importer needs dcids shaped this way.
 
 Both methods take `description`, `license`, and `isPartOf`. `add_provenance` additionally takes
 `licenseType`, `lastDataRefreshDate`, `nextDataRefreshDate`, `nextSourceReleaseDate`,
 `sourceReleaseFrequency`, `earliestObservationDate`, `latestObservationDate`, and `curator`. Use
 `additional_properties={"someProperty": "value"}` for anything else. Pass `override=True` to
 replace a node that's already registered under the same name.
-
-!!! warning "Heads up"
-    `provenance.mcf` isn't exported automatically. List it explicitly when you export:
-
-    ```python
-    manager.export_all("output", mcf_file_names=["provenance.mcf"])
-    ```
-
-    If a registered input file references a provenance whose MCF file isn't in
-    `mcf_file_names`, `export_all` raises before writing anything, rather than shipping a
-    `config.json` with a dangling reference. See
-    [How to validate and export the bundle](#how-to-validate-and-export-the-bundle).
 
 ## How to register a single-entity input file
 
@@ -100,13 +87,13 @@ manager.add_input_file(
     file_name="climate_finance_commitments.csv",
     provenance="ONEClimateFinance",
     data=df,
-    columnMappings={
+    column_mappings={
         "observationAbout": "country",
         "date": "year",
         "variable": "variable",
         "value": "value",
     },
-    observationProperties={"unit": "USDollar"},
+    observation_properties={"unit": "USDollar"},
 )
 ```
 
@@ -126,7 +113,7 @@ Data is optional at registration:
 manager.add_input_file(
     file_name="climate_finance_disbursements.csv",
     provenance="ONEClimateFinance",
-    columnMappings={
+    column_mappings={
         "observationAbout": "country",
         "date": "year",
         "variable": "variable",
@@ -161,7 +148,7 @@ manager.add_input_file(
     file_name="bilateral_climate_finance_flows.csv",
     provenance="ONEClimateFinance",
     data=flows,
-    columnMappings={
+    column_mappings={
         "variable": "variable",
         "date": "year",
         "value": "value",
@@ -171,11 +158,11 @@ manager.add_input_file(
 )
 
 manager.add_variable_to_mcf(
-    Node="climateFinanceBilateralFlow",
+    dcid="climateFinanceBilateralFlow",
     name="Climate finance bilateral flow",
     description="Bilateral climate finance commitments between a provider and a recipient country.",
-    statType="dcid:measuredValue",
-    observationProperties=["dcid:providerCountry", "dcid:recipientCountry"],
+    stat_type="dcid:measuredValue",
+    observation_properties=["dcid:providerCountry", "dcid:recipientCountry"],
 )
 ```
 
@@ -216,12 +203,12 @@ Declaring the StatVar the single-entity input file from earlier references:
 
 ```python
 manager.add_variable_to_mcf(
-    Node="climateFinanceProvidedCommitments",
+    dcid="climateFinanceProvidedCommitments",
     name="Climate finance committed",
     description="Bilateral climate finance commitments provided by a country.",
-    statType="dcid:measuredValue",
-    populationType="Country",
-    measuredProperty="amount",
+    stat_type="dcid:measuredValue",
+    population_type="Country",
+    measured_property="amount",
 )
 ```
 
@@ -233,18 +220,18 @@ Declaring the two properties the multi-entity StatVar from the previous section 
 
 ```python
 manager.add_property(
-    Node="providerCountry",
+    dcid="providerCountry",
     name="provider country",
     description="The country providing climate finance in a bilateral flow.",
-    domainIncludes="StatisticalVariable",
-    rangeIncludes="Country",
+    domain_includes="StatisticalVariable",
+    range_includes="Country",
 )
 manager.add_property(
-    Node="recipientCountry",
+    dcid="recipientCountry",
     name="recipient country",
     description="The country receiving climate finance in a bilateral flow.",
-    domainIncludes="StatisticalVariable",
-    rangeIncludes="Country",
+    domain_includes="StatisticalVariable",
+    range_includes="Country",
 )
 ```
 
@@ -256,10 +243,10 @@ name, not a dcid, unlike every other ref parameter on these builders:
 
 ```python
 manager.add_entity_type(
-    Node="ClimateFinanceProgram",
+    dcid="ClimateFinanceProgram",
     name="Climate finance program",
     description="A named climate finance program or initiative tracked by ONE.",
-    includedIn="ONEClimateFinance",
+    included_in="ONEClimateFinance",
 )
 ```
 
@@ -273,9 +260,9 @@ Add a top-level StatVarGroup for all of an organization's custom variables:
 
 ```python
 manager.add_variable_group_to_mcf(
-    Node="dcid:one/g/ONEData",
+    dcid="dcid:one/g/ONEData",
     name="ONE Data",
-    specializationOf="dcid:dc/g/Root",
+    specialization_of="dcid:dc/g/Root",
 )
 ```
 
@@ -284,7 +271,7 @@ another group's dcid for a sub-group. Unlike the schema-node builders above,
 `add_variable_group_to_mcf` doesn't normalize a bare `Node`. Pass it already `dcid:`-prefixed.
 
 To declare many StatVars at once instead of calling `add_variable_to_mcf` per variable, put them
-in a CSV with one row per StatVar and columns matching `StatVarMCFNode` field names:
+in a CSV with one row per StatVar and columns matching `StatVarNode` field names:
 
 ```csv
 Node,name,statType,memberOf
@@ -302,7 +289,7 @@ manager.add_variables_to_mcf_from_csv(
 
 `parse_groups=True` treats `memberOf` as a slash-separated group path
 (`"Economic/ClimateFinance/BilateralCommitments"`) instead of a dcid, and expands it into a chain
-of `StatVarGroupMCFNode`s under `group_namespace` (here, `dcid:one/g/economic`, then
+of `StatVarGroupNode`s under `group_namespace` (here, `dcid:one/g/economic`, then
 `.../climatefinance`, then `.../bilateralcommitments`). Each StatVar's `memberOf` is rewritten to
 the deepest group's dcid. Rename CSV columns to node field names with
 `column_to_property_mapping` if your headers don't already match.
@@ -328,11 +315,8 @@ name isn't found or the new name is already taken. Scope the search to one file 
 `mcf_file_name=`. Omit it and all loaded MCF files are searched.
 
 ```python
-manager.remove_indicator("dcid:climateFinanceCommitmentsProvided")
+manager.remove_variable("dcid:climateFinanceCommitmentsProvided")
 ```
-
-!!! warning "Heads up"
-    There's no `remove_variable` method. The real name is `remove_indicator`.
 
 ## How to merge config files
 
@@ -369,7 +353,7 @@ merged by `filename`/`pattern`. Everything else (`importName`, `customIdNamespac
     `export_config` defaults an unset `importName` to the export directory's name. If two configs
     were each exported without an explicit `importName`, merging them raises a conflict on
     `importName` (`"climate"` vs. `"health"`) even though neither config set it on purpose. Call
-    `set_importName` explicitly on configs you intend to merge later.
+    `set_import_name` explicitly on configs you intend to merge later.
 
 ## How to add vertical specs to guide the StatVar hierarchy
 
@@ -377,7 +361,7 @@ Vertical specs tell the importer which top-level groups to file matching StatVar
 `groupStatVarsByProperty` is set. Skip this unless you're using that setting.
 
 ```python
-manager.set_groupStatVarsByProperty(True)
+manager.set_group_stat_vars_by_property(True)
 manager.add_vertical_spec(
     verticals=["ClimateFinanceVertical"],
     population_type="Country",
@@ -387,7 +371,7 @@ manager.add_vertical_spec(
 
 Each call appends one spec matching StatVars about `population_type` with the given
 `measured_properties` to `verticals`. The first call also sets the config's `verticalSpecsFile` to
-`"vertical_specs.json"`, unless you already set one with `set_verticalSpecsFile` or passed
+`"vertical_specs.json"`, unless you already set one with `set_vertical_specs_file` or passed
 `file_name=` here. `export_all` (or `export_vertical_specs` directly) writes the accumulated specs
 as `{"specs": [...]}` JSON. Exporting with no specs added raises `ValueError`.
 
@@ -405,32 +389,19 @@ input file references a provenance that was never registered.
 Export everything in one call:
 
 ```python
-manager.export_all(
-    "output_directory",
-    mcf_file_names=["provenance.mcf", "custom_nodes.mcf", "custom_groups.mcf"],
-)
+manager.export_all("output_directory")
 ```
 
-`export_all` writes `config.json` always, data CSVs if any DataFrames are registered,
-`vertical_specs.json` if any specs were added, and each file in `mcf_file_names`. `mcf_file_names`
-defaults to `None`, which exports **no MCF file at all**. Omitting it is the most common way to
-end up with a `config.json` that references StatVars and provenances nobody wrote to disk.
+`export_all` writes the full bundle, overwriting anything already in the directory: `config.json`
+always, the data CSVs for any registered DataFrames, `vertical_specs.json` if any specs were added,
+and every MCF file you've added nodes to. To write only part of the bundle, use the individual
+`export_*` methods below.
 
-Before writing anything, `export_all` checks that every provenance an input file references (and
-that provenance's linked source) lives in one of the MCF files you're exporting. If not, it raises
-rather than shipping an incomplete bundle:
-
-```text
-ValueError: export_all() would write a config.json referencing source/provenance node(s)
-defined in MCF file(s) not being exported: ['provenance.mcf']. Add them to mcf_file_names
-(e.g. mcf_file_names=['provenance.mcf']) so the bundle is complete.
-```
-
-Pass `validate_data=True` to also raise if any declared input file has no registered DataFrame
+Pass `validate_data=True` to raise if any declared input file has no registered DataFrame
 (pattern entries are exempt, since they carry no local data by design):
 
 ```python
-manager.export_all("output_directory", mcf_file_names=["provenance.mcf"], validate_data=True)
+manager.export_all("output_directory", validate_data=True)
 ```
 
 To export pieces individually instead of all at once:

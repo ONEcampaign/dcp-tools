@@ -11,6 +11,7 @@ from pydantic import (
     model_serializer,
     model_validator,
 )
+from pydantic.alias_generators import to_camel
 
 from dcp_tools.custom_data.models.common import CustomDimensionName, mint_dcid
 
@@ -34,11 +35,11 @@ class ColumnMappings(BaseModel):
         date: Date of the observation.
         value: Value of the observation.
         unit: Unit of the observation.
-        scalingFactor: Scaling factor for the data.
-        measurementMethod: Measurement method used for the data.
-        observationPeriod: Observation period of the data.
-        observationAbout: Entity column for single-entity data.
-        customDimensions: Entity columns for multi-entity data.
+        scaling_factor: Scaling factor for the data.
+        measurement_method: Measurement method used for the data.
+        observation_period: Observation period of the data.
+        observation_about: Entity column for single-entity data.
+        custom_dimensions: Entity columns for multi-entity data.
     """
 
     variable: str | None = Field(
@@ -61,27 +62,32 @@ class ColumnMappings(BaseModel):
         validation_alias=AliasChoices("unit", "dcid:unit"),
         serialization_alias="dcid:unit",
     )
-    scalingFactor: str | None = None
-    measurementMethod: str | None = Field(
+    scaling_factor: str | None = None
+    measurement_method: str | None = Field(
         default=None,
         validation_alias=AliasChoices("measurementMethod", "dcid:measurementMethod"),
         serialization_alias="dcid:measurementMethod",
     )
-    observationPeriod: str | None = Field(
+    observation_period: str | None = Field(
         default=None,
         validation_alias=AliasChoices("observationPeriod", "dcid:observationPeriod"),
         serialization_alias="dcid:observationPeriod",
     )
-    observationAbout: str | None = Field(
+    observation_about: str | None = Field(
         default=None,
         validation_alias=AliasChoices("observationAbout", "dcid:observationAbout"),
         serialization_alias="dcid:observationAbout",
     )
-    customDimensions: dict[CustomDimensionName, str] = Field(
+    custom_dimensions: dict[CustomDimensionName, str] = Field(
         default_factory=dict,
     )
 
-    model_config = ConfigDict(extra="forbid")
+    model_config = ConfigDict(
+        alias_generator=to_camel,
+        extra="forbid",
+        populate_by_name=True,
+        serialize_by_alias=True,
+    )
 
     @model_serializer(mode="wrap")
     def _serialize(self, handler: SerializerFunctionWrapHandler) -> dict[str, str]:
@@ -119,15 +125,15 @@ class ObservationProperties(BaseModel):
 
     Attributes:
         unit: Unit applied to every observation.
-        scalingFactor: Scaling factor applied to every observation.
-        measurementMethod: Measurement method applied to every observation.
-        observationPeriod: Observation period applied to every observation.
+        scaling_factor: Scaling factor applied to every observation.
+        measurement_method: Measurement method applied to every observation.
+        observation_period: Observation period applied to every observation.
     """
 
     unit: str | None = None
-    scalingFactor: str | None = None
-    measurementMethod: str | None = None
-    observationPeriod: str | None = None
+    scaling_factor: str | None = None
+    measurement_method: str | None = None
+    observation_period: str | None = None
 
     model_config = ConfigDict(extra="allow")
 
@@ -146,10 +152,10 @@ class InputFile(BaseModel):
         provenance: Provenance name for the data. Bare name is minted as
             ``dcid:provenance/<name>``; pass an already ``dcid:``-prefixed value to
             use it verbatim. Names must be valid dcid tokens (no whitespace).
-        ignoreColumns: List of columns to ignore.
-        columnMappings: If headings in the CSV file do not use the default names,
+        ignore_columns: List of columns to ignore.
+        column_mappings: If headings in the CSV file do not use the default names,
             the equivalent names for each column.
-        observationProperties: File-level constant observation properties applied to every
+        observation_properties: File-level constant observation properties applied to every
             observation (constants such as unit or measurementMethod). Optional.
         data_format: Format of the data (variable per row, one observation per row).
             This attribute is represented as "format" in the JSON.
@@ -158,19 +164,23 @@ class InputFile(BaseModel):
     filename: str | None = None
     pattern: str | None = None
     provenance: str
-    ignoreColumns: list[str] | None = None
-    columnMappings: ColumnMappings
-    observationProperties: ObservationProperties | None = None
+    ignore_columns: list[str] | None = None
+    column_mappings: ColumnMappings
+    observation_properties: ObservationProperties | None = None
     data_format: Literal["variablePerRow"] = Field(
         default="variablePerRow", alias="format"
     )
 
-    model_config = ConfigDict(extra="forbid", populate_by_name=True)
+    model_config = ConfigDict(
+        alias_generator=to_camel,
+        extra="forbid",
+        populate_by_name=True,
+    )
 
     @field_validator("provenance", mode="after")
     @classmethod
     def _mint_provenance(cls, value: str) -> str:
-        return mint_dcid(prefix="provenance", name=value)
+        return mint_dcid(prefix="provenance", token=value)
 
     @model_validator(mode="after")
     def _validate_filename_or_pattern(self) -> "InputFile":

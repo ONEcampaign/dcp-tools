@@ -9,7 +9,7 @@ from dcp_tools.custom_data.models.common import (
     PeerGroupDcid,
     QuotedStrListOrStr,
 )
-from dcp_tools.custom_data.models.mcf import MCFNode
+from dcp_tools.custom_data.models.mcf import Node
 
 
 class StatType(StrEnum):
@@ -26,88 +26,86 @@ class StatType(StrEnum):
     STANDARD_ERROR = "dcid:stdErr"
 
 
-class StatVarMCFNode(MCFNode):
+class StatVarNode(Node):
     """Represents a Statistical Variable node in MCF.
 
     Attributes:
-        # Inherited from MCFNode
-        Node: Identifier for the Node.
+        # Inherited from Node
+        dcid: Identifier for the Node.
         name: The human-readable name for the Node.
-        dcid: Optional DCID for uniquely identifying the Node.
         description: Optional human-readable description.
         provenance: Optional provenance information.
-        shortDisplayName: Optional human-readable short name for display.
-        subClassOf: Optional DCID indicating the 'parent' Node class.
+        short_display_name: Optional human-readable short name for display.
+        sub_class_of: Optional DCID indicating the 'parent' Node class.
 
         # Additional Attributes specific to StatisticalVariable
-        statType: Type of statistical measurement represented by the variable.
-        typeOf: Fixed type indicating this is a StatisticalVariable.
-        memberOf: Optional DCID indicating group membership.
-        relevantVariable: Optional DCID of a related variable.
-        searchDescription: Optional descriptions enhancing NL search capabilities.
-        populationType: Optional DCID of the population entity type being measured.
-        measuredProperty: Optional DCID of the property being measured.
-        measurementQualifier: Optional qualifier describing measurement specifics.
-        measurementDenominator: Optional denominator for ratio-type statistical measures.
+        stat_type: Type of statistical measurement represented by the variable.
+        type_of: Fixed type indicating this is a StatisticalVariable.
+        member_of: Optional DCID indicating group membership.
+        relevant_variable: Optional DCID of a related variable.
+        search_description: Optional descriptions enhancing NL search capabilities.
+        population_type: Optional DCID of the population entity type being measured.
+        measured_property: Optional DCID of the property being measured.
+        measurement_qualifier: Optional qualifier describing measurement specifics.
+        measurement_denominator: Optional denominator for ratio-type statistical measures.
         footnote: Optional footnotes providing additional context or information.
-        observationProperties: Optional observation properties for multi-entity data.
+        observation_properties: Optional observation properties for multi-entity data.
     """
 
-    statType: StatType | None = StatType.MEASURED_VALUE
-    typeOf: Literal["dcid:StatisticalVariable"] = "dcid:StatisticalVariable"
-    memberOf: GroupDcidOrListGroupDcid | None = None
-    relevantVariable: DcidOrListDcid | None = None
-    searchDescription: QuotedStrListOrStr | None = None
-    populationType: Dcid | None = None
-    measuredProperty: Dcid | None = None
-    measurementQualifier: Dcid | None = None
-    measurementDenominator: Dcid | None = None
+    stat_type: StatType | None = StatType.MEASURED_VALUE
+    type_of: Literal["dcid:StatisticalVariable"] = "dcid:StatisticalVariable"
+    member_of: GroupDcidOrListGroupDcid | None = None
+    relevant_variable: DcidOrListDcid | None = None
+    search_description: QuotedStrListOrStr | None = None
+    population_type: Dcid | None = None
+    measured_property: Dcid | None = None
+    measurement_qualifier: Dcid | None = None
+    measurement_denominator: Dcid | None = None
     footnote: QuotedStrListOrStr | None = None
-    observationProperties: DcidOrListDcid | None = None
+    observation_properties: DcidOrListDcid | None = None
 
 
-class StatVarGroupMCFNode(MCFNode):
+class StatVarGroupNode(Node):
     """Represents a Statistical Variable Group node in MCF.
 
     Attributes:
         # Additional Attributes specific to StatVarGroup
-        Node: Node identifier, must contain '/g'.
-        typeOf: Fixed type indicating this is a StatVarGroup.
-        specializationOf: DCID of the parent group, must start with 'dcid:' and contain 'g/'.
+        dcid: Node identifier, must contain '/g'.
+        type_of: Fixed type indicating this is a StatVarGroup.
+        specialization_of: DCID of the parent group, must start with 'dcid:' and contain 'g/'.
 
-         # Inherits from MCFNode
+         # Inherits from Node
         name: The human-readable name for the Node.
         dcid: Optional DCID for uniquely identifying the Node.
         description: Optional human-readable description.
         provenance: Optional provenance information.
-        shortDisplayName: Optional human-readable short name for display.
-        subClassOf: Optional DCID indicating the 'parent' Node class.
+        short_display_name: Optional human-readable short name for display.
+        sub_class_of: Optional DCID indicating the 'parent' Node class.
     """
 
-    Node: GroupDcid
-    typeOf: Literal["dcid:StatVarGroup"] = "dcid:StatVarGroup"
-    specializationOf: GroupDcid
+    dcid: GroupDcid
+    type_of: Literal["dcid:StatVarGroup"] = "dcid:StatVarGroup"
+    specialization_of: GroupDcid
 
 
-class StatVarPeerGroupMCFNode(MCFNode):
+class StatVarPeerGroupNode(Node):
     """Represents a Statistical Variable Peer Group node in MCF.
     A StatVarPeerGroup represents a group of StatisticalVariable nodes that are comparable peers.
 
     Attributes:
         # Additional Attributes specific to StatVarPeerGroup
-        Node: Node identifier, must contain '/svpg'.
-        typeOf: Fixed type indicating this is a StatVarPeerGroup.
+        dcid: Node identifier, must contain '/svpg'.
+        type_of: Fixed type indicating this is a StatVarPeerGroup.
         member: DCID of the parent group, must start with 'dcid:' and contain 'g/'.
 
-         # Inherits from MCFNode
+         # Inherits from Node
         name: The human-readable name for the Node.
-        dcid: Optional DCID for uniquely identifying the Node.
         description: Optional human-readable description.
         provenance: Optional provenance information.
-        shortDisplayName: Optional human-readable short name for display.
-        subClassOf: Optional DCID indicating the 'parent' Node class.
+        short_display_name: Optional human-readable short name for display.
+        sub_class_of: Optional DCID indicating the 'parent' Node class.
     """
 
-    Node: PeerGroupDcid
-    typeOf: Literal["dcid:StatVarPeerGroup"] = "dcid:StatVarPeerGroup"
+    dcid: PeerGroupDcid
+    type_of: Literal["dcid:StatVarPeerGroup"] = "dcid:StatVarPeerGroup"
     member: DcidOrListDcid

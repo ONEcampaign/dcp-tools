@@ -2,6 +2,7 @@ from os import PathLike
 from typing import Any
 
 from pydantic import BaseModel, ConfigDict, model_validator
+from pydantic.alias_generators import to_camel
 
 from dcp_tools.custom_data.models.data_files import InputFile
 
@@ -10,44 +11,46 @@ class Config(BaseModel):
     """Representation of the config file
 
     Attributes:
-        importName: Name of the import. Used by the platform prep job to name the
+        import_name: Name of the import. Used by the platform prep job to name the
             JSON-LD output directory. Optional; defaults to the export directory name
             on export when unset.
-        includeInputSubdirs: Include input subdirectories.
-        groupStatVarsByProperty: Group stat vars by property.
-        defaultCustomRootStatVarGroupName: Display name for the custom root StatVarGroup.
+        include_input_subdirs: Include input subdirectories.
+        group_stat_vars_by_property: Group stat vars by property.
+        default_custom_root_stat_var_group_name: Display name for the custom root StatVarGroup.
             Default: `"Custom Variables"`
-        customIdNamespace: Namespace token for generated ids for SVs and manual groups.
+        custom_id_namespace: Namespace token for generated ids for SVs and manual groups.
             Default: `"custom"`.
-        customSvgPrefix: String prefix for generated custom StatVarGroup ids. If not set,
+        custom_svg_prefix: String prefix for generated custom StatVarGroup ids. If not set,
             and `customIdNamespace` is provided, it defaults to `<customIdNamespace>/g/`.
-        inputFiles: List of input file entries. Each entry specifies exactly one of
+        input_files: List of input file entries. Each entry specifies exactly one of
             ``filename`` (exact CSV name) or ``pattern`` (glob), plus ``provenance``
             and column mapping information.
-        svHierarchyPropsBlocklist: Array of additional property dcids to exclude from hierarchy generation.
+        sv_hierarchy_props_blocklist: Array of additional property dcids to exclude from hierarchy generation.
             These are added to the internal blocklist used by Data Commons.
-        dataDownloadUrl: Optional list of URLs the importer fetches input data from.
+        data_download_url: Optional list of URLs the importer fetches input data from.
             Serialized as a JSON list; passthrough config value (no fetching/validation here).
-        verticalSpecsFile: Optional filename of the vertical-specs JSON file the importer reads
+        vertical_specs_file: Optional filename of the vertical-specs JSON file the importer reads
             when grouping stat vars. Plain filename string; the file itself is not managed here.
     """
 
-    importName: str | None = None
-    includeInputSubdirs: bool | None = None
-    groupStatVarsByProperty: bool | None = None
-    defaultCustomRootStatVarGroupName: str | None = None
-    customIdNamespace: str | None = None
-    customSvgPrefix: str | None = None
-    svHierarchyPropsBlocklist: list[str] | None = None
-    dataDownloadUrl: list[str] | None = None
-    verticalSpecsFile: str | None = None
-    inputFiles: list[InputFile]
+    import_name: str | None = None
+    include_input_subdirs: bool | None = None
+    group_stat_vars_by_property: bool | None = None
+    default_custom_root_stat_var_group_name: str | None = None
+    custom_id_namespace: str | None = None
+    custom_svg_prefix: str | None = None
+    sv_hierarchy_props_blocklist: list[str] | None = None
+    data_download_url: list[str] | None = None
+    vertical_specs_file: str | None = None
+    input_files: list[InputFile]
 
     # model configuration - populate by name (for the "format" field alias)
     # and forbid extra fields
     model_config = ConfigDict(
-        populate_by_name=True,
+        alias_generator=to_camel,
         extra="forbid",
+        populate_by_name=True,
+        serialize_by_alias=True,
         str_strip_whitespace=True,
         validate_assignment=True,
     )

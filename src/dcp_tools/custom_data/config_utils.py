@@ -25,27 +25,27 @@ def iter_config_files(directory: Path, pattern: str = "config.json") -> Iterator
 def _merge_simple_attrs(existing: Config, new: Config, policy: DuplicatePolicy) -> None:
     """Merge simple attributes that are booleans, strings, or None."""
     for attr in (
-        "importName",
-        "includeInputSubdirs",
-        "groupStatVarsByProperty",
-        "defaultCustomRootStatVarGroupName",
-        "customIdNamespace",
-        "customSvgPrefix",
-        "verticalSpecsFile",
+        "import_name",
+        "include_input_subdirs",
+        "group_stat_vars_by_property",
+        "default_custom_root_stat_var_group_name",
+        "custom_id_namespace",
+        "custom_svg_prefix",
+        "vertical_specs_file",
     ):
         _merge_attribute(existing, new, attr, policy)
 
     _merge_sequence_attribute(
         existing=existing,
         new=new,
-        attribute="svHierarchyPropsBlocklist",
+        attribute="sv_hierarchy_props_blocklist",
         policy=policy,
     )
 
     _merge_sequence_attribute(
         existing=existing,
         new=new,
-        attribute="dataDownloadUrl",
+        attribute="data_download_url",
         policy=policy,
     )
 
@@ -70,24 +70,24 @@ def _merge_input_files(existing: Config, new: Config, policy: DuplicatePolicy) -
     replaces, ``"ignore"`` and equal entries are skipped.
     """
     existing_by_key: dict[str, int] = {}
-    for i, e in enumerate(existing.inputFiles):
+    for i, e in enumerate(existing.input_files):
         k = e.filename or e.pattern
         if k is not None:
             existing_by_key[k] = i
 
-    for entry in new.inputFiles:
+    for entry in new.input_files:
         key = entry.filename or entry.pattern
         if key is None:
             # Should not happen: InputFile enforces filename XOR pattern.
             continue
         if key not in existing_by_key:
             logger.info(f"Added input file '{key}'")
-            existing.inputFiles.append(entry)
-            existing_by_key[key] = len(existing.inputFiles) - 1
+            existing.input_files.append(entry)
+            existing_by_key[key] = len(existing.input_files) - 1
             continue
 
         idx = existing_by_key[key]
-        tgt = existing.inputFiles[idx]
+        tgt = existing.input_files[idx]
         if tgt == entry:
             continue
 
@@ -98,7 +98,7 @@ def _merge_input_files(existing: Config, new: Config, policy: DuplicatePolicy) -
             policy=policy,
         )
         if policy == "override":
-            existing.inputFiles[idx] = entry
+            existing.input_files[idx] = entry
 
 
 def _merge_attribute(
@@ -180,7 +180,7 @@ def merge_configs_from_directory(
             values are encountered.
 
     """
-    base = Config(inputFiles=[])
+    base = Config(input_files=[])
     for path in iter_config_files(Path(directory)):
         logger.info(f"Merging config file {path}")
         config = Config.from_json(str(path))

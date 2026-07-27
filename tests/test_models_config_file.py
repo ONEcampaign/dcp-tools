@@ -18,7 +18,7 @@ def test_config_validators_raise_on_invalid_input_files():
         InputFile(
             filename="data.txt",
             provenance="p1",
-            columnMappings=ColumnMappings(),
+            column_mappings=ColumnMappings(),
         )
 
 
@@ -28,7 +28,7 @@ def test_input_file_filename_pattern_xor():
     with pytest.raises(ValueError):
         InputFile(
             provenance="p1",
-            columnMappings=ColumnMappings(),
+            column_mappings=ColumnMappings(),
         )
 
     # Both provided
@@ -37,14 +37,14 @@ def test_input_file_filename_pattern_xor():
             filename="a.csv",
             pattern="a*",
             provenance="p1",
-            columnMappings=ColumnMappings(),
+            column_mappings=ColumnMappings(),
         )
 
     # filename only — valid
     by_filename = InputFile(
         filename="a.csv",
         provenance="p1",
-        columnMappings=ColumnMappings(),
+        column_mappings=ColumnMappings(),
     )
     assert by_filename.filename == "a.csv"
     assert by_filename.pattern is None
@@ -53,7 +53,7 @@ def test_input_file_filename_pattern_xor():
     by_pattern = InputFile(
         pattern="data_*",
         provenance="p1",
-        columnMappings=ColumnMappings(),
+        column_mappings=ColumnMappings(),
     )
     assert by_pattern.pattern == "data_*"
     assert by_pattern.filename is None
@@ -64,7 +64,7 @@ def test_input_file_provenance_minted():
     entry = InputFile(
         filename="a.csv",
         provenance="myProv",
-        columnMappings=ColumnMappings(),
+        column_mappings=ColumnMappings(),
     )
     assert entry.provenance == "dcid:provenance/myProv"
 
@@ -72,7 +72,7 @@ def test_input_file_provenance_minted():
     already_minted = InputFile(
         filename="b.csv",
         provenance="dcid:provenance/myProv",
-        columnMappings=ColumnMappings(),
+        column_mappings=ColumnMappings(),
     )
     assert already_minted.provenance == "dcid:provenance/myProv"
 
@@ -86,7 +86,7 @@ def test_config_round_trips_import_name(tmp_path):
         ' "format": "variablePerRow"}]}'
     )
     loaded = Config.from_json(str(config))
-    assert loaded.importName == "OECD_wage_data"
+    assert loaded.import_name == "OECD_wage_data"
     assert loaded.model_dump(exclude_none=True)["importName"] == "OECD_wage_data"
 
 
@@ -134,8 +134,8 @@ def test_config_accepts_data_download_url_and_vertical_specs_file(tmp_path):
     config_file.write_text(json.dumps(config_data))
 
     loaded = Config.from_json(str(config_file))
-    assert loaded.dataDownloadUrl == ["https://example.org/data.csv"]
-    assert loaded.verticalSpecsFile == "vert.json"
+    assert loaded.data_download_url == ["https://example.org/data.csv"]
+    assert loaded.vertical_specs_file == "vert.json"
 
     # Both fields survive a round-trip through model_dump
     dumped = loaded.model_dump(exclude_none=True, by_alias=True)
@@ -148,8 +148,8 @@ def test_input_file_observation_properties_roundtrip():
     entry = InputFile(
         filename="data.csv",
         provenance="prov1",
-        columnMappings=ColumnMappings(observationAbout="Country", date="Year"),
-        observationProperties=ObservationProperties(unit="USD", customProp="x"),
+        column_mappings=ColumnMappings(observation_about="Country", date="Year"),
+        observation_properties=ObservationProperties(unit="USD", customProp="x"),
     )
     dumped = entry.model_dump(exclude_none=True, by_alias=True)
     assert "observationProperties" in dumped
@@ -159,6 +159,6 @@ def test_input_file_observation_properties_roundtrip():
 
     # Reload from the dumped dict
     reloaded = InputFile.model_validate(dumped)
-    assert reloaded.observationProperties is not None
-    assert reloaded.observationProperties.unit == "USD"
-    assert reloaded.observationProperties.__pydantic_extra__["customProp"] == "x"
+    assert reloaded.observation_properties is not None
+    assert reloaded.observation_properties.unit == "USD"
+    assert reloaded.observation_properties.__pydantic_extra__["customProp"] == "x"

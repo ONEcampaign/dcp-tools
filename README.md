@@ -46,9 +46,9 @@ import pandas as pd
 from dcp_tools import CustomDataManager
 
 manager = CustomDataManager()
-manager.add_source(name="ONEData", url="https://data.one.org")
+manager.add_source(dcid="ONEData", url="https://data.one.org")
 manager.add_provenance(
-    name="ONEClimateFinance",
+    dcid="ONEClimateFinance",
     url="https://datacommons.one.org/data/climate-finance-files",
     source="ONEData",
 )
@@ -63,29 +63,29 @@ manager.add_input_file(
     file_name="climate_finance/one_cf_provider_commitments.csv",
     provenance="ONEClimateFinance",
     data=data,
-    columnMappings={
+    column_mappings={
         "observationAbout": "country",
         "date": "year",
         "variable": "variable",
         "value": "value",
     },
-    observationProperties={"unit": "USDollar"},
+    observation_properties={"unit": "USDollar"},
 )
 
 manager.add_variable_to_mcf(
-    Node="climateFinanceProvidedCommitments",
+    dcid="climateFinanceProvidedCommitments",
     name="Climate finance commitments (bilateral)",
     description="Funding committed for climate adaptation and mitigation projects",
-    statType="dcid:measuredValue",
+    stat_type="dcid:measuredValue",
 )
 
 out_dir = Path("export/climate_finance")
 out_dir.mkdir(parents=True, exist_ok=True)
-manager.export_all(out_dir, mcf_file_names=["provenance.mcf", "custom_nodes.mcf"])
+manager.export_all(out_dir)
 ```
 
-`export_all` writes `config.json`, the CSV, and both named MCF files under `out_dir`. Since we
-never called `set_importName`, `config.json` defaults `importName` to the export directory's
+`export_all` writes `config.json`, the CSV, and both MCF files under `out_dir`. Since we
+never called `set_import_name`, `config.json` defaults `importName` to the export directory's
 name, and column mappings and the provenance name are resolved to full dcids:
 
 ```json
@@ -107,11 +107,6 @@ name, and column mappings and the provenance name are resolved to full dcids:
     ]
 }
 ```
-
-!!! warning "Heads up"
-    `provenance.mcf` (source and provenance nodes) is never exported by default. If an input
-    file references a provenance and its MCF file isn't in `mcf_file_names`, `export_all` raises
-    before writing anything, so you can't ship a bundle with a dangling reference.
 
 ## Loading it
 

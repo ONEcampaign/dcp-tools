@@ -47,9 +47,9 @@ from dcp_tools import CustomDataManager
 import pandas as pd
 
 manager = CustomDataManager()
-manager.add_source(name="ONEData", url="https://data.one.org")
+manager.add_source(dcid="ONEData", url="https://data.one.org")
 manager.add_provenance(
-    name="ONEClimateFinance",
+    dcid="ONEClimateFinance",
     url="https://datacommons.one.org/data/climate-finance-files",
     source="ONEData",
 )
@@ -65,11 +65,11 @@ manager.add_input_file(
     "climate-finance/commitments.csv",
     provenance="ONEClimateFinance",
     data=commitments,
-    columnMappings={
-        "observationAbout": "country",
-        "date": "year",
-        "variable": "variable",
-        "value": "value",
+    column_mappings={
+      "observationAbout": "country",
+      "date": "year",
+      "variable": "variable",
+      "value": "value",
     },
 )
 ```
@@ -124,22 +124,22 @@ flows = pd.DataFrame({
 })
 
 manager.add_variable_to_mcf(
-    Node="climateFinanceProvidedFlows",
+    dcid="climateFinanceProvidedFlows",
     name="Climate finance provided (bilateral flow)",
-    statType="dcid:measuredValue",
-    observationProperties=["dcid:providerCountry", "dcid:recipientCountry"],
+    stat_type="dcid:measuredValue",
+    observation_properties=["dcid:providerCountry", "dcid:recipientCountry"],
 )
 
 manager.add_input_file(
     "climate-finance/flows.csv",
     provenance="ONEClimateFinance",
     data=flows,
-    columnMappings={
-        "variable": "variable",
-        "date": "year",
-        "value": "value",
-        "custom:providerCountry": "provider",
-        "custom:recipientCountry": "recipient",
+    column_mappings={
+      "variable": "variable",
+      "date": "year",
+      "value": "value",
+      "custom:providerCountry": "provider",
+      "custom:recipientCountry": "recipient",
     },
 )
 ```
@@ -160,8 +160,8 @@ names you pass to `add_entity_type`, `add_property`, `add_unit`, or `Node`/`popu
 on `add_variable_to_mcf`. Both rules turn a bare token into a `dcid:`-prefixed one, but only one
 of them inserts a namespace segment:
 
-- `add_source(name="ONEData", ...)` mints `dcid:source/ONEData`.
-- `add_property(Node="providerCountry", ...)` mints `dcid:providerCountry`, no `property/`
+- `add_source(dcid="ONEData", ...)` mints `dcid:source/ONEData`.
+- `add_property(dcid="providerCountry", ...)` mints `dcid:providerCountry`, no `property/`
   segment.
 
 The difference tracks what's being identified. A source or provenance name is usually a short
@@ -174,7 +174,7 @@ source's identity separate from a provenance's even if someone reuses the same w
 
 A custom entity type, property, unit, or measurement method doesn't have that problem, because
 defining one *is* the act of claiming a unique identifier. When you call
-`add_property(Node="providerCountry", ...)`, you're not labeling something that already exists
+`add_property(dcid="providerCountry", ...)`, you're not labeling something that already exists
 elsewhere. You're declaring that `dcid:providerCountry` is now a `Property` node. The
 `typeOf: dcid:Property` on the node itself is what disambiguates it from a same-named source or
 StatVar, not an extra path segment on the id. That's why these builders use `ensure_dcid`, which

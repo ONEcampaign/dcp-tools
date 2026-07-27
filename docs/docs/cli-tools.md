@@ -69,7 +69,7 @@ dcp-tools csv2mcf <CSV> <MCF>
                   [--column-mapping CSV_COL=MCF_PROP]
                   [--csv-option KEY=VALUE]
                   [--ignore-column COLUMN]
-                  [--override]
+                  [--append]
 ```
 
 **Arguments**
@@ -82,15 +82,15 @@ dcp-tools csv2mcf <CSV> <MCF>
 - **`--node-type {Node,StatVar,StatVarGroup,Topic,StatVarPeerGroup}`** (default: `Node`) — the MCF
   node type to build, one per CSV row. `StatVar`, `StatVarGroup`, `Topic`, and `StatVarPeerGroup`
   map to the typed node models under `dcp_tools.custom_data.models`. `Node` builds the untyped base
-  `MCFNode` and accepts any column as an extra property.
+  model and accepts any column as an extra property.
 - **`--column-mapping CSV_COL=MCF_PROP`** (repeatable) — rename a CSV column to an MCF property
   before building nodes, e.g. `--column-mapping identifier=Node`. Pass the flag once per column.
 - **`--csv-option KEY=VALUE`** (repeatable) — an extra keyword argument forwarded to
   `pandas.read_csv`, e.g. `--csv-option delimiter=";"`.
 - **`--ignore-column COLUMN`** (repeatable) — drop a CSV column before building nodes. Pass the
   flag once per column.
-- **`--override`** — controls how `<MCF>` is written when it already exists. Without it, new nodes
-  are appended to the file. With it, the file is truncated and written fresh.
+- **`--append`** — append to `<MCF>` if it already exists instead of overwriting it. Without this
+  flag, `csv2mcf` overwrites the file (or creates it if it doesn't exist).
 
 CSV values that map to a `dcid:`-typed field (`Node`, `populationType`, `measuredProperty`,
 `measurementQualifier`, `measurementDenominator`) must already carry the `dcid:` prefix. `csv2mcf`
@@ -102,11 +102,6 @@ does not mint the prefix for you. A bare value such as `climateFinanceProvidedCo
 is minted to `dcid:<value>` automatically; for the other four node types it defaults to a fixed
 value (`dcid:StatisticalVariable`, `dcid:StatVarGroup`, `dcid:Topic`, `dcid:StatVarPeerGroup`) that
 a CSV `typeOf` column doesn't need to repeat.
-
-!!! warning "Heads up"
-    Without `--override`, `csv2mcf` appends to `<MCF>` if it already exists rather than replacing
-    it. Running the same command twice against the same output path writes duplicate `Node:`
-    blocks. Pass `--override` to truncate the file first, or write to a fresh path each run.
 
 **Example**
 

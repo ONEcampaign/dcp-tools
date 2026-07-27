@@ -1,7 +1,7 @@
 import pytest
 from pydantic import ValidationError
 
-from dcp_tools.custom_data.models.topics import TopicMCFNode
+from dcp_tools.custom_data.models.topics import TopicNode
 from dcp_tools.custom_data.schema_tools import csv_metadata_to_nodes
 
 # relevantVariable collapsed to plain DcidOrListDcid in #131. The group and topic members of
@@ -15,37 +15,35 @@ from dcp_tools.custom_data.schema_tools import csv_metadata_to_nodes
 def test_topic_relevant_variable_accepts_bare_statvar_dcid():
     """A bare token matches the plain-Dcid branch and is minted to a plain dcid
     (regression for #126: this used to pass through unvalidated)."""
-    node = TopicMCFNode(
-        Node="dcid:topic/T", name="Topic", relevantVariable="myVariable"
-    )
-    assert node.relevantVariable == "dcid:myVariable"
+    node = TopicNode(dcid="dcid:topic/T", name="Topic", relevant_variable="myVariable")
+    assert node.relevant_variable == "dcid:myVariable"
 
 
 def test_topic_relevant_variable_accepts_group_dcid():
-    node = TopicMCFNode(Node="dcid:topic/T", name="Topic", relevantVariable="g/MyGroup")
-    assert node.relevantVariable == "dcid:g/MyGroup"
+    node = TopicNode(dcid="dcid:topic/T", name="Topic", relevant_variable="g/MyGroup")
+    assert node.relevant_variable == "dcid:g/MyGroup"
 
 
 def test_topic_relevant_variable_accepts_topic_dcid():
-    node = TopicMCFNode(
-        Node="dcid:topic/T", name="Topic", relevantVariable="topic/OtherTopic"
+    node = TopicNode(
+        dcid="dcid:topic/T", name="Topic", relevant_variable="topic/OtherTopic"
     )
-    assert node.relevantVariable == "dcid:topic/OtherTopic"
+    assert node.relevant_variable == "dcid:topic/OtherTopic"
 
 
 def test_topic_relevant_variable_accepts_list():
-    node = TopicMCFNode(
-        Node="dcid:topic/T",
+    node = TopicNode(
+        dcid="dcid:topic/T",
         name="Topic",
-        relevantVariable=["varOne", "varTwo"],
+        relevant_variable=["varOne", "varTwo"],
     )
-    assert node.relevantVariable == ["dcid:varOne", "dcid:varTwo"]
-    assert "relevantVariable: dcid:varOne, dcid:varTwo" in node.mcf
+    assert node.relevant_variable == ["dcid:varOne", "dcid:varTwo"]
+    assert "relevantVariable: dcid:varOne, dcid:varTwo" in node.to_mcf()
 
 
 def test_topic_node_rejects_missing_slug():
     with pytest.raises(ValidationError):
-        TopicMCFNode(Node="dcid:NotATopic", name="Topic", relevantVariable="var")
+        TopicNode(dcid="dcid:NotATopic", name="Topic", relevant_variable="var")
 
 
 def test_topic_node_rejects_missing_dcid_prefix():
@@ -53,17 +51,17 @@ def test_topic_node_rejects_missing_dcid_prefix():
     unprefixed, since the old hand-rolled pattern checked for the 'topic/' segment
     but never required the 'dcid:' prefix."""
     with pytest.raises(ValidationError):
-        TopicMCFNode(Node="topic/x", name="Topic", relevantVariable="var")
+        TopicNode(dcid="topic/x", name="Topic", relevant_variable="var")
 
 
 def test_topic_node_accepts_dcid_prefixed_slug():
-    node = TopicMCFNode(Node="dcid:topic/x", name="Topic", relevantVariable="var")
-    assert node.Node == "dcid:topic/x"
+    node = TopicNode(dcid="dcid:topic/x", name="Topic", relevant_variable="var")
+    assert node.dcid == "dcid:topic/x"
 
 
 def test_topic_node_rejects_whitespace_bearing_token():
     with pytest.raises(ValidationError):
-        TopicMCFNode(Node="dcid:topic/ x", name="Topic", relevantVariable="var")
+        TopicNode(dcid="dcid:topic/ x", name="Topic", relevant_variable="var")
 
 
 def test_topic_csv_conversion_rejects_bare_node(tmp_path):
@@ -82,8 +80,8 @@ def test_topic_csv_conversion_rejects_bare_node(tmp_path):
     csv_path.write_text("Node,name,relevantVariable\ndcid:topic/x,T,dcid:v\n")
     nodes = csv_metadata_to_nodes(str(csv_path), node_type="Topic")
 
-    assert nodes.nodes[0].Node == "dcid:topic/x"
-    assert "Node: dcid:topic/x\n" in nodes.nodes[0].mcf
+    assert nodes.nodes[0].dcid == "dcid:topic/x"
+    assert "Node: dcid:topic/x\n" in nodes.nodes[0].to_mcf()
 
 
 def test_topic_relevant_variable_rejects_whitespace_bearing_token():
@@ -91,4 +89,4 @@ def test_topic_relevant_variable_rejects_whitespace_bearing_token():
     value DcidOrListDcid rejected could still validate via the more-permissive
     Group/Topic branches (which used PlainValidator and never enforced a pattern)."""
     with pytest.raises(ValidationError):
-        TopicMCFNode(Node="dcid:topic/T", name="Topic", relevantVariable="has space")
+        TopicNode(dcid="dcid:topic/T", name="Topic", relevant_variable="has space")

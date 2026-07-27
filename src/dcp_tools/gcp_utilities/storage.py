@@ -12,7 +12,7 @@ import pandas as pd
 from google.cloud.storage import Bucket
 
 from dcp_tools.custom_data.models.config_file import Config
-from dcp_tools.custom_data.models.mcf import MCFNodes
+from dcp_tools.custom_data.models.mcf import Nodes
 from dcp_tools.logger import logger
 
 _VALID_EXTENSIONS = {".csv", ".json", ".mcf"}
@@ -291,8 +291,8 @@ def get_unregistered_csv_files(
     if isinstance(config, dict):
         config = Config.model_validate(config)
 
-    registered = {e.filename for e in config.inputFiles if e.filename}
-    patterns = [e.pattern for e in config.inputFiles if e.pattern]
+    registered = {e.filename for e in config.input_files if e.filename}
+    patterns = [e.pattern for e in config.input_files if e.pattern]
     return [
         name
         for name in csv_files
@@ -338,7 +338,7 @@ def get_missing_csv_files(
         config = Config.model_validate(config)
 
     missing: list[str] = []
-    for entry in config.inputFiles:
+    for entry in config.input_files:
         name = entry.filename
         if name is None:
             # Pattern entries are globs, not single files — skip them.
@@ -398,7 +398,7 @@ def get_bucket_files(
             with tempfile.NamedTemporaryFile(suffix=".mcf", delete=False) as tmp:
                 tmp.write(raw)
             try:
-                results[name] = MCFNodes().load_from_mcf_file(tmp.name)
+                results[name] = Nodes().load_from_mcf_file(tmp.name)
             finally:
                 os.unlink(tmp.name)
         else:

@@ -57,6 +57,37 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   is unchanged.
 - `rename_variable` normalizes a bare `old_name`/`new_name` to `dcid:<token>`, the same rule
   `add_variable_to_mcf` applies to `Node`.
+- **Renamed the node model classes to drop the `MCF` qualifier**, treating MCF as one
+  serialization of a Data Commons graph node rather than the model's identity: `MCFNode` →
+  `Node`, `MCFNodes` → `Nodes`, and every subclass.
+- **Collapsed a node's duplicate `Node`/`dcid` properties into a single `dcid`.** A node's
+  identifier is now `node.dcid`, which still serializes to the mandatory `Node:` line in MCF;
+  the separate optional `dcid` property is removed.
+- **`Node.mcf` is now the `Node.to_mcf()` method** (and `Nodes.to_mcf()`), matching the
+  `to_dict()`/`to_json()` convention and leaving room for a future `to_jsonld()`.
+- **The Python API is now snake_case throughout.** Node and `Config` attributes,
+  `CustomDataManager` builder keyword arguments, and the `set_*` methods use snake_case
+  (`node.type_of`, `add_variable_to_mcf(measured_property=...)`, `set_import_name(...)`). The
+  serialized `config.json` and MCF wire format are unchanged: camelCase keys are preserved via
+  pydantic aliases (`alias_generator=to_camel`). CSV column headers (e.g. `memberOf`) keep the
+  Data Commons camelCase convention.
+- **`export_all` writes and overwrites the complete bundle.** It no longer takes `mcf_file_names`
+  or `override`. It writes `config.json`, the data CSVs, `vertical_specs.json` (when specs were
+  added), and every MCF file you've added nodes to, overwriting anything already in the directory.
+  Pass nothing for the full bundle; use `export_mcf_file` to write a single file.
+- **Renamed `override` to `overwrite` on the export helpers and flipped the default to `True`**
+  (overwrite). Affects `CustomDataManager.export_mcf_file`, `Nodes.export_to_mcf_file`, and
+  `csv_metadata_to_mcf_file`.
+- **Replaced `csv2mcf`'s `--override` flag with `--append`.** `csv2mcf` now overwrites the output
+  file by default; pass `--append` to add to an existing file instead (which can produce duplicate
+  `Node:` blocks on repeated runs).
+- **`add_source` and `add_provenance` take separate `dcid`, `name`, and `description` parameters.**
+  `dcid` is the identifier (minted with the `source/`/`provenance/` slug prefix); `name` is an
+  optional human-readable label; `description` is optional longer text. Previously `name` was used
+  as the identifier and the node's own `name` property was never set.
+- **Renamed `CustomDataManager.remove_indicator` to `remove_variable`** (parameter `indicator_id`
+  → `dcid`), matching the `variable` terminology used elsewhere (`rename_variable`,
+  `add_variable_to_mcf`).
 
 ### Removed
 
@@ -154,6 +185,23 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   the MCF as-is.
 - Replace direct calls to `build_stat_var_groups_from_strings` with either
   `csv_metadata_to_nodes(..., parse_groups=True, group_namespace=...)` or `resolve_group_paths`.
+- Drop the `MCF` infix from node model class names (`MCFNode` → `Node`, `StatVarMCFNode` →
+  `StatVarNode`, and so on) and the `MCFNodes` container → `Nodes`.
+- Read a node's id via `.dcid` (not `.Node`); the separate `dcid` property is gone.
+- Call `node.to_mcf()` instead of `node.mcf`.
+- Convert builder keyword arguments, node/`Config` attributes and `set_*` methods to
+  snake_case (`measuredProperty` → `measured_property`, `typeOf` → `type_of`, `set_importName`
+  → `set_import_name`, and so on). The exported `config.json` and MCF are unchanged.
+- Drop `mcf_file_names` and `override` from `export_all` calls: pass nothing for the full bundle,
+  and use `export_mcf_file` for a single file. `export_all` now overwrites what's already there.
+- Rename `override=` → `overwrite=` on `export_mcf_file`, `Nodes.export_to_mcf_file` and
+  `csv_metadata_to_mcf_file` (all now overwrite by default).
+- Replace `csv2mcf --override` with the default (overwrite), or `--append` to add to an existing
+  file.
+- In `add_source`/`add_provenance` calls, pass the identifier as `dcid=` (was `name=`); optionally
+  pass `name=` for a human-readable label.
+- Rename `remove_indicator(...)` calls to `remove_variable(...)`; the positional id argument is
+  unchanged, and the keyword is now `dcid` (was `indicator_id`).
 
 ## [0.1.1] - 2026-02-19
 

@@ -2,151 +2,149 @@ import pytest
 from pydantic import ValidationError
 
 from dcp_tools.custom_data.models.schema_nodes import (
-    EntityTypeMCFNode,
-    EventTypeMCFNode,
-    MeasurementMethodMCFNode,
-    PropertyMCFNode,
-    UnitOfMeasureMCFNode,
+    EntityTypeNode,
+    EventTypeNode,
+    MeasurementMethodNode,
+    PropertyNode,
+    UnitOfMeasureNode,
 )
 
-# --- EntityTypeMCFNode ---
+# --- EntityTypeNode ---
 
 
 def test_entity_type_default_typeof():
-    node = EntityTypeMCFNode(Node="dcid:MyClass", name="My Class")
-    assert node.typeOf == "dcid:Class"
-    assert "typeOf: dcid:Class" in node.mcf
+    node = EntityTypeNode(dcid="dcid:MyClass", name="My Class")
+    assert node.type_of == "dcid:Class"
+    assert "typeOf: dcid:Class" in node.to_mcf()
 
 
 def test_entity_type_accepts_included_in_list():
-    node = EntityTypeMCFNode(
-        Node="dcid:MyClass",
+    node = EntityTypeNode(
+        dcid="dcid:MyClass",
         name="My Class",
-        includedIn=["dcid:provenance/p", "dcid:source/s"],
+        included_in=["dcid:provenance/p", "dcid:source/s"],
     )
-    assert "includedIn: dcid:provenance/p, dcid:source/s" in node.mcf
+    assert "includedIn: dcid:provenance/p, dcid:source/s" in node.to_mcf()
 
 
 def test_entity_type_rejects_malformed_node():
     """Node field enforces dcid: prefix; builder normalizes before construction."""
     with pytest.raises(ValidationError):
-        EntityTypeMCFNode(Node="MyClass", name="My Class")
+        EntityTypeNode(dcid="MyClass", name="My Class")
 
 
 def test_entity_type_included_in_normalizes_bare_token():
     """includedIn is DcidOrListDcid; a bare token is minted (regression for #126)."""
-    node = EntityTypeMCFNode(Node="dcid:MyClass", name="My Class", includedIn="p")
-    assert node.includedIn == "dcid:p"
+    node = EntityTypeNode(dcid="dcid:MyClass", name="My Class", included_in="p")
+    assert node.included_in == "dcid:p"
 
 
-# --- EventTypeMCFNode ---
+# --- EventTypeNode ---
 
 
 def test_event_type_default_typeof_and_subclassof():
-    node = EventTypeMCFNode(Node="dcid:MyEvent", name="My Event")
-    assert node.typeOf == "dcid:Class"
-    assert node.subClassOf == "dcid:Event"
+    node = EventTypeNode(dcid="dcid:MyEvent", name="My Event")
+    assert node.type_of == "dcid:Class"
+    assert node.sub_class_of == "dcid:Event"
 
 
 def test_event_type_subclassof_override():
-    node = EventTypeMCFNode(
-        Node="dcid:MyEvent", name="My Event", subClassOf="dcid:DisasterEvent"
+    node = EventTypeNode(
+        dcid="dcid:MyEvent", name="My Event", sub_class_of="dcid:DisasterEvent"
     )
-    assert node.subClassOf == "dcid:DisasterEvent"
-    assert "subClassOf: dcid:DisasterEvent" in node.mcf
+    assert node.sub_class_of == "dcid:DisasterEvent"
+    assert "subClassOf: dcid:DisasterEvent" in node.to_mcf()
 
 
 def test_event_type_subclassof_normalizes_bare_token():
     """subClassOf is DcidOrListDcid; a bare token is minted (regression for #126)."""
-    node = EventTypeMCFNode(
-        Node="dcid:MyEvent", name="My Event", subClassOf="DisasterEvent"
+    node = EventTypeNode(
+        dcid="dcid:MyEvent", name="My Event", sub_class_of="DisasterEvent"
     )
-    assert node.subClassOf == "dcid:DisasterEvent"
+    assert node.sub_class_of == "dcid:DisasterEvent"
 
 
-# --- PropertyMCFNode ---
+# --- PropertyNode ---
 
 
 def test_property_default_typeof():
-    node = PropertyMCFNode(Node="dcid:myProp", name="My Prop")
-    assert node.typeOf == "dcid:Property"
+    node = PropertyNode(dcid="dcid:myProp", name="My Prop")
+    assert node.type_of == "dcid:Property"
 
 
 def test_property_optional_refs_serialize():
-    node = PropertyMCFNode(
-        Node="dcid:myProp",
+    node = PropertyNode(
+        dcid="dcid:myProp",
         name="My Prop",
-        domainIncludes="dcid:Person",
-        rangeIncludes="dcid:Number",
-        subPropertyOf="dcid:baseProp",
+        domain_includes="dcid:Person",
+        range_includes="dcid:Number",
+        sub_property_of="dcid:baseProp",
     )
-    assert "domainIncludes: dcid:Person" in node.mcf
-    assert "rangeIncludes: dcid:Number" in node.mcf
-    assert "subPropertyOf: dcid:baseProp" in node.mcf
+    assert "domainIncludes: dcid:Person" in node.to_mcf()
+    assert "rangeIncludes: dcid:Number" in node.to_mcf()
+    assert "subPropertyOf: dcid:baseProp" in node.to_mcf()
 
 
 def test_property_model_normalizes_bare_ref():
     """DcidOrListDcid now runs ensure_dcid via a BeforeValidator (regression for #126), so
     domainIncludes/rangeIncludes/subPropertyOf are normalized at the model layer too, not
     just by the builder (add_property). A bare token is minted to dcid:<token>."""
-    node = PropertyMCFNode(Node="dcid:myProp", domainIncludes="Person")
-    assert node.domainIncludes == "dcid:Person"
+    node = PropertyNode(dcid="dcid:myProp", domain_includes="Person")
+    assert node.domain_includes == "dcid:Person"
 
 
 def test_property_model_rejects_whitespace_bearing_ref():
     with pytest.raises(ValidationError):
-        PropertyMCFNode(Node="dcid:myProp", domainIncludes="has space")
+        PropertyNode(dcid="dcid:myProp", domain_includes="has space")
 
 
 def test_property_model_normalizes_bare_ref_list():
-    node = PropertyMCFNode(
-        Node="dcid:myProp",
-        domainIncludes=["Person", "Household"],
-        rangeIncludes=["Number"],
-        subPropertyOf=["baseProp"],
+    node = PropertyNode(
+        dcid="dcid:myProp",
+        domain_includes=["Person", "Household"],
+        range_includes=["Number"],
+        sub_property_of=["baseProp"],
     )
-    assert node.domainIncludes == ["dcid:Person", "dcid:Household"]
-    assert node.rangeIncludes == ["dcid:Number"]
-    assert node.subPropertyOf == ["dcid:baseProp"]
+    assert node.domain_includes == ["dcid:Person", "dcid:Household"]
+    assert node.range_includes == ["dcid:Number"]
+    assert node.sub_property_of == ["dcid:baseProp"]
 
 
-# --- UnitOfMeasureMCFNode ---
+# --- UnitOfMeasureNode ---
 
 
 def test_unit_default_typeof():
-    node = UnitOfMeasureMCFNode(Node="dcid:MyUnit", name="My Unit")
-    assert node.typeOf == "dcid:UnitOfMeasure"
+    node = UnitOfMeasureNode(dcid="dcid:MyUnit", name="My Unit")
+    assert node.type_of == "dcid:UnitOfMeasure"
 
 
 def test_unit_typeof_override_validates():
-    node = UnitOfMeasureMCFNode(
-        Node="dcid:USD", name="US Dollar", typeOf="dcid:CurrencyUnitOfMeasure"
+    node = UnitOfMeasureNode(
+        dcid="dcid:USD", name="US Dollar", type_of="dcid:CurrencyUnitOfMeasure"
     )
-    assert node.typeOf == "dcid:CurrencyUnitOfMeasure"
-    assert "typeOf: dcid:CurrencyUnitOfMeasure" in node.mcf
+    assert node.type_of == "dcid:CurrencyUnitOfMeasure"
+    assert "typeOf: dcid:CurrencyUnitOfMeasure" in node.to_mcf()
 
 
 def test_unit_inherits_short_display_name():
-    node = UnitOfMeasureMCFNode(Node="dcid:USD", name="US Dollar", shortDisplayName="$")
-    assert 'shortDisplayName: "$"' in node.mcf
+    node = UnitOfMeasureNode(dcid="dcid:USD", name="US Dollar", short_display_name="$")
+    assert 'shortDisplayName: "$"' in node.to_mcf()
 
 
-# --- MeasurementMethodMCFNode ---
+# --- MeasurementMethodNode ---
 
 
 def test_measurement_method_default_typeof():
-    node = MeasurementMethodMCFNode(Node="dcid:MyMethod")
-    assert node.typeOf == "dcid:MeasurementMethodEnum"
+    node = MeasurementMethodNode(dcid="dcid:MyMethod")
+    assert node.type_of == "dcid:MeasurementMethodEnum"
 
 
 def test_measurement_method_typeof_override_validates():
-    node = MeasurementMethodMCFNode(
-        Node="dcid:MyCensus", typeOf="dcid:CensusSurveyEnum"
-    )
-    assert node.typeOf == "dcid:CensusSurveyEnum"
-    assert "typeOf: dcid:CensusSurveyEnum" in node.mcf
+    node = MeasurementMethodNode(dcid="dcid:MyCensus", type_of="dcid:CensusSurveyEnum")
+    assert node.type_of == "dcid:CensusSurveyEnum"
+    assert "typeOf: dcid:CensusSurveyEnum" in node.to_mcf()
 
 
 def test_measurement_method_allows_missing_name():
-    node = MeasurementMethodMCFNode(Node="dcid:MyMethod")
-    assert "name:" not in node.mcf
+    node = MeasurementMethodNode(dcid="dcid:MyMethod")
+    assert "name:" not in node.to_mcf()

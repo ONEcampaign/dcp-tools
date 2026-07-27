@@ -64,16 +64,16 @@ flags: importName=None, includeInputSubdirs=None, groupStatVarsByProperty=None, 
 Register where the data comes from: a Source (the publishing organization) and a Provenance (this specific dataset). Every input file you register later points back at a Provenance dcid, so it has to exist first.
 
 ```python
-manager.add_source(name="ONEData", url="https://data.one.org")
+manager.add_source(dcid="ONEData", url="https://data.one.org")
 manager.add_provenance(
-    name="ONEClimateFinance",
+    dcid="ONEClimateFinance",
     url="https://datacommons.one.org/data/climate-finance-files",
     source="ONEData",
 )
 ```
 
 !!! note
-    `name` becomes part of the node's dcid, so it can't contain spaces. `add_source` turns `"ONEData"` into `dcid:source/ONEData`. If you want a spaced-out label, put it in `description` instead.
+    `dcid` is the node's identifier, so it can't contain spaces — `add_source` mints `"ONEData"` into `dcid:source/ONEData`. For a human-readable label (spaces allowed), pass `name`; it's optional.
 
 Both calls add MCF nodes in memory. Export them to see what they'll look like on disk:
 
@@ -113,7 +113,7 @@ manager.add_input_file(
     file_name="climate_finance/one_cf_provider_commitments.csv",
     provenance="ONEClimateFinance",
     data=data,
-    columnMappings={
+    column_mappings={
         "observationAbout": "country",
         "date": "year",
         "variable": "variable",
@@ -154,16 +154,16 @@ The `variable` column holds `climateFinanceProvidedCommitments`, a dcid that has
 
 ```python
 manager.add_variable_to_mcf(
-    Node="climateFinanceProvidedCommitments",
+    dcid="climateFinanceProvidedCommitments",
     name="Climate finance provided (commitments)",
     description="Bilateral climate finance commitments reported by the provider country.",
     provenance="ONEClimateFinance",
-    populationType="Thing",
-    measuredProperty="amount",
+    population_type="Thing",
+    measured_property="amount",
 )
 ```
 
-`Node` is a bare token here, so `dcp-tools` normalizes it to `dcid:climateFinanceProvidedCommitments` for you. It must match the `variable` column values exactly. Export the checkpoint and take a look:
+`dcid` is a bare token here, so `dcp-tools` normalizes it to `dcid:climateFinanceProvidedCommitments` for you. It must match the `variable` column values exactly. Export the checkpoint and take a look:
 
 ```python
 manager.export_mcf_file("one_climate_finance", mcf_file_name="custom_nodes.mcf")
@@ -185,19 +185,10 @@ The `provenance` field here is the bare name you passed in, stored as a plain qu
 
 ## Step 5: Export the bundle and verify it
 
-`export_all` writes the config, the data, and any MCF files you name, in one call. It doesn't export MCF files unless you list them.
-
-!!! warning "Heads up"
-    `mcf_file_names` defaults to `None`, which exports no MCF at all. Since the input file from Step 3 references the provenance node in `provenance.mcf`, leaving it off `mcf_file_names` makes `export_all` raise a `ValueError` before writing anything, rather than shipping a config with a dangling reference.
-
-Steps 2 and 4 already wrote `provenance.mcf` and `custom_nodes.mcf` once each as checkpoints, so this final call needs `override=True` to overwrite them instead of appending:
+`export_all` writes the config, the data, and any MCF files you've registered.
 
 ```python
-manager.export_all(
-    "one_climate_finance",
-    mcf_file_names=["provenance.mcf", "custom_nodes.mcf"],
-    override=True,
-)
+manager.export_all("one_climate_finance")
 ```
 
 List the directory to confirm the full bundle landed:
@@ -217,7 +208,7 @@ one_climate_finance/provenance.mcf
 one_climate_finance/climate_finance/one_cf_provider_commitments.csv
 ```
 
-`config.json` now has an `importName`, defaulted from the export directory name since we never called `set_importName`:
+`config.json` now has an `importName`, defaulted from the export directory name since we never called `set_import_name`:
 
 ```json
 {

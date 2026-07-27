@@ -23,19 +23,19 @@ from dcp_tools.custom_data.models.data_files import (
     MCFFileName,
     ObservationProperties,
 )
-from dcp_tools.custom_data.models.mcf import MCFNode, MCFNodes
+from dcp_tools.custom_data.models.mcf import Node, Nodes
 from dcp_tools.custom_data.models.schema_nodes import (
-    EntityTypeMCFNode,
-    EventTypeMCFNode,
-    MeasurementMethodMCFNode,
-    PropertyMCFNode,
-    UnitOfMeasureMCFNode,
+    EntityTypeNode,
+    EventTypeNode,
+    MeasurementMethodNode,
+    PropertyNode,
+    UnitOfMeasureNode,
 )
-from dcp_tools.custom_data.models.sources import ProvenanceMCFNode, SourceMCFNode
+from dcp_tools.custom_data.models.sources import ProvenanceNode, SourceNode
 from dcp_tools.custom_data.models.stat_vars import (
     StatType,
-    StatVarGroupMCFNode,
-    StatVarMCFNode,
+    StatVarGroupNode,
+    StatVarNode,
 )
 from dcp_tools.custom_data.models.vertical_specs import VerticalSpec
 from dcp_tools.custom_data.schema_tools import (
@@ -73,7 +73,7 @@ class CustomDataManager:
 
     Args:
         config_file: Path to the config json file. If not provided, a new config object will be created.
-        mcf_files: Path to one or more MCF files. If not provided, a new MCFNodes object will be created.
+        mcf_files: Path to one or more MCF files. If not provided, a new Nodes object will be created.
 
     Usage:
 
@@ -86,17 +86,18 @@ class CustomDataManager:
 
     To add a Source and Provenance (emitted as MCF nodes to ``provenance.mcf`` by default),
     use the ``add_source`` and ``add_provenance`` methods:
-    >>> dc_manager.add_source(name="ONE Data", url="https://data.one.org")
+    >>> dc_manager.add_source(dcid="ONEData", name="ONE Data", url="https://data.one.org")
     >>> dc_manager.add_provenance(
+    >>>     dcid="ONEClimateFinance",
     >>>     name="ONE Climate Finance",
     >>>     url="https://datacommons.one.org/data/climate-finance-files",
-    >>>     source="ONE Data",
+    >>>     source="ONEData",
     >>> )
 
     To add a variable for export to an MCF file, use the add_variable_to_mcf method.
-    ``Node`` accepts a bare or ``dcid:``-prefixed token, as the schema-node builders below do:
+    ``dcid`` accepts a bare or ``dcid:``-prefixed token, as the schema-node builders below do:
     >>> dc_manager.add_variable_to_mcf(
-    >>>    Node="StatVar",
+    >>>    dcid="StatVar",
     >>>    name="Variable Name",
     >>>    description="Variable Description",
     >>>    ...
@@ -106,18 +107,18 @@ class CustomDataManager:
 
     To add custom schema nodes (entity types, event types, properties, units, and
     measurement methods), use the five typed builders. All five accept bare or
-    ``dcid:``-prefixed ``Node`` tokens. Note: ``add_measurement_method`` is the only
-    builder where ``name`` is optional — only ``Node`` is required.
-    >>> dc_manager.add_entity_type(Node="MyClass", name="My Class")
-    >>> dc_manager.add_event_type(Node="MyEvent", name="My Event")
+    ``dcid:``-prefixed ``dcid`` tokens. Note: ``add_measurement_method`` is the only
+    builder where ``name`` is optional — only ``dcid`` is required.
+    >>> dc_manager.add_entity_type(dcid="MyClass", name="My Class")
+    >>> dc_manager.add_event_type(dcid="MyEvent", name="My Event")
     >>> dc_manager.add_property(
-    >>>     Node="myProp",
+    >>>     dcid="myProp",
     >>>     name="My Property",
-    >>>     domainIncludes="Person",
-    >>>     rangeIncludes="Number",
+    >>>     domain_includes="Person",
+    >>>     range_includes="Number",
     >>> )
-    >>> dc_manager.add_unit(Node="USD", name="US Dollar", shortDisplayName="$")
-    >>> dc_manager.add_measurement_method(Node="MyCensus")
+    >>> dc_manager.add_unit(dcid="USD", name="US Dollar", short_display_name="$")
+    >>> dc_manager.add_measurement_method(dcid="MyCensus")
 
     You can also add variables for export to an MCF file using a CSV file. The CSV file should
     contain the variables you want to add.
@@ -128,7 +129,7 @@ class CustomDataManager:
     >>>    file_name="input_file.csv",
     >>>    provenance="Provenance Name",
     >>>    data=df,
-    >>>    columnMappings={"observationAbout": "Country", "date": "Year", "value": "Value"}
+    >>>    column_mappings={"observationAbout": "Country", "date": "Year", "value": "Value"}
     >>>    )
 
     For multi-entity observations, map each dimension with a ``custom:<name>`` key, and declare the
@@ -137,7 +138,7 @@ class CustomDataManager:
     >>>    file_name="input_file.csv",
     >>>    provenance="Provenance Name",
     >>>    data=df,
-    >>>    columnMappings={
+    >>>    column_mappings={
     >>>        "variable": "Var",
     >>>        "date": "Year",
     >>>        "value": "Value",
@@ -146,9 +147,9 @@ class CustomDataManager:
     >>>    },
     >>> )
     >>> dc_manager.add_variable_to_mcf(
-    >>>    Node="dcid:var/StatVar",
+    >>>    dcid="dcid:var/StatVar",
     >>>    name="Variable Name",
-    >>>    observationProperties=["dcid:originCountry", "dcid:destinationCountry"],
+    >>>    observation_properties=["dcid:originCountry", "dcid:destinationCountry"],
     >>> )
 
     It isn't a requirement to add the data at the same time as the input file. You can add the data
@@ -160,10 +161,10 @@ class CustomDataManager:
     Note: To add data, the input file must already be registered in the config file
     >>> dc_manager.add_data(<data>, "input_file.csv")
 
-    To set the includeInputSubdirs and the groupStatVarsByProperty fields of the config, use
-    the set_includeInputSubdirs and set_groupStatVarsByProperty methods
-    >>> dc_manager.set_includeInputSubdirs(True)
-    >>> dc_manager.set_groupStatVarsByProperty(True)
+    To set the ``include_input_subdirs`` and ``group_stat_vars_by_property`` config fields, use
+    the set_include_input_subdirs and set_group_stat_vars_by_property methods
+    >>> dc_manager.set_include_input_subdirs(True)
+    >>> dc_manager.set_group_stat_vars_by_property(True)
 
     Once you are ready to export the config and the data, use the exporter methods.
     Note that while the config is being edited (provenances, variables, input files being added)
@@ -195,11 +196,11 @@ class CustomDataManager:
         Initialize the CustomDataManager object
         Args:
             config_file: Path to the config json file. If not provided, a new config object will be created.
-            mcf_files: Path to one or more MCF files. If not provided, a new MCFNodes object will be created.
+            mcf_files: Path to one or more MCF files. If not provided, a new Nodes object will be created.
         """
 
         self._config = (
-            Config.from_json(config_file) if config_file else Config(inputFiles=[])
+            Config.from_json(config_file) if config_file else Config(input_files=[])
         )
 
         if mcf_files:
@@ -209,42 +210,35 @@ class CustomDataManager:
             else:
                 paths = [Path(p) for p in mcf_files]
 
-            self._mcf_nodes: dict[str, MCFNodes] = {
-                path.name: MCFNodes().load_from_mcf_file(file_path=path)
-                for path in paths
+            self._mcf_nodes: dict[str, Nodes] = {
+                path.name: Nodes().load_from_mcf_file(file_path=path) for path in paths
             }
         else:
-            self._mcf_nodes: dict[str, MCFNodes] = {
-                DEFAULT_STATVAR_MCF_NAME: MCFNodes()
-            }
+            self._mcf_nodes: dict[str, Nodes] = {DEFAULT_STATVAR_MCF_NAME: Nodes()}
 
         self._data = {}
         self._vertical_specs: list[VerticalSpec] = []
 
     def __repr__(self) -> str:
-        input_files_count = len(self._config.inputFiles)
+        input_files_count = len(self._config.input_files)
 
         all_nodes = [n for nodes in self._mcf_nodes.values() for n in nodes.nodes]
-        sources_count = sum(
-            1 for n in all_nodes if getattr(n, "typeOf", None) == "dcid:Source"
-        )
-        provenances_count = sum(
-            1 for n in all_nodes if getattr(n, "typeOf", None) == "dcid:Provenance"
-        )
+        sources_count = sum(1 for n in all_nodes if n.type_of == "dcid:Source")
+        provenances_count = sum(1 for n in all_nodes if n.type_of == "dcid:Provenance")
         variables_count = len(all_nodes) - sources_count - provenances_count
 
         dataframes_count = len(self._data)
         vertical_specs_count = len(self._vertical_specs)
 
-        import_name = self._config.importName
-        include_input_subdirs = self._config.includeInputSubdirs
-        group_statvars = self._config.groupStatVarsByProperty
-        root_group_name = self._config.defaultCustomRootStatVarGroupName
-        namespace = self._config.customIdNamespace
-        svg_prefix = self._config.customSvgPrefix
-        blocklist = self._config.svHierarchyPropsBlocklist
-        data_download_url = self._config.dataDownloadUrl
-        vertical_specs_file = self._config.verticalSpecsFile
+        import_name = self._config.import_name
+        include_input_subdirs = self._config.include_input_subdirs
+        group_statvars = self._config.group_stat_vars_by_property
+        root_group_name = self._config.default_custom_root_stat_var_group_name
+        namespace = self._config.custom_id_namespace
+        svg_prefix = self._config.custom_svg_prefix
+        blocklist = self._config.sv_hierarchy_props_blocklist
+        data_download_url = self._config.data_download_url
+        vertical_specs_file = self._config.vertical_specs_file
 
         return (
             f"<CustomDataManager config: "
@@ -263,35 +257,35 @@ class CustomDataManager:
             f"verticalSpecsFile={vertical_specs_file}>"
         )
 
-    def set_importName(self, name: str | None) -> CustomDataManager:
+    def set_import_name(self, name: str | None) -> CustomDataManager:
         """Set the import name in the config.
 
         The import name is used by the platform prep job to name the JSON-LD output
         directory. Pass ``None`` to unset it; ``export_config`` then defaults it to the
         export directory name.
         """
-        self._config.importName = name
+        self._config.import_name = name
         return self
 
-    def set_includeInputSubdirs(self, set_value: bool) -> CustomDataManager:
+    def set_include_input_subdirs(self, set_value: bool) -> CustomDataManager:
         """Set the includeInputSubdirs attribute of the config"""
-        self._config.includeInputSubdirs = set_value
+        self._config.include_input_subdirs = set_value
         return self
 
-    def set_groupStatVarsByProperty(self, set_value: bool) -> CustomDataManager:
+    def set_group_stat_vars_by_property(self, set_value: bool) -> CustomDataManager:
         """Set the groupStatVarsByProperty attribute of the config"""
-        self._config.groupStatVarsByProperty = set_value
+        self._config.group_stat_vars_by_property = set_value
         return self
 
-    def set_defaultCustomRootStatVarGroupName(
+    def set_default_custom_root_stat_var_group_name(
         self, name: str | None
     ) -> CustomDataManager:
         """Set the default custom root StatVarGroup display name in the config."""
 
-        self._config.defaultCustomRootStatVarGroupName = name
+        self._config.default_custom_root_stat_var_group_name = name
         return self
 
-    def set_customIdNamespace(
+    def set_custom_id_namespace(
         self, namespace: str | None, *, update_svg_prefix: bool = True
     ) -> CustomDataManager:
         """Set the namespace for generated custom Statistical Variables and groups.
@@ -303,20 +297,20 @@ class CustomDataManager:
                 Defaults to ``True``.
         """
 
-        self._config.customIdNamespace = namespace
+        self._config.custom_id_namespace = namespace
 
-        if update_svg_prefix and namespace and not self._config.customSvgPrefix:
-            self._config.customSvgPrefix = f"{namespace}/g/"
+        if update_svg_prefix and namespace and not self._config.custom_svg_prefix:
+            self._config.custom_svg_prefix = f"{namespace}/g/"
 
         return self
 
-    def set_customSvgPrefix(self, prefix: str | None) -> CustomDataManager:
+    def set_custom_svg_prefix(self, prefix: str | None) -> CustomDataManager:
         """Set the prefix used for generated custom StatVarGroup IDs."""
 
-        self._config.customSvgPrefix = prefix
+        self._config.custom_svg_prefix = prefix
         return self
 
-    def set_svHierarchyPropsBlocklist(
+    def set_sv_hierarchy_props_blocklist(
         self, blocklist: list[str] | None
     ) -> CustomDataManager:
         """Set the StatVar hierarchy property blocklist.
@@ -326,7 +320,7 @@ class CustomDataManager:
         """
 
         if blocklist is None:
-            self._config.svHierarchyPropsBlocklist = None
+            self._config.sv_hierarchy_props_blocklist = None
         else:
             seen: set[str] = set()
             deduped: list[str] = []
@@ -334,33 +328,33 @@ class CustomDataManager:
                 if prop not in seen:
                     seen.add(prop)
                     deduped.append(prop)
-            self._config.svHierarchyPropsBlocklist = deduped
+            self._config.sv_hierarchy_props_blocklist = deduped
         return self
 
-    def set_dataDownloadUrl(self, urls: list[str] | None) -> CustomDataManager:
+    def set_data_download_url(self, urls: list[str] | None) -> CustomDataManager:
         """Set the data download URLs in the config.
 
         Replaces any existing list. Pass ``None`` to unset the field (absent from the
         exported ``config.json``).
         """
-        self._config.dataDownloadUrl = urls
+        self._config.data_download_url = urls
         return self
 
-    def add_dataDownloadUrl(self, url: str) -> CustomDataManager:
+    def add_data_download_url(self, url: str) -> CustomDataManager:
         """Append a single data download URL to the config.
 
         Initializes the list to ``[url]`` when the field is unset.
         """
-        existing = self._config.dataDownloadUrl or []
-        self._config.dataDownloadUrl = [*existing, url]
+        existing = self._config.data_download_url or []
+        self._config.data_download_url = [*existing, url]
         return self
 
-    def set_verticalSpecsFile(self, file_name: str | None) -> CustomDataManager:
+    def set_vertical_specs_file(self, file_name: str | None) -> CustomDataManager:
         """Set the vertical-specs filename in the config.
 
         Plain filename string (no ``.json``-suffix enforcement). Pass ``None`` to unset.
         """
-        self._config.verticalSpecsFile = file_name
+        self._config.vertical_specs_file = file_name
         return self
 
     def add_vertical_spec(
@@ -390,25 +384,26 @@ class CustomDataManager:
         """
         self._vertical_specs.append(
             VerticalSpec(
-                populationType=population_type,
-                measuredProperties=measured_properties or [],
+                population_type=population_type,
+                measured_properties=measured_properties or [],
                 verticals=verticals,
             )
         )
         if file_name is not None:
-            self._config.verticalSpecsFile = file_name
-        elif self._config.verticalSpecsFile is None:
-            self._config.verticalSpecsFile = DEFAULT_VERTICAL_SPECS_NAME
+            self._config.vertical_specs_file = file_name
+        elif self._config.vertical_specs_file is None:
+            self._config.vertical_specs_file = DEFAULT_VERTICAL_SPECS_NAME
         return self
 
     def add_source(
         self,
         *,
-        name: str,
+        dcid: str,
         url: str,
+        name: str | None = None,
         description: str | None = None,
         license: str | None = None,
-        isPartOf: str | None = None,
+        is_part_of: str | None = None,
         additional_properties: dict[str, str] | None = None,
         override: bool = False,
         mcf_file_name: MCFFileName | str = DEFAULT_PROVENANCE_MCF_NAME,
@@ -416,16 +411,18 @@ class CustomDataManager:
         """Add a Source MCF node.
 
         Emits a ``dcid:Source`` node to the MCF collection (default: ``provenance.mcf``).
-        The node is referenced by ``add_provenance`` via the same bare ``name``.
+        The node is referenced by ``add_provenance`` via the same bare ``dcid`` token
+        (passed to its ``source`` argument).
 
         Args:
-            name: Bare name for the source. Minting rule: bare name →
-                ``dcid:source/<name>``; pass an already ``dcid:``-prefixed value to use
-                it verbatim. Names must be valid dcid tokens (no whitespace).
+            dcid: Identifier for the source node. Minting rule: bare token →
+                ``dcid:source/<token>``; pass an already ``dcid:``-prefixed value to use
+                it verbatim. Must be a valid dcid token (no whitespace).
             url: URL of the data source.
+            name: Optional human-readable name of the source. (Optional)
             description: Optional human-readable description. (Optional)
             license: Optional license information. (Optional)
-            isPartOf: Optional DCID of a parent source. (Optional)
+            is_part_of: Optional DCID of a parent source. (Optional)
             additional_properties: Additional MCF properties, passed as a dictionary
                 with the target property as key. (Optional)
             override: If True, overwrite the existing node if it exists. Defaults to False.
@@ -436,37 +433,38 @@ class CustomDataManager:
             CustomDataManager object
 
         Raises:
-            ValueError: If the name contains whitespace, if a node with the same id
-                already exists and ``override`` is False, or if the file name is invalid.
+            ValueError: If the ``dcid`` token contains whitespace, if a node with the same
+                id already exists and ``override`` is False, or if the file name is invalid.
         """
 
-        Node = mint_dcid(prefix="source", name=name)
+        dcid = mint_dcid(prefix="source", token=dcid)
         url = str(url)
-        props = _parse_kwargs_into_properties(locals(), extra_exclude={"name"})
-        node = SourceMCFNode(**props)
+        props = _parse_kwargs_into_properties(locals())
+        node = SourceNode(**props)
 
         mcf_name = validate_mcf_file_name(mcf_file_name)
-        self._mcf_nodes.setdefault(mcf_name, MCFNodes()).add(node, override=override)
+        self._mcf_nodes.setdefault(mcf_name, Nodes()).add(node, override=override)
 
         return self
 
     def add_provenance(
         self,
         *,
-        name: str,
+        dcid: str,
         url: str,
         source: str,
+        name: str | None = None,
         description: str | None = None,
         license: str | None = None,
-        licenseType: str | None = None,
-        lastDataRefreshDate: str | None = None,
-        nextDataRefreshDate: str | None = None,
-        nextSourceReleaseDate: str | None = None,
-        sourceReleaseFrequency: str | None = None,
-        earliestObservationDate: str | None = None,
-        latestObservationDate: str | None = None,
+        license_type: str | None = None,
+        last_data_refresh_date: str | None = None,
+        next_data_refresh_date: str | None = None,
+        next_source_release_date: str | None = None,
+        source_release_frequency: str | None = None,
+        earliest_observation_date: str | None = None,
+        latest_observation_date: str | None = None,
         curator: str | None = None,
-        isPartOf: str | None = None,
+        is_part_of: str | None = None,
         additional_properties: dict[str, str] | None = None,
         override: bool = False,
         mcf_file_name: MCFFileName | str = DEFAULT_PROVENANCE_MCF_NAME,
@@ -477,24 +475,25 @@ class CustomDataManager:
         The corresponding Source must already be registered via ``add_source``.
 
         Args:
-            name: Bare name for the provenance. Minting rule: bare name →
-                ``dcid:provenance/<name>``; pass an already ``dcid:``-prefixed value to
-                use it verbatim. Names must be valid dcid tokens (no whitespace).
+            dcid: Identifier for the provenance node. Minting rule: bare token →
+                ``dcid:provenance/<token>``; pass an already ``dcid:``-prefixed value to
+                use it verbatim. Must be a valid dcid token (no whitespace).
             url: URL of the provenance dataset.
             source: Bare name of the parent Source (must already have been added via
                 ``add_source``). The same minting rule applies: bare name →
                 ``dcid:source/<source>``; ``dcid:``-prefixed → verbatim.
+            name: Optional human-readable name of the provenance. (Optional)
             description: Optional human-readable description. (Optional)
             license: Optional license information. (Optional)
-            licenseType: Optional license type. (Optional)
-            lastDataRefreshDate: Optional date of last data refresh. (Optional)
-            nextDataRefreshDate: Optional date of next expected data refresh. (Optional)
-            nextSourceReleaseDate: Optional date of next source release. (Optional)
-            sourceReleaseFrequency: Optional frequency of source releases. (Optional)
-            earliestObservationDate: Optional earliest observation date. (Optional)
-            latestObservationDate: Optional latest observation date. (Optional)
+            license_type: Optional license type. (Optional)
+            last_data_refresh_date: Optional date of last data refresh. (Optional)
+            next_data_refresh_date: Optional date of next expected data refresh. (Optional)
+            next_source_release_date: Optional date of next source release. (Optional)
+            source_release_frequency: Optional frequency of source releases. (Optional)
+            earliest_observation_date: Optional earliest observation date. (Optional)
+            latest_observation_date: Optional latest observation date. (Optional)
             curator: Optional curator of the dataset. (Optional)
-            isPartOf: Optional DCID of a parent provenance. (Optional)
+            is_part_of: Optional DCID of a parent provenance. (Optional)
             additional_properties: Additional MCF properties, passed as a dictionary
                 with the target property as key. (Optional)
             override: If True, overwrite the existing node if it exists. Defaults to False.
@@ -505,41 +504,39 @@ class CustomDataManager:
             CustomDataManager object
 
         Raises:
-            ValueError: If the ``source`` has not been added yet, if either name
-                contains whitespace, if a node with the same id already exists and
-                ``override`` is False, or if the file name is invalid.
+            ValueError: If the ``source`` has not been added yet, if the ``dcid`` or
+                ``source`` token contains whitespace, if a node with the same id already
+                exists and ``override`` is False, or if the file name is invalid.
         """
 
-        Node = mint_dcid(prefix="provenance", name=name)
+        dcid = mint_dcid(prefix="provenance", token=dcid)
         url = str(url)
-        sourceLink = mint_dcid(prefix="source", name=source)
-        self._require_source_exists(source, sourceLink)
-        props = _parse_kwargs_into_properties(
-            locals(), extra_exclude={"name", "source"}
-        )
-        node = ProvenanceMCFNode(**props)
+        source_link = mint_dcid(prefix="source", token=source)
+        self._require_source_exists(source, source_link)
+        props = _parse_kwargs_into_properties(locals(), extra_exclude={"source"})
+        node = ProvenanceNode(**props)
 
         mcf_name = validate_mcf_file_name(mcf_file_name)
-        self._mcf_nodes.setdefault(mcf_name, MCFNodes()).add(node, override=override)
+        self._mcf_nodes.setdefault(mcf_name, Nodes()).add(node, override=override)
 
         return self
 
     def add_variable_to_mcf(
         self,
         *,
-        Node: str,
+        dcid: str,
         name: str,
-        memberOf: list[str] | str | None = None,
-        statType: str | StatType | None = None,
-        shortDisplayName: str | None = None,
+        member_of: list[str] | str | None = None,
+        stat_type: str | StatType | None = None,
+        short_display_name: str | None = None,
         description: str | None = None,
-        searchDescription: list[str] | str | None = None,
+        search_description: list[str] | str | None = None,
         provenance: str | None = None,
-        populationType: str | None = None,
-        measuredProperty: str | None = None,
-        measurementQualifier: str | None = None,
-        measurementDenominator: str | None = None,
-        observationProperties: list[str] | None = None,
+        population_type: str | None = None,
+        measured_property: str | None = None,
+        measurement_qualifier: str | None = None,
+        measurement_denominator: str | None = None,
+        observation_properties: list[str] | None = None,
         additional_properties: dict[str, str] | None = None,
         override: bool = False,
         mcf_file_name: MCFFileName | str = DEFAULT_STATVAR_MCF_NAME,
@@ -547,23 +544,23 @@ class CustomDataManager:
         """Add a StatVar node for the MCF file
 
         Args:
-            Node: The identifier of the statistical variable. A bare token is
+            dcid: The identifier of the statistical variable. A bare token is
                 normalized to ``dcid:<token>`` and an already ``dcid:``-prefixed token
                 is kept as-is; either way whitespace raises ``ValueError``. The same
                 applies to ``populationType``, ``measuredProperty``,
                 ``measurementQualifier`` and ``measurementDenominator``.
             name: Name of the variable (Optional)
-            memberOf: Member of group for the variable (Optional)
-            statType: Type of the statistical variable (Optional)
-            shortDisplayName: Short display name of the variable (Optional)
+            member_of: Member of group for the variable (Optional)
+            stat_type: Type of the statistical variable (Optional)
+            short_display_name: Short display name of the variable (Optional)
             description: Description of the variable (Optional)
-            searchDescription: Search description of the variable (Optional)
+            search_description: Search description of the variable (Optional)
             provenance: Provenance of the variable (Optional)
-            populationType: Population type of the variable (Optional)
-            measuredProperty: Measured property of the variable (Optional)
-            measurementQualifier: Measurement qualifier of the variable (Optional)
-            measurementDenominator: Measurement denominator of the variable (Optional)
-            observationProperties: For multi-entity data, the list of dcid:-prefixed properties
+            population_type: Population type of the variable (Optional)
+            measured_property: Measured property of the variable (Optional)
+            measurement_qualifier: Measurement qualifier of the variable (Optional)
+            measurement_denominator: Measurement denominator of the variable (Optional)
+            observation_properties: For multi-entity data, the list of dcid:-prefixed properties
                 that apply to observations, one per custom dimension (Optional)
             additional_properties: Additional properties for the variable,
                 passed as a dictionary with the target property as key.(Optional)
@@ -574,33 +571,33 @@ class CustomDataManager:
             CustomDataManager object
         """
 
-        Node = ensure_dcid(Node)
-        if populationType is not None:
-            populationType = ensure_dcid(populationType)
-        if measuredProperty is not None:
-            measuredProperty = ensure_dcid(measuredProperty)
-        if measurementQualifier is not None:
-            measurementQualifier = ensure_dcid(measurementQualifier)
-        if measurementDenominator is not None:
-            measurementDenominator = ensure_dcid(measurementDenominator)
+        dcid = ensure_dcid(dcid)
+        if population_type is not None:
+            population_type = ensure_dcid(population_type)
+        if measured_property is not None:
+            measured_property = ensure_dcid(measured_property)
+        if measurement_qualifier is not None:
+            measurement_qualifier = ensure_dcid(measurement_qualifier)
+        if measurement_denominator is not None:
+            measurement_denominator = ensure_dcid(measurement_denominator)
 
         props = _parse_kwargs_into_properties(locals())
-        node = StatVarMCFNode(**props)
+        node = StatVarNode(**props)
 
         name = validate_mcf_file_name(mcf_file_name)
-        self._mcf_nodes.setdefault(name, MCFNodes()).add(node, override=override)
+        self._mcf_nodes.setdefault(name, Nodes()).add(node, override=override)
 
         return self
 
     def add_variable_group_to_mcf(
         self,
         *,
-        Node: str,
+        dcid: str,
         name: str,
-        specializationOf: str,
+        specialization_of: str,
         description: str | None = None,
         provenance: str | None = None,
-        shortDisplayName: str | None = None,
+        short_display_name: str | None = None,
         additional_properties: dict[str, str] | None = None,
         override: bool = False,
         mcf_file_name: MCFFileName | str = DEFAULT_GROUP_NAME,
@@ -608,16 +605,16 @@ class CustomDataManager:
         """Add a StatVarGroup node for the MCF file
 
         Args:
-            Node: DCID of the group you are defining. It must be prefixed by g/ and may include
+            dcid: DCID of the group you are defining. It must be prefixed by g/ and may include
                 an additional prefix before the g.
             name: This is the name of the heading that will appear in the Statistical Variable Explorer.
-            specializationOf: Specialization of the variable group. For a top-level group,
+            specialization_of: Specialization of the variable group. For a top-level group,
                 this must be dcid:dc/g/Root, which is the root group in the statistical
                 variable hierarchy in the Knowledge Graph.To create a sub-group, specify the
                 DCID of another node you have already defined.
             description: Description of the variable group (Optional)
             provenance: Provenance of the variable group (Optional)
-            shortDisplayName: Short display name of the variable group (Optional)
+            short_display_name: Short display name of the variable group (Optional)
             additional_properties: Additional properties for the variable group,
                 passed as a dictionary with the target property as key.(Optional)
             override: If True, overwrite the existing node if it exists. Defaults to False.
@@ -628,19 +625,19 @@ class CustomDataManager:
         """
         props = _parse_kwargs_into_properties(locals())
 
-        node = StatVarGroupMCFNode(**props)
+        node = StatVarGroupNode(**props)
 
         name = validate_mcf_file_name(mcf_file_name)
-        self._mcf_nodes.setdefault(name, MCFNodes()).add(node, override=override)
+        self._mcf_nodes.setdefault(name, Nodes()).add(node, override=override)
         return self
 
     def add_entity_type(
         self,
         *,
-        Node: str,
+        dcid: str,
         name: str,
         description: str | None = None,
-        includedIn: str | list[str] | None = None,
+        included_in: str | list[str] | None = None,
         additional_properties: dict[str, str] | None = None,
         override: bool = False,
         mcf_file_name: MCFFileName | str = DEFAULT_STATVAR_MCF_NAME,
@@ -650,13 +647,13 @@ class CustomDataManager:
         Emits a ``dcid:Class`` node to the MCF collection (default: ``custom_nodes.mcf``).
 
         Args:
-            Node: Identifier token for the Class. Bare tokens are normalized to
+            dcid: Identifier token for the Class. Bare tokens are normalized to
                 ``dcid:<token>`` (e.g. ``"MyClass"`` → ``"dcid:MyClass"``); already
                 ``dcid:``-prefixed values are passed through verbatim. Names must be
                 valid dcid tokens (no whitespace).
             name: Human-readable name for the entity type.
             description: Optional human-readable description. (Optional)
-            includedIn: Bare provenance name (or list of names) the entity type is
+            included_in: Bare provenance name (or list of names) the entity type is
                 defined in. **Important:** this takes the bare provenance name (not a
                 dcid, unlike the other ref params). The provenance must already be
                 registered via ``add_provenance``. The builder emits ``includedIn`` for
@@ -676,23 +673,23 @@ class CustomDataManager:
                 exists and ``override`` is False, if the file name is invalid, or if any
                 provenance referenced by ``includedIn`` has not been registered.
         """
-        Node = ensure_dcid(Node)
-        if includedIn is not None:
-            includedIn = self._expand_included_in(includedIn)
+        dcid = ensure_dcid(dcid)
+        if included_in is not None:
+            included_in = self._expand_included_in(included_in)
         props = _parse_kwargs_into_properties(locals())
-        node = EntityTypeMCFNode(**props)
+        node = EntityTypeNode(**props)
         mcf_name = validate_mcf_file_name(mcf_file_name)
-        self._mcf_nodes.setdefault(mcf_name, MCFNodes()).add(node, override=override)
+        self._mcf_nodes.setdefault(mcf_name, Nodes()).add(node, override=override)
         return self
 
     def add_event_type(
         self,
         *,
-        Node: str,
+        dcid: str,
         name: str,
         description: str | None = None,
-        subClassOf: str = "dcid:Event",
-        includedIn: str | list[str] | None = None,
+        sub_class_of: str = "dcid:Event",
+        included_in: str | list[str] | None = None,
         additional_properties: dict[str, str] | None = None,
         override: bool = False,
         mcf_file_name: MCFFileName | str = DEFAULT_STATVAR_MCF_NAME,
@@ -703,14 +700,14 @@ class CustomDataManager:
         (default: ``custom_nodes.mcf``).
 
         Args:
-            Node: Identifier token for the event type. Bare tokens are normalized to
+            dcid: Identifier token for the event type. Bare tokens are normalized to
                 ``dcid:<token>``; already ``dcid:``-prefixed values are passed through
                 verbatim. Names must be valid dcid tokens (no whitespace).
             name: Human-readable name for the event type.
             description: Optional human-readable description. (Optional)
-            subClassOf: Parent class DCID. Bare tokens are normalized to ``dcid:<token>``.
+            sub_class_of: Parent class DCID. Bare tokens are normalized to ``dcid:<token>``.
                 Defaults to ``"dcid:Event"``. (Optional)
-            includedIn: Bare provenance name (or list of names) the event type is
+            included_in: Bare provenance name (or list of names) the event type is
                 defined in. **Important:** this takes the bare provenance name (not a
                 dcid, unlike the other ref params). The provenance must already be
                 registered via ``add_provenance``. The builder emits ``includedIn`` for
@@ -730,24 +727,24 @@ class CustomDataManager:
                 exists and ``override`` is False, if the file name is invalid, or if any
                 provenance referenced by ``includedIn`` has not been registered.
         """
-        Node = ensure_dcid(Node)
-        subClassOf = ensure_dcid(subClassOf)
-        if includedIn is not None:
-            includedIn = self._expand_included_in(includedIn)
+        dcid = ensure_dcid(dcid)
+        sub_class_of = ensure_dcid(sub_class_of)
+        if included_in is not None:
+            included_in = self._expand_included_in(included_in)
         props = _parse_kwargs_into_properties(locals())
-        node = EventTypeMCFNode(**props)
+        node = EventTypeNode(**props)
         mcf_name = validate_mcf_file_name(mcf_file_name)
-        self._mcf_nodes.setdefault(mcf_name, MCFNodes()).add(node, override=override)
+        self._mcf_nodes.setdefault(mcf_name, Nodes()).add(node, override=override)
         return self
 
     def add_property(
         self,
         *,
-        Node: str,
+        dcid: str,
         name: str,
-        domainIncludes: str | list[str] | None = None,
-        rangeIncludes: str | list[str] | None = None,
-        subPropertyOf: str | list[str] | None = None,
+        domain_includes: str | list[str] | None = None,
+        range_includes: str | list[str] | None = None,
+        sub_property_of: str | list[str] | None = None,
         description: str | None = None,
         additional_properties: dict[str, str] | None = None,
         override: bool = False,
@@ -758,17 +755,17 @@ class CustomDataManager:
         Emits a ``dcid:Property`` node to the MCF collection (default: ``custom_nodes.mcf``).
 
         Args:
-            Node: Identifier token for the property. Bare tokens are normalized to
+            dcid: Identifier token for the property. Bare tokens are normalized to
                 ``dcid:<token>``; already ``dcid:``-prefixed values are passed through
                 verbatim. Names must be valid dcid tokens (no whitespace).
             name: Human-readable name for the property.
-            domainIncludes: DCID(s) of classes the property applies to. Bare tokens or
+            domain_includes: DCID(s) of classes the property applies to. Bare tokens or
                 lists are normalized to ``dcid:`` (same as ``Node``); already
                 ``dcid:``-prefixed values are passed through verbatim. (Optional)
-            rangeIncludes: DCID(s) of classes that are the value type. Bare tokens or
+            range_includes: DCID(s) of classes that are the value type. Bare tokens or
                 lists are normalized to ``dcid:`` (same as ``Node``); already
                 ``dcid:``-prefixed values are passed through verbatim. (Optional)
-            subPropertyOf: DCID(s) of parent properties. Bare tokens or lists are
+            sub_property_of: DCID(s) of parent properties. Bare tokens or lists are
                 normalized to ``dcid:`` (same as ``Node``); already ``dcid:``-prefixed
                 values are passed through verbatim. (Optional)
             description: Optional human-readable description. (Optional)
@@ -785,27 +782,27 @@ class CustomDataManager:
             ValueError: If Node contains whitespace, if a node with the same id already
                 exists and ``override`` is False, or if the file name is invalid.
         """
-        Node = ensure_dcid(Node)
-        if domainIncludes is not None:
-            domainIncludes = ensure_dcid(domainIncludes)
-        if rangeIncludes is not None:
-            rangeIncludes = ensure_dcid(rangeIncludes)
-        if subPropertyOf is not None:
-            subPropertyOf = ensure_dcid(subPropertyOf)
+        dcid = ensure_dcid(dcid)
+        if domain_includes is not None:
+            domain_includes = ensure_dcid(domain_includes)
+        if range_includes is not None:
+            range_includes = ensure_dcid(range_includes)
+        if sub_property_of is not None:
+            sub_property_of = ensure_dcid(sub_property_of)
         props = _parse_kwargs_into_properties(locals())
-        node = PropertyMCFNode(**props)
+        node = PropertyNode(**props)
         mcf_name = validate_mcf_file_name(mcf_file_name)
-        self._mcf_nodes.setdefault(mcf_name, MCFNodes()).add(node, override=override)
+        self._mcf_nodes.setdefault(mcf_name, Nodes()).add(node, override=override)
         return self
 
     def add_unit(
         self,
         *,
-        Node: str,
+        dcid: str,
         name: str,
-        shortDisplayName: str | None = None,
+        short_display_name: str | None = None,
         description: str | None = None,
-        typeOf: str = "dcid:UnitOfMeasure",
+        type_of: str = "dcid:UnitOfMeasure",
         additional_properties: dict[str, str] | None = None,
         override: bool = False,
         mcf_file_name: MCFFileName | str = DEFAULT_STATVAR_MCF_NAME,
@@ -816,13 +813,13 @@ class CustomDataManager:
         collection (default: ``custom_nodes.mcf``).
 
         Args:
-            Node: Identifier token for the unit. Bare tokens are normalized to
+            dcid: Identifier token for the unit. Bare tokens are normalized to
                 ``dcid:<token>``; already ``dcid:``-prefixed values are passed through
                 verbatim. Names must be valid dcid tokens (no whitespace).
             name: Human-readable name for the unit.
-            shortDisplayName: Optional short display name (e.g. ``"$"``). (Optional)
+            short_display_name: Optional short display name (e.g. ``"$"``). (Optional)
             description: Optional human-readable description. (Optional)
-            typeOf: Type DCID. Bare tokens are normalized to ``dcid:<token>``. Defaults to
+            type_of: Type DCID. Bare tokens are normalized to ``dcid:<token>``. Defaults to
                 ``"dcid:UnitOfMeasure"``; override for sub-types such as
                 ``"dcid:CurrencyUnitOfMeasure"``. (Optional)
             additional_properties: Additional MCF properties, passed as a dictionary
@@ -838,21 +835,21 @@ class CustomDataManager:
             ValueError: If Node contains whitespace, if a node with the same id already
                 exists and ``override`` is False, or if the file name is invalid.
         """
-        Node = ensure_dcid(Node)
-        typeOf = ensure_dcid(typeOf)
+        dcid = ensure_dcid(dcid)
+        type_of = ensure_dcid(type_of)
         props = _parse_kwargs_into_properties(locals())
-        node = UnitOfMeasureMCFNode(**props)
+        node = UnitOfMeasureNode(**props)
         mcf_name = validate_mcf_file_name(mcf_file_name)
-        self._mcf_nodes.setdefault(mcf_name, MCFNodes()).add(node, override=override)
+        self._mcf_nodes.setdefault(mcf_name, Nodes()).add(node, override=override)
         return self
 
     def add_measurement_method(
         self,
         *,
-        Node: str,
+        dcid: str,
         name: str | None = None,
         description: str | None = None,
-        typeOf: str = "dcid:MeasurementMethodEnum",
+        type_of: str = "dcid:MeasurementMethodEnum",
         additional_properties: dict[str, str] | None = None,
         override: bool = False,
         mcf_file_name: MCFFileName | str = DEFAULT_STATVAR_MCF_NAME,
@@ -864,12 +861,12 @@ class CustomDataManager:
         ``name`` is optional here — only ``Node`` is required.
 
         Args:
-            Node: Identifier token for the measurement method. Bare tokens are normalized
+            dcid: Identifier token for the measurement method. Bare tokens are normalized
                 to ``dcid:<token>``; already ``dcid:``-prefixed values are passed through
                 verbatim. Names must be valid dcid tokens (no whitespace).
             name: Optional human-readable name. (Optional)
             description: Optional human-readable description. (Optional)
-            typeOf: Measurement-method enum type DCID. Bare tokens are normalized to
+            type_of: Measurement-method enum type DCID. Bare tokens are normalized to
                 ``dcid:<token>``. Defaults to ``"dcid:MeasurementMethodEnum"``; override
                 for sub-types such as ``"dcid:CensusSurveyEnum"``. (Optional)
             additional_properties: Additional MCF properties, passed as a dictionary
@@ -885,12 +882,12 @@ class CustomDataManager:
             ValueError: If Node contains whitespace, if a node with the same id already
                 exists and ``override`` is False, or if the file name is invalid.
         """
-        Node = ensure_dcid(Node)
-        typeOf = ensure_dcid(typeOf)
+        dcid = ensure_dcid(dcid)
+        type_of = ensure_dcid(type_of)
         props = _parse_kwargs_into_properties(locals())
-        node = MeasurementMethodMCFNode(**props)
+        node = MeasurementMethodNode(**props)
         mcf_name = validate_mcf_file_name(mcf_file_name)
-        self._mcf_nodes.setdefault(mcf_name, MCFNodes()).add(node, override=override)
+        self._mcf_nodes.setdefault(mcf_name, Nodes()).add(node, override=override)
         return self
 
     def add_variables_to_mcf_from_csv(
@@ -906,17 +903,17 @@ class CustomDataManager:
         override: bool = False,
     ) -> CustomDataManager:
         """
-        Read a CSV containing StatVar nodes and parse them into StatVarMCFNode objects.
+        Read a CSV containing StatVar nodes and parse them into StatVarNode objects.
 
         Args:
             csv_file_path: Path to the CSV file.
             mcf_file_name: Name of the MCF file. Defaults to "custom_nodes.mcf".
             column_to_property_mapping: Optional map from CSV column names to
-                ``StatVarMCFNode`` attribute names.
+                ``StatVarNode`` attribute names.
             parse_groups: If True, parse groups into StatVar nodes. That means the `memberOf`
                 attribute of each StatVar node in `stat_vars`, which is expected to be a
                 slash-separated string path describing its group hierarchy
-                (e.g.,"Economic/Employment/Unemployment"), gets transformed into StatVarGroupMCFNode
+                (e.g.,"Economic/Employment/Unemployment"), gets transformed into StatVarGroupNode
                 objects for each group level. This sets up their parent-child relationships,
                 and updates the original memberOf attribute to reference the deepest group DCID.
                 Defaults to False.
@@ -947,7 +944,7 @@ class CustomDataManager:
 
         name = validate_mcf_file_name(mcf_file_name)
         for node in stat_vars.nodes:
-            self._mcf_nodes.setdefault(name, MCFNodes()).add(node, override=override)
+            self._mcf_nodes.setdefault(name, Nodes()).add(node, override=override)
 
         return self
 
@@ -965,9 +962,9 @@ class CustomDataManager:
         *,
         provenance: str,
         data: pd.DataFrame | None = None,
-        columnMappings: dict[str, str] | None = None,
-        observationProperties: dict[str, str] | None = None,
-        ignoreColumns: list[str] | None = None,
+        column_mappings: dict[str, str] | None = None,
+        observation_properties: dict[str, str] | None = None,
+        ignore_columns: list[str] | None = None,
         pattern: str | None = None,
         override: bool = False,
     ) -> CustomDataManager:
@@ -992,15 +989,15 @@ class CustomDataManager:
                 ``dcid:provenance/<name>``; pass an already ``dcid:``-prefixed value to
                 use it verbatim. Names must be valid dcid tokens (no whitespace).
             data: Data to register (optional; only valid with ``file_name``).
-            columnMappings: Column mappings. Match the headings in the CSV file to the
+            column_mappings: Column mappings. Match the headings in the CSV file to the
                 allowed properties. Allowed keys are [variable, observationAbout, date, value, unit,
                 scalingFactor, measurementMethod, observationPeriod, custom:<name>].
                 Use custom:<name> keys to map each entity dimension for multi-entity observations.
-            observationProperties: Optional file-level constant observation properties applied
+            observation_properties: Optional file-level constant observation properties applied
                 to every observation (e.g. ``{"unit": "USDollar"}``). Standard keys are
                 ``unit``/``scalingFactor``/``measurementMethod``/``observationPeriod``; custom
                 keys are preserved verbatim.
-            ignoreColumns: List of columns to ignore (optional).
+            ignore_columns: List of columns to ignore (optional).
             pattern: Glob pattern matching one or more input files. Mutually exclusive
                 with ``file_name``. Pattern entries carry no local data.
             override: If True, overwrite the existing entry if it exists. Defaults to False.
@@ -1022,18 +1019,18 @@ class CustomDataManager:
             filename=file_name,
             pattern=pattern,
             provenance=provenance,
-            columnMappings=ColumnMappings.model_validate(columnMappings or {}),
-            observationProperties=(
-                ObservationProperties(**observationProperties)
-                if observationProperties is not None
+            column_mappings=ColumnMappings.model_validate(column_mappings or {}),
+            observation_properties=(
+                ObservationProperties(**observation_properties)
+                if observation_properties is not None
                 else None
             ),
-            ignoreColumns=ignoreColumns,
+            ignore_columns=ignore_columns,
         )
 
         # Upsert into the list keyed by filename or pattern
         existing_idx: int | None = None
-        for i, e in enumerate(self._config.inputFiles):
+        for i, e in enumerate(self._config.input_files):
             if file_name is not None and e.filename == file_name:
                 existing_idx = i
                 break
@@ -1048,9 +1045,9 @@ class CustomDataManager:
                     f"Input file '{key}' already registered. "
                     "Use override=True to replace it."
                 )
-            self._config.inputFiles[existing_idx] = entry
+            self._config.input_files[existing_idx] = entry
         else:
-            self._config.inputFiles.append(entry)
+            self._config.input_files.append(entry)
 
         # Register data if provided (filename path only).
         # file_name is non-None here: the pattern+data guard and XOR check above ensure it.
@@ -1073,7 +1070,7 @@ class CustomDataManager:
             override: If True, overwrite the existing data if it exists.
         """
 
-        if not any(e.filename == file_name for e in self._config.inputFiles):
+        if not any(e.filename == file_name for e in self._config.input_files):
             raise ValueError(
                 f"File '{file_name}' not found in the config file. Please register the "
                 "file in the config file before adding data, using the "
@@ -1114,14 +1111,14 @@ class CustomDataManager:
         )
 
         found_old = any(
-            node.Node == old_name
+            node.dcid == old_name
             for name in file_names
-            for node in (self._mcf_nodes.get(name) or MCFNodes()).nodes
+            for node in (self._mcf_nodes.get(name) or Nodes()).nodes
         )
         found_new = any(
-            node.Node == new_name
+            node.dcid == new_name
             for name in file_names
-            for node in (self._mcf_nodes.get(name) or MCFNodes()).nodes
+            for node in (self._mcf_nodes.get(name) or Nodes()).nodes
         )
 
         if not found_old:
@@ -1133,27 +1130,27 @@ class CustomDataManager:
             nodes = self._mcf_nodes.get(name)
             if not nodes:
                 continue
-            if any(node.Node == old_name for node in nodes.nodes):
+            if any(node.dcid == old_name for node in nodes.nodes):
                 nodes.rename(old_name, new_name)
 
         return self
 
-    def remove_indicator(
-        self, indicator_id: str, *, mcf_file_name: str | None = None
+    def remove_variable(
+        self, dcid: str, *, mcf_file_name: str | None = None
     ) -> CustomDataManager:
-        """Remove a single indicator from the manager.
+        """Remove a single variable from the manager.
 
-        This removes the indicator from any loaded MCF files. If
+        This removes the variable from any loaded MCF files. If
         ``mcf_file_name`` is provided, only that MCF file is searched;
         otherwise all MCF files will be inspected.
 
         Args:
-            indicator_id: Identifier of the indicator/StatVar to remove.
+            dcid: DCID of the StatVar to remove.
             mcf_file_name: Optional name of the MCF file from which to remove the
                 node. If omitted, all managed MCF files are searched.
 
         Raises:
-            ValueError: If the indicator is not found in any MCF file.
+            ValueError: If the variable is not found in any MCF file.
         """
 
         found = False
@@ -1174,19 +1171,17 @@ class CustomDataManager:
             if not nodes:
                 continue
             try:
-                nodes.remove(indicator_id)
+                nodes.remove(dcid)
                 found = True
             except ValueError:
                 pass
 
         if not found:
-            raise ValueError(f"Indicator '{indicator_id}' not found")
+            raise ValueError(f"Statistical variable '{dcid}' not found")
 
         return self
 
-    def _require_provenance_exists(
-        self, provenance: str, provenance_link: str
-    ) -> MCFNode:
+    def _require_provenance_exists(self, provenance: str, provenance_link: str) -> Node:
         """Return the Provenance MCF node with id ``provenance_link``, or raise ValueError.
 
         Args:
@@ -1195,14 +1190,11 @@ class CustomDataManager:
         """
         for nodes in self._mcf_nodes.values():
             for n in nodes.nodes:
-                if (
-                    getattr(n, "typeOf", None) == "dcid:Provenance"
-                    and n.Node == provenance_link
-                ):
+                if n.type_of == "dcid:Provenance" and n.dcid == provenance_link:
                     return n
         raise ValueError(
             f"Provenance '{provenance}' not found. "
-            f"Call add_provenance(name={provenance!r}, url=..., source=...) "
+            f"Call add_provenance(dcid={provenance!r}, url=..., source=...) "
             f"before referencing it in includedIn."
         )
 
@@ -1229,9 +1221,9 @@ class CustomDataManager:
         expanded: list[str] = []
         seen: set[str] = set()
         for ref in refs:
-            prov_link = mint_dcid(prefix="provenance", name=ref)
+            prov_link = mint_dcid(prefix="provenance", token=ref)
             prov_node = self._require_provenance_exists(ref, prov_link)
-            for dcid in (prov_link, getattr(prov_node, "sourceLink", None)):
+            for dcid in (prov_link, getattr(prov_node, "source_link", None)):
                 if dcid is not None and dcid not in seen:
                     seen.add(dcid)
                     expanded.append(dcid)
@@ -1245,13 +1237,13 @@ class CustomDataManager:
             source_link: The minted dcid for the source (used for the lookup).
         """
         if not any(
-            getattr(n, "typeOf", None) == "dcid:Source" and n.Node == source_link
+            n.type_of == "dcid:Source" and n.dcid == source_link
             for nodes in self._mcf_nodes.values()
             for n in nodes.nodes
         ):
             raise ValueError(
                 f"Source '{source}' not found. "
-                f"Call add_source(name={source!r}, url=...) before add_provenance()."
+                f"Call add_source(dcid={source!r}, url=...) before add_provenance()."
             )
 
     def _validate_provenances(self) -> None:
@@ -1261,67 +1253,19 @@ class CustomDataManager:
         ``inputFiles`` entry with a ``provenance`` ref has a corresponding node.
         """
         known = {
-            n.Node
+            n.dcid
             for nodes in self._mcf_nodes.values()
             for n in nodes.nodes
-            if getattr(n, "typeOf", None) == "dcid:Provenance"
+            if n.type_of == "dcid:Provenance"
         }
-        for entry in self._config.inputFiles:
+        for entry in self._config.input_files:
             if entry.provenance and entry.provenance not in known:
                 bare = entry.provenance.removeprefix("dcid:provenance/")
                 raise ValueError(
                     f"Input file references unknown provenance '{bare}' "
                     f"('{entry.provenance}'). "
-                    f"Call add_provenance(name={bare!r}, url=..., source=...) first."
+                    f"Call add_provenance(dcid={bare!r}, url=..., source=...) first."
                 )
-
-    def _validate_provenance_files_exported(self, exported_mcf: set[str]) -> None:
-        """Raise if an inputFile references a provenance — or its linked Source —
-        defined in an MCF file that is not being exported.
-
-        ``export_all`` writes a complete bundle, so every provenance an input file
-        references must be defined in an exported MCF file, and so must the Source it
-        links to via ``sourceLink``. Without this check a forgotten
-        ``mcf_file_names=["provenance.mcf"]`` (or a Source kept in a separate, unexported
-        MCF file) would write a config.json pointing at nodes absent from the bundle —
-        references the DCP importer rejects. Unknown provenances (no node at all) are
-        left to ``_validate_provenances``.
-        """
-        prov_file: dict[str, str] = {}
-        prov_source: dict[str, str | None] = {}
-        source_file: dict[str, str] = {}
-        for fname, nodes in self._mcf_nodes.items():
-            for n in nodes.nodes:
-                node_type = getattr(n, "typeOf", None)
-                if node_type == "dcid:Provenance":
-                    prov_file[n.Node] = fname
-                    prov_source[n.Node] = getattr(n, "sourceLink", None)
-                elif node_type == "dcid:Source":
-                    source_file[n.Node] = fname
-
-        missing: dict[str, str] = {}
-        for entry in self._config.inputFiles:
-            ref = entry.provenance
-            owning = prov_file.get(ref)
-            if owning is None:
-                continue  # unknown provenance -> _validate_provenances reports it
-            if owning not in exported_mcf:
-                missing.setdefault(owning, ref)
-                continue
-            # The provenance is exported; the Source it links to must be too.
-            link = prov_source.get(ref)
-            if link is not None:
-                src_owner = source_file.get(link)
-                if src_owner is not None and src_owner not in exported_mcf:
-                    missing.setdefault(src_owner, link)
-
-        if missing:
-            files = sorted(missing)
-            raise ValueError(
-                f"export_all() would write a config.json referencing source/provenance "
-                f"node(s) defined in MCF file(s) not being exported: {files}. Add them to "
-                f"mcf_file_names (e.g. mcf_file_names={files!r}) so the bundle is complete."
-            )
 
     def export_config(self, dir_path: str | PathLike[str]) -> None:
         """Export the config to a JSON file
@@ -1343,8 +1287,8 @@ class CustomDataManager:
         # fallback) for this export only, without mutating manager state, so
         # re-exporting to another directory picks up that directory's name.
         config = self._config
-        if config.importName is None:
-            config = config.model_copy(update={"importName": Path(dir_path).name})
+        if config.import_name is None:
+            config = config.model_copy(update={"import_name": Path(dir_path).name})
 
         output_path = Path(dir_path) / "config.json"
         with output_path.open("w") as f:
@@ -1354,14 +1298,14 @@ class CustomDataManager:
         self,
         dir_path: str | PathLike[str],
         mcf_file_name: str = DEFAULT_STATVAR_MCF_NAME,
-        override: bool = False,
+        overwrite: bool = True,
     ) -> None:
         """Export the MCF file to a file
 
         Args:
             dir_path: Path to the directory where the MCF file will be exported.
             mcf_file_name: Name of the MCF file (must end in .mcf). Defaults to "custom_nodes.mcf".
-            override: If True, overwrite the file if it exists. Defaults to False.
+            overwrite: If True, overwrite the file if it exists. Defaults to True.
         """
         mcf_file_name = validate_mcf_file_name(mcf_file_name)
 
@@ -1372,7 +1316,7 @@ class CustomDataManager:
             raise ValueError(f"No data available for '{mcf_file_name}'")
 
         output_path.parent.mkdir(parents=True, exist_ok=True)
-        nodes.export_to_mcf_file(file_path=output_path, override=override)
+        nodes.export_to_mcf_file(file_path=output_path, overwrite=overwrite)
 
     def config_to_dict(self) -> dict:
         """Export the config to a dictionary
@@ -1426,7 +1370,7 @@ class CustomDataManager:
         if not self._vertical_specs:
             raise ValueError("No vertical specs to export")
 
-        file_name = self._config.verticalSpecsFile or DEFAULT_VERTICAL_SPECS_NAME
+        file_name = self._config.vertical_specs_file or DEFAULT_VERTICAL_SPECS_NAME
         payload = {
             "specs": [spec.model_dump(mode="json") for spec in self._vertical_specs]
         }
@@ -1448,7 +1392,7 @@ class CustomDataManager:
 
         missing = [
             entry.filename
-            for entry in self._config.inputFiles
+            for entry in self._config.input_files
             if entry.filename is not None and entry.filename not in self._data
         ]
         if missing:
@@ -1462,41 +1406,26 @@ class CustomDataManager:
     def export_all(
         self,
         dir_path: str | PathLike[str],
-        override: bool = False,
-        mcf_file_names: str | list[str] | None = None,
         validate_data: bool = False,
     ) -> None:
         """Export the config, MCF file, and data to a directory
 
-        ``export_all`` writes a complete bundle and enforces it: if an input file
-        references a provenance whose MCF file is not listed in ``mcf_file_names``,
-        it raises before writing anything (so no partial bundle lands on disk). To
-        export only the config (deferring MCF export), use ``export_config`` directly.
+        ``export_all`` overwrites the complete bundle. To export only the config
+        (deferring MCF export), use ``export_config`` directly. To export a single MCF
+        file, use `export_mcf_file`.
 
         Args:
             dir_path: Path to the directory where the config and data will be exported.
-            override: If True, overwrite the files if they exist. Defaults to False.
-            mcf_file_names: Name of the MCF file(s) to export (must end in .mcf).
-                Defaults to None, which means no MCF file will be exported.
-                Source and Provenance nodes live in ``provenance.mcf`` by default and
-                must be listed here to be written (e.g.
-                ``mcf_file_names=["provenance.mcf"]``).
             validate_data: If True, raise a ValueError before exporting if any input
                 file declared in the config does not have a corresponding data entry.
                 Defaults to False.
 
         Raises:
-            ValueError: If an input file references a provenance defined in an MCF
-                file not included in ``mcf_file_names`` (the bundle would be incomplete).
+            ValueError: If an input file has no data entry.
         """
-
-        if isinstance(mcf_file_names, str):
-            mcf_file_names = [mcf_file_names]
 
         if validate_data:
             self.validate_all_input_files_have_data()
-
-        self._validate_provenance_files_exported(set(mcf_file_names or ()))
 
         self.export_config(dir_path)
 
@@ -1506,9 +1435,9 @@ class CustomDataManager:
         if self._vertical_specs:
             self.export_vertical_specs(dir_path)
 
-        for mcf_file_name in mcf_file_names or ():
+        for mcf_file_name in self._mcf_nodes:
             self.export_mcf_file(
-                dir_path=dir_path, mcf_file_name=mcf_file_name, override=override
+                dir_path=dir_path, mcf_file_name=mcf_file_name, overwrite=True
             )
 
     def validate_config(self) -> CustomDataManager:
@@ -1603,7 +1532,7 @@ class CustomDataManager:
         Args:
             directory: The directory to search for config files.
             policy: How to resolve collisions. Can be "error", "override", or "ignore".
-            mcf_files: Path to one or more MCF files. If not provided, a new MCFNodes object
+            mcf_files: Path to one or more MCF files. If not provided, a new Nodes object
                 will be created.
 
         Returns:

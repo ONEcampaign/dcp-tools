@@ -43,7 +43,7 @@ Ready to contribute? Here's how to set up `dcp-tools` for local development.
 1. Open an issue in the `dcp-tools` repository to discuss your proposed changes or enhancements.
    This is a good way to get feedback and ensure your work aligns with the project's goals.
 2. Fork `dcp-tools` and clone your fork.
-1. Dependencies are managed using uv. Install uv in your virtual environment and
+3. Dependencies are managed using uv. Install uv in your virtual environment and
    install project dependencies:
 
 ```console

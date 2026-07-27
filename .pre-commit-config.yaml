@@ -44,6 +44,9 @@ repos:
       - id: check-shebang-scripts-are-executable
       - id: check-builtin-literals
       - id: check-docstring-first
+        # models/common.py documents its type aliases with PEP 257 attribute
+        # docstrings, which this hook reads as a module docstring after code.
+        exclude: ^src/dcp_tools/custom_data/models/common\.py$
 
       # Config/data formats
       - id: check-json

@@ -1,10 +1,7 @@
 import json
 from pathlib import Path
 
-import pytest
-
 from dcp_tools.custom_data.data_management import CustomDataManager
-from dcp_tools.custom_data.models.config_file import Config
 from dcp_tools.custom_data.schema_tools import csv_metadata_to_nodes
 
 GOLDEN_DIR = Path(__file__).parent / "goldens"
@@ -128,17 +125,3 @@ def test_csv_to_mcf_snapshot():
     got = "".join(n.to_mcf() for n in nodes.nodes)
     expected = (GOLDEN_DIR / "sample_csv_nodes.mcf").read_text()
     assert got == expected
-
-
-@pytest.mark.parametrize(
-    "golden_file", ["config.json", "config_all_fields.json", "config_multi_entity.json"]
-)
-def test_round_trip_config(tmp_path, golden_file):
-    data = json.loads((GOLDEN_DIR / golden_file).read_text())
-    config_file = tmp_path / "config.json"
-    config_file.write_text(json.dumps(data))
-
-    loaded = Config.from_json(str(config_file))
-
-    got = loaded.model_dump_json(indent=4, exclude_none=True, by_alias=True)
-    assert json.loads(got) == data

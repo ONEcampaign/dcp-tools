@@ -5,25 +5,9 @@ import pytest
 
 from dcp_tools.custom_data.data_management import CustomDataManager
 from dcp_tools.custom_data.models.config_file import Config
-from dcp_tools.custom_data.models.mcf import Node
 from dcp_tools.custom_data.schema_tools import csv_metadata_to_nodes
 
 GOLDEN_DIR = Path(__file__).parent / "goldens"
-
-
-def test_node_snapshot():
-    got = (GOLDEN_DIR / "sample_node.mcf").read_text()
-
-    node = Node(
-        dcid="dcid:X/foo",
-        name='"Some Name"',
-        type_of="dcid:StatisticalVariable",
-        description='"Foo description',
-        provenance='"Some foo provenance"',
-        short_display_name='"F"',
-        sub_class_of="dcid:Parent",
-    )
-    assert node.to_mcf().strip() == got
 
 
 def test_config_json_snapshot(tmp_path):

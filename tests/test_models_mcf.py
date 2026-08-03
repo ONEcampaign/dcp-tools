@@ -7,21 +7,28 @@ from dcp_tools.custom_data.models.mcf import Node, Nodes
 from dcp_tools.custom_data.models.stat_vars import StatType, StatVarNode
 
 
-def test_node_mcf_output_order_and_formatting():
+def test_node_to_mcf_output_order_and_formatting():
     """
     Ensures Node.to_mcf() outputs correctly with 'Node:' line first.
     """
     node = Node(
+        dcid="dcid:TestNode",
         name='"My Name"',
         type_of="dcid:TypeA",
-        description='"Desc"',
-        dcid="dcid:TestNode",
+        description='"Description for the node',
+        provenance="dcid:MyProvenance",
+        short_display_name="F",
+        sub_class_of="dcid:Parent",
     )
     assert node.to_mcf() == (
         "Node: dcid:TestNode\n"
         'name: "My Name"\n'
         "typeOf: dcid:TypeA\n"
-        'description: "Desc"\n\n'
+        'description: "Description for the node"\n'
+        'provenance: "dcid:MyProvenance"\n'
+        'shortDisplayName: "F"\n'
+        "subClassOf: dcid:Parent\n"
+        "\n"
     )
 
 

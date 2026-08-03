@@ -1,3 +1,5 @@
+from pathlib import Path
+
 import pytest
 
 from dcp_tools.custom_data.models.mcf import Nodes
@@ -10,6 +12,8 @@ from dcp_tools.custom_data.schema_tools import (
     resolve_group_paths,
     to_camel_case,
 )
+
+GOLDEN_DIR = Path(__file__).parent / "goldens"
 
 
 def test_csv_metadata_to_nodes(tmp_path):
@@ -35,6 +39,13 @@ def test_csv_metadata_to_nodes(tmp_path):
     nodes_map = csv_metadata_to_nodes(str(csv_path), column_to_property_mapping=mapping)
     for node in nodes_map.nodes:
         assert hasattr(node, "search_description")
+
+
+def test_csv_metadata_to_nodes_full_mcf_output():
+    nodes = csv_metadata_to_nodes(GOLDEN_DIR / "sample.csv", ignore_columns=None)
+    got = "".join(n.to_mcf() for n in nodes.nodes)
+    expected = (GOLDEN_DIR / "sample_csv_nodes.mcf").read_text()
+    assert got == expected
 
 
 def get_group_nodes(nodes: Nodes) -> list[StatVarGroupNode]:

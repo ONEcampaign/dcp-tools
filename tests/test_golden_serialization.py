@@ -2,7 +2,6 @@ import json
 from pathlib import Path
 
 from dcp_tools.custom_data.data_management import CustomDataManager
-from dcp_tools.custom_data.schema_tools import csv_metadata_to_nodes
 
 GOLDEN_DIR = Path(__file__).parent / "goldens"
 
@@ -117,11 +116,4 @@ def test_mcf_export_multi_entity(tmp_path):
 
     got = (tmp_path / "custom_nodes.mcf").read_text()
     expected = (GOLDEN_DIR / "custom_nodes_multi_entity.mcf").read_text()
-    assert got == expected
-
-
-def test_csv_to_mcf_snapshot():
-    nodes = csv_metadata_to_nodes(GOLDEN_DIR / "sample.csv", ignore_columns=None)
-    got = "".join(n.to_mcf() for n in nodes.nodes)
-    expected = (GOLDEN_DIR / "sample_csv_nodes.mcf").read_text()
     assert got == expected

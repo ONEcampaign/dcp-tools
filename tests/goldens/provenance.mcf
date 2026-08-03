@@ -9,12 +9,12 @@ name: "Prov A"
 typeOf: dcid:Provenance
 description: "An example provenance."
 url: "http://prova"
-sourceLink: dcid:source/S1
+source: dcid:source/S1
 
 Node: dcid:provenance/provB
 name: "Prov B"
 typeOf: dcid:Provenance
 description: "Another example provenance."
 url: "http://provb"
-sourceLink: dcid:source/S1
+source: dcid:source/S1
 

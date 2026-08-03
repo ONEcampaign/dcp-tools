@@ -7,6 +7,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed
+- `ProvenanceNode.source_link` is renamed to `source`, so a provenance's parent
+  source now serializes as `source: dcid:source/<name>` (was `sourceLink:`), the property name
+  Data Commons ingestion preprocessing expects.
+
 ## [1.0.0a1] - 2026-07-27
 
 ### Added

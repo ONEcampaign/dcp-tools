@@ -1,5 +1,11 @@
 # Changelog
 
+## Unreleased
+
+- **Breaking:** `ProvenanceNode.source_link` is renamed to `source`, so a provenance's parent
+  source now serializes as `source: dcid:source/<name>` (was `sourceLink:`), the property name
+  Data Commons ingestion preprocessing expects.
+
 ## v1.0.0a1 (2026-07-27)
 
 - First alpha of the `dcp-tools` package, the first release under the new name.

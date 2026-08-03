@@ -92,7 +92,7 @@ url: "https://data.one.org"
 Node: dcid:provenance/ONEClimateFinance
 typeOf: dcid:Provenance
 url: "https://datacommons.one.org/data/climate-finance-files"
-sourceLink: dcid:source/ONEData
+source: dcid:source/ONEData
 ```
 
 ## Step 3: Register the input CSV file

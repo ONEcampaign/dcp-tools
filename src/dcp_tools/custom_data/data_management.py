@@ -49,14 +49,10 @@ DEFAULT_PROVENANCE_MCF_NAME: str = "provenance.mcf"
 DEFAULT_VERTICAL_SPECS_NAME: str = "vertical_specs.json"
 
 
-def _parse_kwargs_into_properties(
-    locals_dict: dict[str, Any], *, extra_exclude: set[str] | None = None
-) -> dict[str, Any]:
+def _parse_kwargs_into_properties(locals_dict: dict[str, Any]) -> dict[str, Any]:
     """Parse a dictionary of keyword arguments into a dictionary of properties"""
 
     exclude = {"self", "additional_properties", "override", "mcf_file_name"}
-    if extra_exclude:
-        exclude |= extra_exclude
 
     props = {k: v for k, v in locals_dict.items() if k not in exclude and v is not None}
 
@@ -511,9 +507,9 @@ class CustomDataManager:
 
         dcid = mint_dcid(prefix="provenance", token=dcid)
         url = str(url)
-        source_link = mint_dcid(prefix="source", token=source)
-        self._require_source_exists(source, source_link)
-        props = _parse_kwargs_into_properties(locals(), extra_exclude={"source"})
+        source = mint_dcid(prefix="source", token=source)
+        self._require_source_exists(source)
+        props = _parse_kwargs_into_properties(locals())
         node = ProvenanceNode(**props)
 
         mcf_name = validate_mcf_file_name(mcf_file_name)
@@ -1203,7 +1199,7 @@ class CustomDataManager:
 
         For each reference: mint to ``dcid:provenance/<name>``, require the Provenance node
         to exist, and emit includedIn for BOTH the provenance and its linked Source
-        (``sourceLink``). Order is preserved and duplicate dcids are collapsed (so two
+        (``source``). Order is preserved and duplicate dcids are collapsed (so two
         provenances sharing a source emit that source once).
 
         Args:
@@ -1223,21 +1219,20 @@ class CustomDataManager:
         for ref in refs:
             prov_link = mint_dcid(prefix="provenance", token=ref)
             prov_node = self._require_provenance_exists(ref, prov_link)
-            for dcid in (prov_link, getattr(prov_node, "source_link", None)):
+            for dcid in (prov_link, getattr(prov_node, "source", None)):
                 if dcid is not None and dcid not in seen:
                     seen.add(dcid)
                     expanded.append(dcid)
         return expanded
 
-    def _require_source_exists(self, source: str, source_link: str) -> None:
-        """Raise ValueError if no Source MCF node with id ``source_link`` exists.
+    def _require_source_exists(self, source: str) -> None:
+        """Raise ValueError if no Source MCF node with id ``source`` exists.
 
         Args:
-            source: The bare user-facing source name (used in the error message).
-            source_link: The minted dcid for the source (used for the lookup).
+            source: The minted dcid for the source.
         """
         if not any(
-            n.type_of == "dcid:Source" and n.dcid == source_link
+            n.type_of == "dcid:Source" and n.dcid == source
             for nodes in self._mcf_nodes.values()
             for n in nodes.nodes
         ):

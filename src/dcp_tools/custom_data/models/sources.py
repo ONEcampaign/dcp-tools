@@ -38,7 +38,7 @@ class ProvenanceNode(Node):
         # Provenance-specific
         type_of: Fixed type indicating this is a Provenance (``dcid:Provenance``).
         url: URL of the provenance dataset.
-        source_link: DCID of the parent Source node.
+        source: DCID of the parent Source node.
         license: Optional license information.
         license_type: Optional license type.
         last_data_refresh_date: Optional date of last data refresh.
@@ -53,7 +53,7 @@ class ProvenanceNode(Node):
 
     type_of: Literal["dcid:Provenance"] = "dcid:Provenance"
     url: QuotedStr | None = None
-    source_link: Dcid | None = None
+    source: Dcid | None = None
     license: QuotedStr | None = None
     license_type: QuotedStr | None = None
     last_data_refresh_date: QuotedStr | None = None

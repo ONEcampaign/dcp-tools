@@ -42,7 +42,7 @@ def test_custom_data_manager_add_provenance_and_override():
     assert isinstance(prov_node, ProvenanceNode)
     assert source_node.dcid == "dcid:source/new_source"
     assert prov_node.dcid == "dcid:provenance/pA"
-    assert prov_node.source_link == "dcid:source/new_source"
+    assert prov_node.source == "dcid:source/new_source"
 
     # duplicate provenance without override raises
     with pytest.raises(ValueError):

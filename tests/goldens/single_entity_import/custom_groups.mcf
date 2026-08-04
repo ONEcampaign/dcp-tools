@@ -1,0 +1,5 @@
+Node: dcid:one/g/group1
+name: "Group One"
+typeOf: dcid:StatVarGroup
+specializationOf: dcid:dc/g/Root
+

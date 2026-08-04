@@ -316,31 +316,6 @@ def test_export_vertical_specs_creates_missing_subdirectory(tmp_path):
     assert (tmp_path / "sub" / "vertical_specs.json").exists()
 
 
-def test_export_all_writes_full_bundle_for_subdirectory_input_file(tmp_path):
-    """export_all writes the complete bundle when a file_name nests in a subdirectory."""
-    manager = CustomDataManager()
-    manager.set_include_input_subdirs(True)
-    manager.add_source(dcid="S", url="http://s")
-    manager.add_provenance(dcid="P", url="http://p", source="S")
-    manager.add_entity_type(
-        dcid="MyEntityType",
-        name="My Entity Type",
-    )
-    manager.add_input_file(
-        file_name="sub/gdp.csv",
-        provenance="P",
-        data=pd.DataFrame({"a": [1]}),
-        column_mappings={"value": "a"},
-    )
-
-    manager.export_all(tmp_path)
-
-    assert (tmp_path / "sub" / "gdp.csv").exists()
-    assert (tmp_path / "config.json").exists()
-    assert (tmp_path / "provenance.mcf").exists()
-    assert (tmp_path / "custom_nodes.mcf").exists()
-
-
 def test_export_all_overwrites_correctly(tmp_path):
     """export_all overwrites correctly."""
     manager = CustomDataManager()

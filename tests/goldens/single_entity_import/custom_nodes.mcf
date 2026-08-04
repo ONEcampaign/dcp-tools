@@ -1,7 +1,7 @@
-Node: dcid:var/one
+Node: dcid:TestVar
 name: "Test Var"
 typeOf: dcid:StatisticalVariable
-description: "Test var"
+description: "Description for Test Var."
 statType: dcid:measuredValue
 memberOf: dcid:one/g/group1
 

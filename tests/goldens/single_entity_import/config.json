@@ -1,20 +1,21 @@
 {
-    "importName": "test_import_all_fields",
+    "importName": "single_entity_import",
     "includeInputSubdirs": true,
     "groupStatVarsByProperty": false,
     "dataDownloadUrl": [
         "https://example.org/data/file1.csv",
         "https://example.org/data/file2.csv"
     ],
-    "verticalSpecsFile": "vertical_specs.json",
+    "verticalSpecsFile": "verticals.json",
     "inputFiles": [
         {
-            "filename": "a.csv",
-            "provenance": "dcid:provenance/provA",
+            "filename": "subdir/data.csv",
+            "provenance": "dcid:provenance/MyProvenance",
             "columnMappings": {
-                "dcid:observationAbout": "Country",
+                "dcid:variableMeasured": "Var",
                 "dcid:observationDate": "Year",
-                "dcid:value": "Val"
+                "dcid:value": "Val",
+                "dcid:observationAbout": "Country"
             },
             "observationProperties": {
                 "unit": "USDollar",

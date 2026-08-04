@@ -1,15 +1,15 @@
 {
-    "importName": "test_import_multi_entity",
+    "importName": "multi_entity_import",
     "inputFiles": [
         {
-            "filename": "c.csv",
-            "provenance": "dcid:provenance/provC",
+            "filename": "data.csv",
+            "provenance": "dcid:provenance/MyProvenance",
             "columnMappings": {
                 "dcid:variableMeasured": "Var",
                 "dcid:observationDate": "Year",
                 "dcid:value": "Val",
-                "custom:originCountry": "Provider",
-                "custom:destinationCountry": "Recipient"
+                "custom:originCountry": "Origin",
+                "custom:destinationCountry": "Destination"
             },
             "format": "variablePerRow"
         }

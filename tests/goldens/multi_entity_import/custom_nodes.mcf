@@ -1,0 +1,15 @@
+Node: dcid:originCountry
+name: "Origin Country"
+typeOf: dcid:Property
+
+Node: dcid:destinationCountry
+name: "Destination Country"
+typeOf: dcid:Property
+
+Node: dcid:TestVar
+name: "Test Var"
+typeOf: dcid:StatisticalVariable
+description: "Description for Test Var."
+statType: dcid:measuredValue
+observationProperties: dcid:originCountry, dcid:destinationCountry
+

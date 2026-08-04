@@ -1,0 +1,11 @@
+{
+    "specs": [
+        {
+            "populationType": "Thing",
+            "measuredProperties": [],
+            "verticals": [
+                "MyVertical"
+            ]
+        }
+    ]
+}

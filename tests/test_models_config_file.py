@@ -1,4 +1,5 @@
 import json
+from pathlib import Path
 
 import pytest
 
@@ -8,6 +9,8 @@ from dcp_tools.custom_data.models.data_files import (
     InputFile,
     ObservationProperties,
 )
+
+GOLDEN_DIR = Path(__file__).parent / "goldens"
 
 
 def test_config_validators_raise_on_invalid_input_files():
@@ -77,17 +80,19 @@ def test_input_file_provenance_minted():
     assert already_minted.provenance == "dcid:provenance/myProv"
 
 
-def test_config_round_trips_import_name(tmp_path):
-    """A platform config.json with a top-level importName loads and round-trips."""
-    config = tmp_path / "config.json"
-    config.write_text(
-        '{"importName": "OECD_wage_data",'
-        ' "inputFiles": [{"filename": "data.csv", "provenance": "p1", "columnMappings": {},'
-        ' "format": "variablePerRow"}]}'
-    )
-    loaded = Config.from_json(str(config))
-    assert loaded.import_name == "OECD_wage_data"
-    assert loaded.model_dump(exclude_none=True)["importName"] == "OECD_wage_data"
+@pytest.mark.parametrize(
+    "golden_file",
+    ["single_entity_import/config.json", "multi_entity_import/config.json"],
+)
+def test_config_round_trips_from_json(tmp_path, golden_file):
+    data = json.loads((GOLDEN_DIR / golden_file).read_text())
+    config_file = tmp_path / "config.json"
+    config_file.write_text(json.dumps(data))
+
+    loaded = Config.from_json(str(config_file))
+
+    got = loaded.model_dump_json(indent=4, exclude_none=True, by_alias=True)
+    assert json.loads(got) == data
 
 
 def test_observation_properties_preserves_custom_keys():

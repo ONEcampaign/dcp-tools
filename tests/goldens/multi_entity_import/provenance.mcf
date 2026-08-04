@@ -1,0 +1,13 @@
+Node: dcid:source/MySource
+name: "My Source"
+typeOf: dcid:Source
+description: "Description for My Source."
+url: "https://mysource.com"
+
+Node: dcid:provenance/MyProvenance
+name: "My Provenance"
+typeOf: dcid:Provenance
+description: "Description for My Provenance."
+url: "https://mysource.com/myprovenance"
+source: dcid:source/MySource
+

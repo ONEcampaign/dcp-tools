@@ -81,7 +81,8 @@ def test_input_file_provenance_minted():
 
 
 @pytest.mark.parametrize(
-    "golden_file", ["config.json", "config_all_fields.json", "config_multi_entity.json"]
+    "golden_file",
+    ["single_entity_import/config.json", "multi_entity_import/config.json"],
 )
 def test_config_round_trips_from_json(tmp_path, golden_file):
     data = json.loads((GOLDEN_DIR / golden_file).read_text())

@@ -139,13 +139,17 @@ class ObservationProperties(BaseModel):
 
 
 class InputFile(BaseModel):
-    """Representation of an input file in variable-per-row form (one observation per row).
+    """Representation of an entry in the config's ``inputFiles`` list.
 
-    Exactly one of ``filename`` or ``pattern`` must be set. The ``.csv``-suffix
-    check applies to ``filename`` only; ``pattern`` entries are exempt.
+    An entry declares either a CSV file of observations in variable-per-row form (one
+    observation per row) or an MCF file of node definitions. Both need a ``provenance``;
+    only CSV entries need column mappings and a format.
+
+    Exactly one of ``filename`` or ``pattern`` must be set. The extension check
+    applies to ``filename`` only; ``pattern`` entries are exempt.
 
     Attributes:
-        filename: Exact CSV file name (mutually exclusive with ``pattern``).
+        filename: Exact file name (mutually exclusive with ``pattern``).
         pattern: Glob pattern matching one or more input files (mutually exclusive
             with ``filename``). Pattern entries are config-only: ``data=`` is not
             accepted with ``pattern=``.
@@ -165,11 +169,9 @@ class InputFile(BaseModel):
     pattern: str | None = None
     provenance: str
     ignore_columns: list[str] | None = None
-    column_mappings: ColumnMappings
+    column_mappings: ColumnMappings | None = None
     observation_properties: ObservationProperties | None = None
-    data_format: Literal["variablePerRow"] = Field(
-        default="variablePerRow", alias="format"
-    )
+    data_format: Literal["variablePerRow"] | None = Field(default=None, alias="format")
 
     model_config = ConfigDict(
         alias_generator=to_camel,
@@ -177,15 +179,28 @@ class InputFile(BaseModel):
         populate_by_name=True,
     )
 
+    @property
+    def is_mcf(self) -> bool:
+        """Whether this entry declares an MCF file rather than a CSV."""
+        return (self.filename or self.pattern or "").lower().endswith(".mcf")
+
     @field_validator("provenance", mode="after")
     @classmethod
     def _mint_provenance(cls, value: str) -> str:
         return mint_dcid(prefix="provenance", token=value)
 
     @model_validator(mode="after")
-    def _validate_filename_or_pattern(self) -> "InputFile":
+    def _validate_entry(self) -> "InputFile":
         if (self.filename is None) == (self.pattern is None):
             raise ValueError("Exactly one of 'filename' or 'pattern' must be set.")
+        if self.is_mcf:
+            # An MCF file holds node definitions, not observations, so none of the
+            # observation settings below apply.
+            return self
         if self.filename is not None and not self.filename.lower().endswith(".csv"):
             raise ValueError(f'filename "{self.filename}" must have a .csv extension.')
+        if self.column_mappings is None:
+            self.column_mappings = ColumnMappings()
+        if self.data_format is None:
+            self.data_format = "variablePerRow"
         return self

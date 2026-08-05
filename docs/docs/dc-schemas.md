@@ -38,9 +38,11 @@ predicate, and why the schema-defining nodes live in a separate file format.
 
 ### `config.json` declares column roles, not data
 
-Every entry in `config.json`'s `inputFiles` list points at a CSV and carries a `columnMappings`
-block. The block doesn't hold data. It holds a role assignment: which column in *this specific
-CSV* plays which part in *every* observation the importer will build from it.
+Every entry in `config.json`'s `inputFiles` list points at either a CSV of observations or an
+MCF file of node definitions. A CSV entry carries a `columnMappings` block. The block
+doesn't hold data. It holds a role assignment: which column in *this specific CSV* plays
+which part in *every* observation the importer will build from it. An MCF entry carries no
+mappings — there are no columns to assign — only the provenance its nodes belong to.
 
 ```python
 from dcp_tools import CustomDataManager
@@ -196,9 +198,9 @@ implicit" name itself. A contrast only needs a name when there's something to co
 
 ## Consequences
 
-Every input file dcp-tools writes is variable-per-row. You don't choose a format when calling
+Every CSV input file dcp-tools writes is variable-per-row. You don't choose a format when calling
 `add_input_file`. There's exactly one, so the question doesn't come up. `columnMappings` is
-always required (it's how the importer finds your columns at all), and it always uses
+always required on a CSV entry (it's how the importer finds your columns at all), and it always uses
 `observationAbout` for single-entity data or `custom:<name>` keys for multi-entity data, never a
 bare `entity` key. That field was renamed for the same reason, to stop implying entity and
 observationAbout were different things.

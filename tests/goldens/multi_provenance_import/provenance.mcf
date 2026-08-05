@@ -1,0 +1,11 @@
+Node: dcid:source/MySource
+name: "My Source"
+typeOf: dcid:Source
+url: "https://mysource.com"
+
+Node: dcid:provenance/ProvA
+name: "Prov A"
+typeOf: dcid:Provenance
+url: "https://mysource.com/a"
+source: dcid:source/MySource
+

@@ -183,7 +183,15 @@ measuredProperty: dcid:amount
 
 The `provenance` field here is the bare name you passed in, stored as a plain quoted string on the node, not the minted dcid you saw on the input file entry in Step 3.
 
-## Step 5: Export the bundle and verify it
+## Step 5: Declare the MCF files
+
+The importer only reads files listed in `config.json`'s `inputFiles`, so the MCF files written next to the config need an entry too, naming the provenance their nodes belong to. One glob covers both files in this import:
+
+```python
+manager.add_mcf_file("*.mcf", provenance="ONEClimateFinance")
+```
+
+## Step 6: Export the bundle and verify it
 
 `export_all` writes the config, the data, and any MCF files you've registered.
 
@@ -224,6 +232,10 @@ one_climate_finance/climate_finance/one_cf_provider_commitments.csv
                 "dcid:observationAbout": "country"
             },
             "format": "variablePerRow"
+        },
+        {
+            "pattern": "*.mcf",
+            "provenance": "dcid:provenance/ONEClimateFinance"
         }
     ]
 }
@@ -244,7 +256,7 @@ print(reloaded)
 
 ```
 <CustomDataManager config:
-1 inputFiles, with 0 containing data
+2 inputFiles, with 0 containing data
 1 sources
 1 provenances
 1 variables
@@ -252,13 +264,14 @@ print(reloaded)
 flags: importName=one_climate_finance, includeInputSubdirs=None, groupStatVarsByProperty=None, defaultCustomRootStatVarGroupName=None, customIdNamespace=None, customSvgPrefix=None, svHierarchyPropsBlocklist=None, dataDownloadUrl=None, verticalSpecsFile=None>
 ```
 
-1 input file, 1 source, 1 provenance, 1 variable. `with 0 containing data` is expected. Reloading from `config_file`/`mcf_files` restores the config and MCF nodes, not the CSV data. That data lives in the CSV file on disk, never in `config.json`.
+2 input files (the CSV and the `*.mcf` declaration), 1 source, 1 provenance, 1 variable. `with 0 containing data` is expected. Reloading from `config_file`/`mcf_files` restores the config and MCF nodes, not the CSV data. That data lives in the CSV file on disk, never in `config.json`.
 
 ## What you learned
 
 - You registered a source and a provenance as MCF nodes
 - You registered an input CSV file with column mappings
 - You declared a StatVar for a data file
+- You declared the MCF files so the importer reads them
 - You exported a complete bundle with `export_all`
 - You verified an exported bundle by loading it back
 

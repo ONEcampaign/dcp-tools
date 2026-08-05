@@ -242,6 +242,14 @@ def test_add_input_file_pattern_xor_filename():
         manager.add_input_file(file_name="a.csv", pattern="a*", provenance="p1")
 
 
+def test_add_mcf_file_requires_mcf_extension():
+    """add_mcf_file rejects a name that is not an MCF file."""
+    manager = CustomDataManager()
+
+    with pytest.raises(ValueError, match=r"should match pattern"):
+        manager.add_mcf_file("nodes.csv", provenance="p1")
+
+
 def test_export_methods(tmp_path):
     """
     Exercises export_config, export_data, and export_mcf_file.

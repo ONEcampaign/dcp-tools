@@ -23,6 +23,10 @@
                 "customProp": "customValue"
             },
             "format": "variablePerRow"
+        },
+        {
+            "pattern": "*.mcf",
+            "provenance": "dcid:provenance/MyProvenance"
         }
     ]
 }

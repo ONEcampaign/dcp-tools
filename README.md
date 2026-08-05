@@ -79,6 +79,8 @@ manager.add_variable_to_mcf(
     stat_type="dcid:measuredValue",
 )
 
+manager.add_mcf_file("*.mcf", provenance="ONEClimateFinance")
+
 out_dir = Path("export/climate_finance")
 out_dir.mkdir(parents=True, exist_ok=True)
 manager.export_all(out_dir)
@@ -103,6 +105,10 @@ name, and column mappings and the provenance name are resolved to full dcids:
             },
             "observationProperties": {"unit": "USDollar"},
             "format": "variablePerRow"
+        },
+        {
+            "pattern": "*.mcf",
+            "provenance": "dcid:provenance/ONEClimateFinance"
         }
     ]
 }

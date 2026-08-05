@@ -375,6 +375,38 @@ Each call appends one spec matching StatVars about `population_type` with the gi
 `file_name=` here. `export_all` (or `export_vertical_specs` directly) writes the accumulated specs
 as `{"specs": [...]}` JSON. Exporting with no specs added raises `ValueError`.
 
+## How to declare MCF files for the importer
+
+The importer only reads files listed in `config.json`'s `inputFiles`, so every MCF file in the
+bundle needs an entry naming the provenance its nodes belong to. With a single provenance, one
+glob covers every MCF file:
+
+```python
+manager.add_mcf_file("*.mcf", provenance="MyProvenance")
+```
+
+The entry carries no `columnMappings` and no `format` — there are no columns to map.
+
+With more than one provenance, a single glob would attribute every node to the same one. Write
+nodes to per-provenance files with `mcf_file_name`, then declare each file against its own
+provenance:
+
+```python
+manager.add_provenance(
+    dcid="ProvB", url="https://source.org/b", source="MySource",
+    mcf_file_name="provenance_b.mcf",
+)
+manager.add_variable_to_mcf(dcid="dcid:VarB", name="Var B", mcf_file_name="nodes_b.mcf")
+
+manager.add_mcf_file("provenance.mcf", provenance="ProvA")
+manager.add_mcf_file("custom_nodes.mcf", provenance="ProvA")
+manager.add_mcf_file("provenance_b.mcf", provenance="ProvB")
+manager.add_mcf_file("nodes_b.mcf", provenance="ProvB")
+```
+
+Nothing checks that you declared every MCF file you wrote, so a file you forget is simply absent
+from the bundle the importer sees.
+
 ## How to validate and export the bundle
 
 Validate without writing anything:

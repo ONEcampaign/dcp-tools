@@ -85,6 +85,64 @@ def test_export_bundle_single_entity(tmp_path):
             "customProp": "customValue",
         },
     )
+    manager.add_mcf_file("*.mcf", provenance="MyProvenance")
+
+    output_dir = tmp_path / import_name
+    output_dir.mkdir(parents=True, exist_ok=True)
+    manager.export_all(output_dir)
+
+    assert_bundle_equal((GOLDEN_DIR / import_name), (tmp_path / import_name))
+
+
+def test_export_bundle_multi_provenance(tmp_path):
+    import_name = "multi_provenance_import"
+    manager = CustomDataManager()
+    manager.set_import_name(import_name)
+    manager.add_source(
+        dcid="MySource",
+        name="My Source",
+        url="https://mysource.com",
+    )
+    manager.add_mcf_file("provenance.mcf", provenance="ProvA")
+    manager.add_mcf_file("custom_nodes.mcf", provenance="ProvA")
+    manager.add_mcf_file("provenance_b.mcf", provenance="ProvB")
+    manager.add_mcf_file("nodes_b.mcf", provenance="ProvB")
+    manager.add_provenance(
+        dcid="ProvA",
+        name="Prov A",
+        url="https://mysource.com/a",
+        source="MySource",
+    )
+    manager.add_provenance(
+        dcid="ProvB",
+        name="Prov B",
+        url="https://mysource.com/b",
+        source="MySource",
+        mcf_file_name="provenance_b.mcf",
+    )
+    manager.add_variable_to_mcf(dcid="dcid:VarA", name="Var A")
+    manager.add_variable_to_mcf(
+        dcid="dcid:VarB", name="Var B", mcf_file_name="nodes_b.mcf"
+    )
+
+    manager.add_input_file(
+        "data_a.csv",
+        provenance="ProvA",
+        data=pd.DataFrame(
+            {
+                "Var": ["dcid:VarA"],
+                "Country": ["country/FRA"],
+                "Year": [2026],
+                "Val": [1.0],
+            }
+        ),
+        column_mappings={
+            "variable": "Var",
+            "observationAbout": "Country",
+            "date": "Year",
+            "value": "Val",
+        },
+    )
 
     output_dir = tmp_path / import_name
     output_dir.mkdir(parents=True, exist_ok=True)
@@ -144,6 +202,7 @@ def test_export_bundle_multi_entity(tmp_path):
             "custom:destinationCountry": "Destination",
         },
     )
+    manager.add_mcf_file("*.mcf", provenance="MyProvenance")
 
     output_dir = tmp_path / import_name
     output_dir.mkdir(parents=True, exist_ok=True)

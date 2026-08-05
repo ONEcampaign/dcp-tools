@@ -7,6 +7,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+- `add_mcf_file(file_name, provenance=...)` declares an MCF file in `config.json`'s `inputFiles`,
+  so the importer reads it. The importer skips MCF files that aren't declared.
+
+### Changed
+- `InputFile` represents both CSV and MCF entries. An entry targeting an `.mcf` file carries only
+  a `provenance` — no `columnMappings` and no `format`. CSV entries are unchanged.
+
 ### Fixed
 - `ProvenanceNode.source_link` is renamed to `source`, so a provenance's parent
   source now serializes as `source: dcid:source/<name>` (was `sourceLink:`), the property name

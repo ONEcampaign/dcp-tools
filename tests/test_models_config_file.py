@@ -62,6 +62,14 @@ def test_input_file_filename_pattern_xor():
     assert by_pattern.filename is None
 
 
+def test_input_file_rejects_mcf_filename():
+    """`filename` entries are treated as data-bearing CSV targets, so a `.mcf` filename
+    would silently be handled as a CSV.
+    """
+    with pytest.raises(ValueError, match="csv extension"):
+        InputFile(filename="nodes.mcf", provenance="p1")
+
+
 def test_input_file_provenance_minted():
     """InputFile mints the provenance to dcid:provenance/<name>."""
     entry = InputFile(

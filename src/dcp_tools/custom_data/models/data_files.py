@@ -145,24 +145,33 @@ class InputFile(BaseModel):
     observation per row) or an MCF file of node definitions. Both need a ``provenance``;
     only CSV entries need column mappings and a format.
 
-    Exactly one of ``filename`` or ``pattern`` must be set. The extension check
-    applies to ``filename`` only; ``pattern`` entries are exempt.
+    Exactly one of ``filename`` or ``pattern`` must be set, and ``filename`` always names
+    a CSV (enforced by the ``.csv`` extension check below). An MCF entry can only be
+    expressed via ``pattern`` — see ``CustomDataManager.add_mcf_file``, which always uses
+    it, even for an exact filename (a literal name is a valid glob). This isn't an
+    arbitrary restriction: ``add_data``, ``export_data``, and
+    ``validate_all_input_files_have_data`` all treat any entry with ``filename`` set as a
+    data-bearing CSV target, with no awareness of ``is_mcf``. Letting ``filename`` end in
+    ``.mcf`` would let those silently treat an MCF declaration as a CSV.
 
     Attributes:
-        filename: Exact file name (mutually exclusive with ``pattern``).
+        filename: Exact CSV file name (mutually exclusive with ``pattern``; always
+            requires a ``.csv`` extension, never ``.mcf``).
         pattern: Glob pattern matching one or more input files (mutually exclusive
             with ``filename``). Pattern entries are config-only: ``data=`` is not
-            accepted with ``pattern=``.
+            accepted with ``pattern=``. The only way to declare an MCF file; no
+            extension check applies here.
         provenance: Provenance name for the data. Bare name is minted as
             ``dcid:provenance/<name>``; pass an already ``dcid:``-prefixed value to
             use it verbatim. Names must be valid dcid tokens (no whitespace).
         ignore_columns: List of columns to ignore.
         column_mappings: If headings in the CSV file do not use the default names,
-            the equivalent names for each column.
+            the equivalent names for each column. Absent for MCF entries.
         observation_properties: File-level constant observation properties applied to every
-            observation (constants such as unit or measurementMethod). Optional.
+            observation (constants such as unit or measurementMethod). Optional; absent
+            for MCF entries.
         data_format: Format of the data (variable per row, one observation per row).
-            This attribute is represented as "format" in the JSON.
+            This attribute is represented as "format" in the JSON. Absent for MCF entries.
     """
 
     filename: str | None = None
@@ -181,7 +190,12 @@ class InputFile(BaseModel):
 
     @property
     def is_mcf(self) -> bool:
-        """Whether this entry declares an MCF file rather than a CSV."""
+        """Whether this entry declares an MCF file rather than a CSV.
+
+        Checks both ``filename`` and ``pattern`` for symmetry, but ``filename`` can never
+        actually end in ``.mcf`` on a validated instance (see the class docstring), so in
+        practice this is only ever true for a ``pattern`` entry.
+        """
         return (self.filename or self.pattern or "").lower().endswith(".mcf")
 
     @field_validator("provenance", mode="after")
@@ -193,12 +207,12 @@ class InputFile(BaseModel):
     def _validate_entry(self) -> "InputFile":
         if (self.filename is None) == (self.pattern is None):
             raise ValueError("Exactly one of 'filename' or 'pattern' must be set.")
+        if self.filename is not None and not self.filename.lower().endswith(".csv"):
+            raise ValueError(f'filename "{self.filename}" must have a .csv extension.')
         if self.is_mcf:
             # An MCF file holds node definitions, not observations, so none of the
             # observation settings below apply.
             return self
-        if self.filename is not None and not self.filename.lower().endswith(".csv"):
-            raise ValueError(f'filename "{self.filename}" must have a .csv extension.')
         if self.column_mappings is None:
             self.column_mappings = ColumnMappings()
         if self.data_format is None:

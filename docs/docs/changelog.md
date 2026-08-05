@@ -5,6 +5,9 @@
 - **Breaking:** `ProvenanceNode.source_link` is renamed to `source`, so a provenance's parent
   source now serializes as `source: dcid:source/<name>` (was `sourceLink:`), the property name
   Data Commons ingestion preprocessing expects.
+- Added `add_mcf_file(file_name, provenance=...)` to declare an MCF file in `config.json`'s
+  `inputFiles`. `add_mcf_file("*.mcf", provenance=...)` covers them all in a single-provenance
+  import; declare each file separately when an import has more than one provenance.
 
 ## v1.0.0a1 (2026-07-27)
 

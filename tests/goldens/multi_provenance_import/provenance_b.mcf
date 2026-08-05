@@ -1,0 +1,6 @@
+Node: dcid:provenance/ProvB
+name: "Prov B"
+typeOf: dcid:Provenance
+url: "https://mysource.com/b"
+source: dcid:source/MySource
+

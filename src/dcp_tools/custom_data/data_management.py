@@ -1015,7 +1015,11 @@ class CustomDataManager:
             filename=file_name,
             pattern=pattern,
             provenance=provenance,
-            column_mappings=ColumnMappings.model_validate(column_mappings or {}),
+            column_mappings=(
+                ColumnMappings.model_validate(column_mappings)
+                if column_mappings is not None
+                else None
+            ),
             observation_properties=(
                 ObservationProperties(**observation_properties)
                 if observation_properties is not None
@@ -1053,6 +1057,44 @@ class CustomDataManager:
             self._data[file_name] = data
 
         return self
+
+    def add_mcf_file(
+        self,
+        file_name: str,
+        *,
+        provenance: str,
+        override: bool = False,
+    ) -> CustomDataManager:
+        """Declare an MCF file in the config's ``inputFiles`` list.
+
+        The importer only reads files listed in ``inputFiles``, and attributes an MCF
+        file's nodes to the provenance declared alongside it, so every MCF file needs an
+        entry. A glob is accepted: ``add_mcf_file("*.mcf", provenance=...)`` covers every
+        MCF file in an import with one provenance. With several, write nodes to
+        per-provenance files (via each builder's ``mcf_file_name``) and declare each here.
+
+        Args:
+            file_name: Name of the MCF file, or a glob matching several (must end
+                in .mcf).
+            provenance: Provenance name for the nodes in the file. Bare name → minted
+                as ``dcid:provenance/<name>``; pass an already ``dcid:``-prefixed
+                value to use it verbatim.
+            override: If True, replace an existing entry for the same file. Defaults
+                to False.
+
+        Returns:
+            CustomDataManager object
+
+        Raises:
+            ValueError: If the file name is invalid, or an entry for it already exists
+                and ``override`` is False.
+        """
+
+        return self.add_input_file(
+            pattern=validate_mcf_file_name(file_name),
+            provenance=provenance,
+            override=override,
+        )
 
     def add_data(
         self, data: pd.DataFrame, file_name: str, override: bool = False
@@ -1403,7 +1445,7 @@ class CustomDataManager:
         dir_path: str | PathLike[str],
         validate_data: bool = False,
     ) -> None:
-        """Export the config, MCF file, and data to a directory
+        """Export the config, MCF files, and data to a directory
 
         ``export_all`` overwrites the complete bundle. To export only the config
         (deferring MCF export), use ``export_config`` directly. To export a single MCF

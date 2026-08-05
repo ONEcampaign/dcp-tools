@@ -1,0 +1,5 @@
+Node: dcid:VarB
+name: "Var B"
+typeOf: dcid:StatisticalVariable
+statType: dcid:measuredValue
+

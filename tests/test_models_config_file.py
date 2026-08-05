@@ -80,9 +80,24 @@ def test_input_file_provenance_minted():
     assert already_minted.provenance == "dcid:provenance/myProv"
 
 
+def test_mcf_input_file_carries_only_provenance():
+    """An .mcf entry needs no columnMappings and emits no format."""
+    entry = InputFile(pattern="*.mcf", provenance="myProv")
+
+    assert entry.is_mcf
+    assert entry.model_dump(exclude_none=True, by_alias=True) == {
+        "pattern": "*.mcf",
+        "provenance": "dcid:provenance/myProv",
+    }
+
+
 @pytest.mark.parametrize(
     "golden_file",
-    ["single_entity_import/config.json", "multi_entity_import/config.json"],
+    [
+        "single_entity_import/config.json",
+        "multi_entity_import/config.json",
+        "multi_provenance_import/config.json",
+    ],
 )
 def test_config_round_trips_from_json(tmp_path, golden_file):
     data = json.loads((GOLDEN_DIR / golden_file).read_text())

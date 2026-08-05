@@ -1,0 +1,32 @@
+{
+    "importName": "multi_provenance_import",
+    "inputFiles": [
+        {
+            "pattern": "provenance.mcf",
+            "provenance": "dcid:provenance/ProvA"
+        },
+        {
+            "pattern": "custom_nodes.mcf",
+            "provenance": "dcid:provenance/ProvA"
+        },
+        {
+            "pattern": "provenance_b.mcf",
+            "provenance": "dcid:provenance/ProvB"
+        },
+        {
+            "pattern": "nodes_b.mcf",
+            "provenance": "dcid:provenance/ProvB"
+        },
+        {
+            "filename": "data_a.csv",
+            "provenance": "dcid:provenance/ProvA",
+            "columnMappings": {
+                "dcid:variableMeasured": "Var",
+                "dcid:observationDate": "Year",
+                "dcid:value": "Val",
+                "dcid:observationAbout": "Country"
+            },
+            "format": "variablePerRow"
+        }
+    ]
+}

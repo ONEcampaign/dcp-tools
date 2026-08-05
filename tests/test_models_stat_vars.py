@@ -117,6 +117,22 @@ def test_observation_properties_rejects_whitespace_bearing_token():
         StatVarNode(dcid="dcid:n1", name="Var", observation_properties="has space")
 
 
+def test_constraint_properties_normalizes_bare_scalar_and_list():
+    sv = StatVarNode(dcid="dcid:n1", name="Var", constraint_properties="age")
+    assert sv.constraint_properties == "dcid:age"
+
+    sv_list = StatVarNode(
+        dcid="dcid:n1", name="Var", constraint_properties=["age", "gender"]
+    )
+    assert sv_list.constraint_properties == ["dcid:age", "dcid:gender"]
+    assert "constraintProperties: dcid:age, dcid:gender" in sv_list.to_mcf()
+
+
+def test_constraint_properties_rejects_whitespace_bearing_token():
+    with pytest.raises(ValidationError):
+        StatVarNode(dcid="dcid:n1", name="Var", constraint_properties="has space")
+
+
 def test_relevant_variable_normalizes_bare_scalar_and_list():
     sv = StatVarNode(dcid="dcid:n1", name="Var", relevant_variable="otherVar")
     assert sv.relevant_variable == "dcid:otherVar"

@@ -530,6 +530,7 @@ class CustomDataManager:
         provenance: str | None = None,
         population_type: str | None = None,
         measured_property: str | None = None,
+        constraint_properties: list[str] | None = None,
         measurement_qualifier: str | None = None,
         measurement_denominator: str | None = None,
         observation_properties: list[str] | None = None,
@@ -554,6 +555,8 @@ class CustomDataManager:
             provenance: Provenance of the variable (Optional)
             population_type: Population type of the variable (Optional)
             measured_property: Measured property of the variable (Optional)
+            constraint_properties: DCID(s) of the properties that constrain the
+                StatisticalVariable. Bare tokens are minted to ``dcid:<token>`` (Optional)
             measurement_qualifier: Measurement qualifier of the variable (Optional)
             measurement_denominator: Measurement denominator of the variable (Optional)
             observation_properties: For multi-entity data, the list of dcid:-prefixed properties

@@ -4,4 +4,5 @@ typeOf: dcid:StatisticalVariable
 description: "Description for Test Var."
 statType: dcid:measuredValue
 memberOf: dcid:one/g/group1
+constraintProperties: dcid:age, dcid:gender
 

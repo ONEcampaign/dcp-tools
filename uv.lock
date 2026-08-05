@@ -288,16 +288,16 @@ wheels = [
 
 [[package]]
 name = "datacommons-admin"
-version = "1.1.0"
+version = "1.1.1"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "click" },
     { name = "google-cloud-storage" },
     { name = "pyopenssl" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/b2/b4/704c4b918a740c46b8f931e9daed31cee7ff103be8785c3c6c264045fd83/datacommons_admin-1.1.0.tar.gz", hash = "sha256:c624b614acaf8f9e45343354fc9272b675bae81f2f93e64bd80d85bda1c1b95e", size = 15458, upload-time = "2026-06-23T11:37:35.244Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/f9/f2/e412c77578eaf460a0247963da00928c793c0c49e657a87c0ae6e2857f2a/datacommons_admin-1.1.1.tar.gz", hash = "sha256:a4364dab421bd0f2f7ef8f9dff40d9a6d4630e17ddf254860863b68481b61050", size = 16193, upload-time = "2026-07-29T03:09:45.227Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/56/26/ccb1d290abb6523ffdb3ef5abee1821f359fbf61e261cc925140f48d8b20/datacommons_admin-1.1.0-py3-none-any.whl", hash = "sha256:9e91d84ddf6ec465429479cee0436f46c34a0bbede8c7b8567f3bd07bbe47b52", size = 17207, upload-time = "2026-06-23T11:37:34.443Z" },
+    { url = "https://files.pythonhosted.org/packages/32/1e/880c1fe612b4cc0894bb06fac2f910bddea62d7a25ea155e290a55465d8d/datacommons_admin-1.1.1-py3-none-any.whl", hash = "sha256:1032649638e3d793ffa87679acbd9d4091d20e21fd826e127eb27b85eaad31e7", size = 17593, upload-time = "2026-07-29T03:09:44.319Z" },
 ]
 
 [[package]]
@@ -324,7 +324,7 @@ dev = [
 
 [package.metadata]
 requires-dist = [
-    { name = "datacommons-admin", specifier = ">=1.1.0" },
+    { name = "datacommons-admin", specifier = ">=1.1.1" },
     { name = "google-cloud-storage", specifier = ">=3.1.0,<4.0.0" },
     { name = "pandas", specifier = ">=2.2.3,<4.0.0" },
     { name = "pydantic", specifier = ">=2.11.3,<3.0.0" },

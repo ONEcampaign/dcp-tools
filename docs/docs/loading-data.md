@@ -18,7 +18,8 @@ Upload an exported data bundle to Google Cloud Storage, then trigger the Data Co
   - `gcs_output_folder_path` (`GCS_OUTPUT_FOLDER_PATH`): folder the pipeline writes its output to.
   - `load_job_region` (`LOAD_JOB_REGION`): region of the Cloud Run load job.
   - `load_job_name` (`LOAD_JOB_NAME`): name of the Cloud Run load job.
-  - `load_job_service_account` (`LOAD_JOB_SERVICE_ACCOUNT`, optional): service account to impersonate when triggering the job. Leave unset to use your own credentials.
+  - `ingestion_workflow_name` (`INGESTION_WORKFLOW_NAME`): name of the Cloud Workflow that runs the ingestion.
+  - `load_job_service_account` (`LOAD_JOB_SERVICE_ACCOUNT`, optional): service account to impersonate when triggering the workflow. Leave unset to use your own credentials.
 
 ## Steps
 
@@ -46,7 +47,8 @@ Upload an exported data bundle to Google Cloud Storage, then trigger the Data Co
      "GCS_INPUT_FOLDER_PATH": "customdc/input",
      "GCS_OUTPUT_FOLDER_PATH": "customdc/output",
      "LOAD_JOB_REGION": "us-central1",
-     "LOAD_JOB_NAME": "dc-load-job"
+     "LOAD_JOB_NAME": "dc-load-job",
+     "INGESTION_WORKFLOW_NAME": "dc-load-workflow"
    }
    ```
 
@@ -63,6 +65,7 @@ Upload an exported data bundle to Google Cloud Storage, then trigger the Data Co
        GCS_OUTPUT_FOLDER_PATH="customdc/output",
        LOAD_JOB_REGION="us-central1",
        LOAD_JOB_NAME="dc-load-job",
+       INGESTION_WORKFLOW_NAME="dc-load-workflow",
    )
    ```
 
@@ -86,7 +89,7 @@ Upload an exported data bundle to Google Cloud Storage, then trigger the Data Co
    dcp-tools upload --env-file customDC.env --sync
    ```
 
-1. **Trigger ingestion.** This starts the DCP prep job against whatever is currently in `gcs_input_folder_path`.
+1. **Trigger ingestion.** This starts the DCP ingestion workflow against whatever is currently in `gcs_input_folder_path`.
 
    ```python
    from dcp_tools.gcp_utilities import run_data_load
@@ -107,7 +110,7 @@ Upload an exported data bundle to Google Cloud Storage, then trigger the Data Co
 
    `pipeline` always loads every import. It has no `--imports` flag. If you need to load a subset, run `upload` then `dataload --imports=...` separately.
 
-`run_data_load` returns as soon as the job starts. It doesn't wait for the job to finish. Under the hood it calls `datacommons-admin`'s `IngestionJobClient`, which starts the DCP prep job. That job ingests the uploaded data and serves it automatically. There's nothing further to trigger from `dcp-tools`.
+`run_data_load` returns as soon as the workflow execution starts. It doesn't wait for it to finish. Under the hood it calls `datacommons-admin`'s `IngestionJobClient`, which starts the Cloud Workflow (`ingestion_workflow_name`) that ingests the uploaded data and serves it automatically. There's nothing further to trigger from `dcp-tools`.
 
 !!! note
     Older versions of this package required a separate `redeploy` call after the load job, plus a set of `CLOUD_SQL_*` settings to reach the underlying database. Both are gone. The DCP prep job now owns the restart, and there's no Cloud SQL in the current architecture.
@@ -132,14 +135,14 @@ print(get_unregistered_csv_files(bucket, config, gcs_folder_name=settings.gcs_in
 
 Both should return `[]`. A non-empty `get_missing_csv_files` result means a file the config expects never made it to GCS (upload failed, or it ran against the wrong folder). A non-empty `get_unregistered_csv_files` result means there's a stray CSV in the bucket that no `inputFiles` entry points at.
 
-The load job itself runs as a Cloud Run job (`load_job_name` in `load_job_region`). Its run history and logs are visible in the Google Cloud Console under Cloud Run > Jobs, not through `dcp-tools`.
+Ingestion itself runs as a Cloud Workflow execution (`ingestion_workflow_name` in `load_job_region`). Its run history and logs are visible in the Google Cloud Console under Workflows, not through `dcp-tools`.
 
 ## Troubleshooting
 
 - **`KGSettings`/`get_kg_settings` raises a `pydantic.ValidationError` listing several fields as "Field required".** One or more required settings are missing from your `.env`/JSON file, or weren't passed to the constructor. Every field except `gcp_credentials` and `load_job_service_account` is required. Check the list under [Before you start](#before-you-start).
 - **`GCP_CREDENTIALS` raises `Invalid JSON`.** `gcp_credentials` expects the *contents* of a service-account key as a JSON string, not a file path. Read the key file and pass its contents (`Path("key.json").read_text()`), or leave the setting unset to use Application Default Credentials.
 - **`get_missing_csv_files` reports every registered CSV as missing, even though the upload succeeded.** Both functions treat a `gcs_folder_name` that doesn't match anything in the bucket as an empty folder rather than raising: `get_missing_csv_files` then reports every `inputFiles` entry as missing, and `get_unregistered_csv_files` reports nothing (there's nothing to compare against). Check `gcs_input_folder_path` for a typo, or confirm the upload step ran first. Leading and trailing slashes are stripped automatically, so those aren't the issue.
-- **`run_data_load` raises `RuntimeError: Failed to start data load job: ...`.** The underlying `IngestionJobClient` call failed, most often from a wrong `load_job_name`/`load_job_region`, or a `load_job_service_account` that isn't allowed to invoke the job.
+- **`run_data_load` raises `RuntimeError: Failed to start data load job: ...`.** The underlying `IngestionJobClient` call failed, most often from a wrong `ingestion_workflow_name`/`load_job_name`/`load_job_region`, or a `load_job_service_account` that isn't allowed to invoke the workflow.
 
 ## See also
 

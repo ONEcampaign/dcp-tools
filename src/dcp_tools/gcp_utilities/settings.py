@@ -39,6 +39,7 @@ class KGSettings(BaseSettings):
     # Cloud run
     load_job_region: str = Field(alias="LOAD_JOB_REGION")
     load_job_name: str = Field(alias="LOAD_JOB_NAME")
+    ingestion_workflow_name: str = Field(alias="INGESTION_WORKFLOW_NAME")
     load_job_service_account: str | None = Field(
         alias="LOAD_JOB_SERVICE_ACCOUNT", default=None
     )

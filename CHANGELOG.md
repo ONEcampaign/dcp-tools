@@ -13,15 +13,24 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - `constraint_properties` on `StatVarNode` and as a parameter on
   `CustomDataManager.add_variable_to_mcf`, listing the DCID(s) of properties that constrain the
   StatisticalVariable. Bare tokens are minted to `dcid:<token>`.
+- **Breaking:** required `ingestion_workflow_name` (`INGESTION_WORKFLOW_NAME`) setting on
+  `KGSettings`, the name of the Cloud Workflow that runs ingestion. Every existing `.env`/settings
+  JSON needs this added before `KGSettings` will construct.
 
 ### Changed
 - `InputFile` represents both CSV and MCF entries. An entry targeting an `.mcf` file carries only
   a `provenance` — no `columnMappings` and no `format`. CSV entries are unchanged.
+- **Breaking:** bumped the `datacommons-admin` floor to `>=1.1.1`. `IngestionJobClient.start_job`
+  is gone in that release, replaced by `start_workflow`, which needs the new
+  `ingestion_workflow_name` setting above in addition to the existing `load_job_name`.
 
 ### Fixed
 - `ProvenanceNode.source_link` is renamed to `source`, so a provenance's parent
   source now serializes as `source: dcid:source/<name>` (was `sourceLink:`), the property name
   Data Commons ingestion preprocessing expects.
+- `run_data_load` (and the CLI's `dataload`/`pipeline` commands) stopped working against a Data
+  Commons Platform instance upgraded to 1.1.1, since the ingestion process moved from a directly
+  invoked Cloud Run job to a Cloud Workflow execution. See the breaking changes above.
 
 ## [1.0.0a1] - 2026-07-27
 

@@ -11,6 +11,8 @@
 - Added `constraint_properties` to `StatVarNode` and as a parameter on `add_variable_to_mcf`,
   for the DCID(s) of properties that constrain the StatisticalVariable. Bare tokens are minted
   to `dcid:<token>`.
+- **Breaking:** `datacommons-admin` was bumped to `>=1.1.1` and now required a
+  `ingestion_workflow_name` (`INGESTION_WORKFLOW_NAME`) setting.
 
 ## v1.0.0a1 (2026-07-27)
 

@@ -1016,6 +1016,19 @@ def test_add_variable_to_mcf_passes_prefixed_reference_fields_through():
     assert node.measured_property == "dcid:count"
 
 
+def test_add_variable_to_mcf_accepts_constraint_properties():
+    """constraint_properties is forwarded to the StatVarNode and bare tokens are minted."""
+    manager = CustomDataManager()
+    manager.add_variable_to_mcf(
+        dcid="StatVar",
+        name="Variable Name",
+        constraint_properties=["age", "gender"],
+    )
+    node = manager._mcf_nodes[DEFAULT_STATVAR_MCF_NAME].nodes[0]
+    assert isinstance(node, StatVarNode)
+    assert node.constraint_properties == ["dcid:age", "dcid:gender"]
+
+
 def test_add_entity_type_lands_node():
     """add_entity_type normalizes bare Node to dcid: and sets typeOf."""
     manager = CustomDataManager()

@@ -8,6 +8,9 @@
 - Added `add_mcf_file(file_name, provenance=...)` to declare an MCF file in `config.json`'s
   `inputFiles`. `add_mcf_file("*.mcf", provenance=...)` covers them all in a single-provenance
   import; declare each file separately when an import has more than one provenance.
+- Added `constraint_properties` to `StatVarNode` and as a parameter on `add_variable_to_mcf`,
+  for the DCID(s) of properties that constrain the StatisticalVariable. Bare tokens are minted
+  to `dcid:<token>`.
 
 ## v1.0.0a1 (2026-07-27)
 

@@ -61,6 +61,7 @@ def test_export_bundle_single_entity(tmp_path):
         name="Test Var",
         description="Description for Test Var.",
         member_of="dcid:one/g/group1",
+        constraint_properties=["age", "gender"],
     )
     manager.add_input_file(
         "subdir/data.csv",

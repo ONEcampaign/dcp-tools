@@ -46,6 +46,7 @@ class StatVarNode(Node):
         search_description: Optional descriptions enhancing NL search capabilities.
         population_type: Optional DCID of the population entity type being measured.
         measured_property: Optional DCID of the property being measured.
+        constraint_properties: Optional DCID(s) of the properties that constrain the StatisticalVariable.
         measurement_qualifier: Optional qualifier describing measurement specifics.
         measurement_denominator: Optional denominator for ratio-type statistical measures.
         footnote: Optional footnotes providing additional context or information.
@@ -59,6 +60,7 @@ class StatVarNode(Node):
     search_description: QuotedStrListOrStr | None = None
     population_type: Dcid | None = None
     measured_property: Dcid | None = None
+    constraint_properties: DcidOrListDcid | None = None
     measurement_qualifier: Dcid | None = None
     measurement_denominator: Dcid | None = None
     footnote: QuotedStrListOrStr | None = None

@@ -32,7 +32,8 @@ settings are read from a `.env` file in the current directory.
   "GCS_INPUT_FOLDER_PATH": "climate-finance",
   "GCS_OUTPUT_FOLDER_PATH": "climate-finance/output",
   "LOAD_JOB_REGION": "us-central1",
-  "LOAD_JOB_NAME": "dcp-prep-job"
+  "LOAD_JOB_NAME": "dcp-prep-job",
+  "INGESTION_WORKFLOW_NAME": "dcp-prep-workflow"
 }
 ```
 
@@ -44,6 +45,7 @@ GCS_INPUT_FOLDER_PATH=climate-finance
 GCS_OUTPUT_FOLDER_PATH=climate-finance/output
 LOAD_JOB_REGION=us-central1
 LOAD_JOB_NAME=dcp-prep-job
+INGESTION_WORKFLOW_NAME=dcp-prep-workflow
 ```
 
 !!! note

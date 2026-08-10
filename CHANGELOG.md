@@ -31,6 +31,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - `run_data_load` (and the CLI's `dataload`/`pipeline` commands) stopped working against a Data
   Commons Platform instance upgraded to 1.1.1, since the ingestion process moved from a directly
   invoked Cloud Run job to a Cloud Workflow execution. See the breaking changes above.
+- `run_data_load` (and the CLI's `dataload`/`pipeline` commands) now loads every import when
+  none are named.
 
 ## [1.0.0a1] - 2026-07-27
 

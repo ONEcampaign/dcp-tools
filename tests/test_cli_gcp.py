@@ -35,7 +35,20 @@ def test_dataload_command_invokes_pipeline() -> None:
         run.assert_called_once_with(settings=get.return_value, imports=None)
 
 
-def test_dataload_command_invokes_pipeline_with_imports() -> None:
+def test_dataload_command_defaults_to_all_imports() -> None:
+    with (
+        patch("dcp_tools.cli.common.get_kg_settings") as get,
+        patch("dcp_tools.gcp_utilities.jobs.IngestionJobClient") as client,
+    ):
+        get.return_value = Mock()
+        exit_code = main(["dataload", "--env-file", "e"])
+        assert exit_code == 0
+        client.return_value.start_workflow.assert_called_once_with(
+            imports="ALL_IMPORTS"
+        )
+
+
+def test_dataload_command_invokes_pipeline_with_names_imports() -> None:
     with (
         patch("dcp_tools.cli.common.get_kg_settings") as get,
         patch("dcp_tools.cli.data_load.run_data_load") as run,

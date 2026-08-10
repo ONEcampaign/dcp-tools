@@ -13,6 +13,8 @@
   to `dcid:<token>`.
 - **Breaking:** `datacommons-admin` was bumped to `>=1.1.1` and now required a
   `ingestion_workflow_name` (`INGESTION_WORKFLOW_NAME`) setting.
+- Fixed `run_data_load` and the `dataload`/`pipeline` commands not loading every import when
+  none are named.
 
 ## v1.0.0a1 (2026-07-27)
 

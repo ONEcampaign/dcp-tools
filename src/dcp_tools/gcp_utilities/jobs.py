@@ -6,14 +6,12 @@ from dcp_tools.gcp_utilities.settings import KGSettings
 from dcp_tools.logger import logger
 
 
-def run_data_load_job(
-    settings: KGSettings, *, imports: str | None = "ALL_IMPORTS"
-) -> None:
+def run_data_load_job(settings: KGSettings, *, imports: str | None = None) -> None:
     """Trigger the ingestion workflow to load data into the knowledge graph.
 
     Args:
         settings (KGSettings): Settings for the workflow.
-        imports (str | None): Comma-separated list of imports to load. Defaults to "ALL_IMPORTS".
+        imports (str | None): Comma-separated list of imports to load. All imports are loaded if omitted.
     """
     logger.info(
         f"Starting data ingestion workflow '{settings.ingestion_workflow_name}'"
@@ -28,7 +26,7 @@ def run_data_load_job(
             project_id=settings.gcp_project_id,
             location=settings.load_job_region,
         )
-        result = client.start_workflow(imports=imports)
+        result = client.start_workflow(imports=imports or "ALL_IMPORTS")
         workflow_execution_id = result.get("name")
         if workflow_execution_id:
             logger.info(f"Started workflow execution '{workflow_execution_id}'")

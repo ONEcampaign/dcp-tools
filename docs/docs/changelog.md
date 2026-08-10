@@ -1,6 +1,6 @@
 # Changelog
 
-## Unreleased
+## v1.0.0a2 (2026-08-10)
 
 - **Breaking:** `ProvenanceNode.source_link` is renamed to `source`, so a provenance's parent
   source now serializes as `source: dcid:source/<name>` (was `sourceLink:`), the property name

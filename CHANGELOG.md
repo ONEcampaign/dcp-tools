@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.0.0a2] - 2026-08-10
+
 ### Added
 - `add_mcf_file(file_name, provenance=...)` declares an MCF file in `config.json`'s `inputFiles`,
   so the importer reads it. The importer skips MCF files that aren't declared.
@@ -265,4 +267,5 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 [0.1.0]: https://github.com/ONEcampaign/dcp-tools/releases/tag/v0.1.0
 [0.1.1]: https://github.com/ONEcampaign/dcp-tools/compare/v0.1.0...v0.1.1
 [1.0.0a1]: https://github.com/ONEcampaign/dcp-tools/compare/v0.1.1...v1.0.0a1
-[unreleased]: https://github.com/ONEcampaign/dcp-tools/compare/v1.0.0a1...HEAD
+[1.0.0a2]: https://github.com/ONEcampaign/dcp-tools/compare/v1.0.0a1...v1.0.0a2
+[unreleased]: https://github.com/ONEcampaign/dcp-tools/compare/v1.0.0a2...HEAD

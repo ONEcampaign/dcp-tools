@@ -145,18 +145,14 @@ class InputFile(BaseModel):
     observation per row) or an MCF file of node definitions. Both need a ``provenance``;
     only CSV entries need column mappings and a format.
 
-    Exactly one of ``filename`` or ``pattern`` must be set, and ``filename`` always names
-    a CSV (enforced by the ``.csv`` extension check below). An MCF entry can only be
-    expressed via ``pattern`` — see ``CustomDataManager.add_mcf_file``, which always uses
-    it, even for an exact filename (a literal name is a valid glob). This isn't an
-    arbitrary restriction: ``add_data``, ``export_data``, and
-    ``validate_all_input_files_have_data`` all treat any entry with ``filename`` set as a
-    data-bearing CSV target, with no awareness of ``is_mcf``. Letting ``filename`` end in
-    ``.mcf`` would let those silently treat an MCF declaration as a CSV.
+    Exactly one of ``filename`` or ``pattern`` must be set:
+    - ``filename`` names one CSV file and must end in ``.csv``.
+    - ``pattern`` is a glob matching one or more files, and is the only way to declare
+      an MCF file. An exact file name works too, since a literal name is a valid glob.
 
     Attributes:
-        filename: Exact CSV file name (mutually exclusive with ``pattern``; always
-            requires a ``.csv`` extension, never ``.mcf``).
+        filename: Exact CSV file name (mutually exclusive with ``pattern``; must have a
+            ``.csv`` extension).
         pattern: Glob pattern matching one or more input files (mutually exclusive
             with ``filename``). Pattern entries are config-only: ``data=`` is not
             accepted with ``pattern=``. The only way to declare an MCF file; no
@@ -192,9 +188,9 @@ class InputFile(BaseModel):
     def is_mcf(self) -> bool:
         """Whether this entry declares an MCF file rather than a CSV.
 
-        Checks both ``filename`` and ``pattern`` for symmetry, but ``filename`` can never
-        actually end in ``.mcf`` on a validated instance (see the class docstring), so in
-        practice this is only ever true for a ``pattern`` entry.
+        Checks both ``filename`` and ``pattern`` for symmetry, but a validated instance
+        can never have a ``.mcf`` ``filename``, so in practice this is only true for
+        ``pattern`` entries.
         """
         return (self.filename or self.pattern or "").lower().endswith(".mcf")
 
@@ -207,6 +203,10 @@ class InputFile(BaseModel):
     def _validate_entry(self) -> "InputFile":
         if (self.filename is None) == (self.pattern is None):
             raise ValueError("Exactly one of 'filename' or 'pattern' must be set.")
+        # `filename` is CSV-only because add_data, export_data, and
+        # validate_all_input_files_have_data treat every filename entry as a
+        # data-bearing CSV target, without checking `is_mcf`. A `.mcf` filename would
+        # let them silently handle an MCF declaration as a CSV.
         if self.filename is not None and not self.filename.lower().endswith(".csv"):
             raise ValueError(f'filename "{self.filename}" must have a .csv extension.')
         if self.is_mcf:

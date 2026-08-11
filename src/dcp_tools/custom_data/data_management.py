@@ -27,6 +27,7 @@ from dcp_tools.custom_data.models.mcf import Node, Nodes
 from dcp_tools.custom_data.models.schema_nodes import (
     EntityTypeNode,
     EventTypeNode,
+    GenericNode,
     MeasurementMethodNode,
     PropertyNode,
     UnitOfMeasureNode,
@@ -115,6 +116,12 @@ class CustomDataManager:
     >>> )
     >>> dc_manager.add_unit(dcid="USD", name="US Dollar", short_display_name="$")
     >>> dc_manager.add_measurement_method(dcid="MyCensus")
+
+    To add an entity instance (e.g. an organisation acting as a CRS provider) or a
+    generic constraint-value class (e.g. ``Commitment``) with an explicit ``typeOf``,
+    use ``add_node``:
+    >>> dc_manager.add_node(dcid="MyOrg", name="My Org", type_of="Organization")
+    >>> dc_manager.add_node(dcid="Commitment", name="Commitment", type_of="Class")
 
     You can also add variables for export to an MCF file using a CSV file. The CSV file should
     contain the variables you want to add.
@@ -885,6 +892,67 @@ class CustomDataManager:
         type_of = ensure_dcid(type_of)
         props = _parse_kwargs_into_properties(locals())
         node = MeasurementMethodNode(**props)
+        mcf_name = validate_mcf_file_name(mcf_file_name)
+        self._mcf_nodes.setdefault(mcf_name, Nodes()).add(node, override=override)
+        return self
+
+    def add_node(
+        self,
+        *,
+        dcid: str,
+        name: str,
+        type_of: str | list[str],
+        description: str | None = None,
+        included_in: str | list[str] | None = None,
+        additional_properties: dict[str, str] | None = None,
+        override: bool = False,
+        mcf_file_name: MCFFileName | str = DEFAULT_STATVAR_MCF_NAME,
+    ) -> CustomDataManager:
+        """Add an arbitrary MCF node with an explicit ``typeOf``.
+
+        Emits an MCF node with the given ``typeOf`` to the MCF collection (default:
+        ``custom_nodes.mcf``). Use this for entity instances (e.g. an organisation
+        acting as a CRS provider) or generic constraint-value classes (e.g.
+        ``Commitment``, ``MalariaControl``).
+
+        Args:
+            dcid: Identifier token for the node. Bare tokens are normalized to
+                ``dcid:<token>``; already ``dcid:``-prefixed values are passed through
+                verbatim. Names must be valid dcid tokens (no whitespace).
+            name: Human-readable name for the node.
+            type_of: DCID(s) of the node's type(s) (e.g. ``"Organization"``, or
+                ``["Commitment", "ConstraintValue"]``). Bare tokens are normalized to
+                ``dcid:<token>``.
+            description: Optional human-readable description. (Optional)
+            included_in: Bare provenance name (or list of names) the node is defined
+                in. **Important:** this takes the bare provenance name (not a dcid,
+                unlike the other ref params). The provenance must already be
+                registered via ``add_provenance``. The builder emits ``includedIn``
+                for **both** the provenance and its linked Source (one bare name →
+                two dcids out). (Optional)
+            additional_properties: Additional MCF properties, passed as a dictionary
+                with the target property as key. Use this for any node property not
+                covered above, such as ``subClassOf`` or a custom relation.
+                (Optional)
+            override: If True, overwrite the existing node if it exists. Defaults to False.
+            mcf_file_name: Name of the MCF file (must end in .mcf).
+                Defaults to ``"custom_nodes.mcf"``.
+
+        Returns:
+            CustomDataManager object
+
+        Raises:
+            ValueError: If Node contains whitespace, if a node with the same id
+                already exists and ``override`` is False, if the file name is
+                invalid, or if any provenance referenced by ``includedIn`` has not
+                been registered.
+        """
+        dcid = ensure_dcid(dcid)
+        type_of = ensure_dcid(type_of)
+        if included_in is not None:
+            included_in = self._expand_included_in(included_in)
+        props = _parse_kwargs_into_properties(locals())
+        node = GenericNode(**props)
         mcf_name = validate_mcf_file_name(mcf_file_name)
         self._mcf_nodes.setdefault(mcf_name, Nodes()).add(node, override=override)
         return self

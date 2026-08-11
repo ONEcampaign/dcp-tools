@@ -48,6 +48,29 @@ class EventTypeNode(Node):
     included_in: DcidOrListDcid | None = None
 
 
+class GenericNode(Node):
+    """Represents an arbitrary Data Commons node with a caller-supplied ``typeOf``.
+
+    Used for entity instances (e.g. an organisation acting as a CRS provider) or
+    generic constraint-value classes (e.g. ``Commitment``, ``MalariaControl``) that
+    don't fit one of the other typed builders. ``includedIn`` references the
+    provenance(s) — and, via the builder, their linked source(s) — the node is
+    defined in.
+
+    Attributes:
+        # Inherited from Node
+        dcid: Identifier for the Node.
+        name: The human-readable name for the Node.
+        type_of: DCID(s) of the node's type(s).
+        description: Optional human-readable description.
+
+        # GenericNode-specific
+        included_in: Optional provenance/source DCID(s) the node is defined in.
+    """
+
+    included_in: DcidOrListDcid | None = None
+
+
 class PropertyNode(Node):
     """Represents a Data Commons Property node.
 

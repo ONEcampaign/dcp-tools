@@ -16,7 +16,11 @@ from dcp_tools.custom_data.models.data_files import (
     ColumnMappings,
     InputFile,
 )
-from dcp_tools.custom_data.models.schema_nodes import EntityTypeNode, PropertyNode
+from dcp_tools.custom_data.models.schema_nodes import (
+    EntityTypeNode,
+    GenericNode,
+    PropertyNode,
+)
 from dcp_tools.custom_data.models.sources import ProvenanceNode, SourceNode
 from dcp_tools.custom_data.models.stat_vars import StatVarGroupNode, StatVarNode
 
@@ -1121,6 +1125,113 @@ def test_add_measurement_method_lands_node_and_typeof_override():
     node = manager._mcf_nodes["custom_nodes.mcf"].nodes[0]
     assert node.type_of == "dcid:CensusSurveyEnum"
     assert node.name is None
+
+
+def test_add_node_lands_entity_instance():
+    """add_node creates an entity instance node with an explicit typeOf."""
+    manager = CustomDataManager()
+    manager.add_node(dcid="ONE-Campaign", name="ONE Campaign", type_of="Organization")
+    node = manager._mcf_nodes[DEFAULT_STATVAR_MCF_NAME].nodes[0]
+    assert type(node) is GenericNode
+    assert node.dcid == "dcid:ONE-Campaign"
+    assert node.name == "ONE Campaign"
+    assert node.type_of == "dcid:Organization"
+
+
+def test_add_node_accepts_list_type_of():
+    """A list of bare typeOf tokens is normalized to a list of dcid: tokens."""
+    manager = CustomDataManager()
+    manager.add_node(
+        dcid="Commitment", name="Commitment", type_of=["Class", "ConstraintValue"]
+    )
+    node = manager._mcf_nodes[DEFAULT_STATVAR_MCF_NAME].nodes[0]
+    assert node.type_of == ["dcid:Class", "dcid:ConstraintValue"]
+
+
+def test_add_node_dcid_prefixed_and_type_of_verbatim():
+    """Already dcid:-prefixed dcid and typeOf are passed through verbatim."""
+    manager = CustomDataManager()
+    manager.add_node(dcid="dcid:Already", name="x", type_of="dcid:Class")
+    node = manager._mcf_nodes[DEFAULT_STATVAR_MCF_NAME].nodes[0]
+    assert node.dcid == "dcid:Already"
+    assert node.type_of == "dcid:Class"
+
+
+def test_add_node_additional_properties_sets_arbitrary_field():
+    """additional_properties reaches fields not exposed as direct parameters, e.g. subClassOf."""
+    manager = CustomDataManager()
+    manager.add_node(
+        dcid="MalariaControl",
+        name="Malaria Control",
+        type_of="Class",
+        additional_properties={"subClassOf": "dcid:ConstraintValue"},
+    )
+    node = manager._mcf_nodes[DEFAULT_STATVAR_MCF_NAME].nodes[0]
+    assert node.sub_class_of == "dcid:ConstraintValue"
+
+
+def test_add_node_included_in_expands_to_provenance_and_source():
+    """add_node's includedIn expands to both the provenance and its linked source, like the
+    typed builders."""
+    manager = CustomDataManager()
+    manager.add_source(dcid="src", url="http://s")
+    manager.add_provenance(dcid="prov", url="http://p", source="src")
+    manager.add_node(
+        dcid="MyOrg", name="My Org", type_of="Organization", included_in="prov"
+    )
+
+    node = manager._mcf_nodes[DEFAULT_STATVAR_MCF_NAME].nodes[0]
+    assert isinstance(node, GenericNode)
+    assert node.included_in == ["dcid:provenance/prov", "dcid:source/src"]
+    assert node.model_dump()["includedIn"] == "dcid:provenance/prov, dcid:source/src"
+
+
+def test_add_node_included_in_raises_for_missing_provenance():
+    """includedIn referencing an unregistered provenance raises ValueError."""
+    manager = CustomDataManager()
+    with pytest.raises(ValueError, match="ghost"):
+        manager.add_node(
+            dcid="MyOrg", name="My Org", type_of="Organization", included_in="ghost"
+        )
+
+
+def test_add_node_override():
+    """Duplicate Node without override raises; with override=True replaces."""
+    manager = CustomDataManager()
+    manager.add_node(dcid="T", name="First", type_of="Organization")
+    with pytest.raises(ValueError):
+        manager.add_node(dcid="T", name="Second", type_of="Organization")
+    manager.add_node(dcid="T", name="Updated", type_of="Organization", override=True)
+    node = manager._mcf_nodes[DEFAULT_STATVAR_MCF_NAME].nodes[0]
+    assert node.name == "Updated"
+
+
+def test_add_node_rejects_whitespace_dcid():
+    """A dcid token with whitespace is rejected before a malformed node is built."""
+    manager = CustomDataManager()
+    with pytest.raises(ValueError):
+        manager.add_node(dcid="My Org", name="My Org", type_of="Organization")
+
+
+def test_add_node_rejects_whitespace_type_of():
+    """A typeOf token with whitespace is rejected before a malformed node is built."""
+    manager = CustomDataManager()
+    with pytest.raises(ValueError):
+        manager.add_node(dcid="MyOrg", name="My Org", type_of="Not Valid")
+
+
+def test_add_node_custom_mcf_file_name():
+    """add_node with mcf_file_name lands the node in the specified file."""
+    manager = CustomDataManager()
+    manager.add_node(
+        dcid="MyOrg",
+        name="My Org",
+        type_of="Organization",
+        mcf_file_name="entities.mcf",
+    )
+    assert "entities.mcf" in manager._mcf_nodes
+    node = manager._mcf_nodes["entities.mcf"].nodes[0]
+    assert node.dcid == "dcid:MyOrg"
 
 
 def test_included_in_expands_to_provenance_and_source():

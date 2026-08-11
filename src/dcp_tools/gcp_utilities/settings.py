@@ -20,28 +20,33 @@ class KGSettings(BaseSettings):
         gcp_credentials: GCP credentials in JSON format. Optional; if not provided,
             Application Default Credentials (ADC) will be used.
         gcs_bucket_name: Google Cloud Storage bucket name.
-        gcs_input_folder_path: Google Cloud Storage input folder path.
+        gcs_input_folder_path: Google Cloud Storage input folder path. Defaults to
+            "ingestion/input", the DCP Terraform default.
         gcs_output_folder_path: Google Cloud Storage output folder path.
         load_job_region: Cloud Run load job region.
         load_job_name: Cloud Run load job name.
         load_job_service_account: Cloud Run service account email to impersonate, optional.
     """
 
-    local_path: Path = Field(alias="LOCAL_PATH")
-    gcp_project_id: str = Field(alias="GCP_PROJECT_ID")
-    gcp_credentials: Json[dict] | None = Field(default=None, alias="GCP_CREDENTIALS")
+    local_path: Path = Field(validation_alias="LOCAL_PATH")
+    gcp_project_id: str = Field(validation_alias="GCP_PROJECT_ID")
+    gcp_credentials: Json[dict] | None = Field(
+        default=None, validation_alias="GCP_CREDENTIALS"
+    )
 
     # Cloud storage
-    gcs_bucket_name: str = Field(alias="GCS_BUCKET_NAME")
-    gcs_input_folder_path: str = Field(alias="GCS_INPUT_FOLDER_PATH")
-    gcs_output_folder_path: str = Field(alias="GCS_OUTPUT_FOLDER_PATH")
+    gcs_bucket_name: str = Field(validation_alias="GCS_BUCKET_NAME")
+    gcs_input_folder_path: str = Field(
+        default="ingestion/input", validation_alias="GCS_INPUT_FOLDER_PATH"
+    )
+    gcs_output_folder_path: str = Field(validation_alias="GCS_OUTPUT_FOLDER_PATH")
 
     # Cloud run
-    load_job_region: str = Field(alias="LOAD_JOB_REGION")
-    load_job_name: str = Field(alias="LOAD_JOB_NAME")
-    ingestion_workflow_name: str = Field(alias="INGESTION_WORKFLOW_NAME")
+    load_job_region: str = Field(validation_alias="LOAD_JOB_REGION")
+    load_job_name: str = Field(validation_alias="LOAD_JOB_NAME")
+    ingestion_workflow_name: str = Field(validation_alias="INGESTION_WORKFLOW_NAME")
     load_job_service_account: str | None = Field(
-        alias="LOAD_JOB_SERVICE_ACCOUNT", default=None
+        validation_alias="LOAD_JOB_SERVICE_ACCOUNT", default=None
     )
 
     @field_validator("gcs_input_folder_path", "gcs_output_folder_path")
@@ -60,7 +65,10 @@ class KGSettings(BaseSettings):
         return f"gs://{self.gcs_bucket_name}/{self.gcs_output_folder_path}"
 
     model_config = SettingsConfigDict(
-        env_file=".env", env_file_encoding="utf-8", case_sensitive=False
+        env_file=".env",
+        env_file_encoding="utf-8",
+        case_sensitive=False,
+        populate_by_name=True,
     )
 
 

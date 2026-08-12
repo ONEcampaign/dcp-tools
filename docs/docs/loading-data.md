@@ -14,7 +14,7 @@ Upload an exported data bundle to Google Cloud Storage, then trigger the Data Co
   - `gcp_project_id` (`GCP_PROJECT_ID`): your GCP project ID.
   - `gcp_credentials` (`GCP_CREDENTIALS`, optional): GCP service account credentials as a JSON string. Leave unset to use Application Default Credentials (after `gcloud auth application-default login`).
   - `gcs_bucket_name` (`GCS_BUCKET_NAME`): the Cloud Storage bucket the DCP pipeline reads from.
-  - `gcs_input_folder_path` (`GCS_INPUT_FOLDER_PATH`): folder in that bucket to upload the bundle to.
+  - `gcs_input_folder_path` (`GCS_INPUT_FOLDER_PATH`, optional): folder in that bucket to upload the bundle to. Defaults to `ingestion/input`, the DCP Terraform default.
   - `gcs_output_folder_path` (`GCS_OUTPUT_FOLDER_PATH`): folder the pipeline writes its output to.
   - `load_job_region` (`LOAD_JOB_REGION`): region of the Cloud Run load job.
   - `load_job_name` (`LOAD_JOB_NAME`): name of the Cloud Run load job.
@@ -139,7 +139,7 @@ Ingestion itself runs as a Cloud Workflow execution (`ingestion_workflow_name` i
 
 ## Troubleshooting
 
-- **`KGSettings`/`get_kg_settings` raises a `pydantic.ValidationError` listing several fields as "Field required".** One or more required settings are missing from your `.env`/JSON file, or weren't passed to the constructor. Every field except `gcp_credentials` and `load_job_service_account` is required. Check the list under [Before you start](#before-you-start).
+- **`KGSettings`/`get_kg_settings` raises a `pydantic.ValidationError` listing several fields as "Field required".** One or more required settings are missing from your `.env`/JSON file, or weren't passed to the constructor. Every field except `gcp_credentials`, `gcs_input_folder_path`, and `load_job_service_account` is required. Check the list under [Before you start](#before-you-start).
 - **`GCP_CREDENTIALS` raises `Invalid JSON`.** `gcp_credentials` expects the *contents* of a service-account key as a JSON string, not a file path. Read the key file and pass its contents (`Path("key.json").read_text()`), or leave the setting unset to use Application Default Credentials.
 - **`get_missing_csv_files` reports every registered CSV as missing, even though the upload succeeded.** Both functions treat a `gcs_folder_name` that doesn't match anything in the bucket as an empty folder rather than raising: `get_missing_csv_files` then reports every `inputFiles` entry as missing, and `get_unregistered_csv_files` reports nothing (there's nothing to compare against). Check `gcs_input_folder_path` for a typo, or confirm the upload step ran first. Leading and trailing slashes are stripped automatically, so those aren't the issue.
 - **`run_data_load` raises `RuntimeError: Failed to start data load job: ...`.** The underlying `IngestionJobClient` call failed, most often from a wrong `ingestion_workflow_name`/`load_job_name`/`load_job_region`, or a `load_job_service_account` that isn't allowed to invoke the workflow.

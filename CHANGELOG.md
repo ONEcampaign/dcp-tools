@@ -7,6 +7,21 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.0.0a3] - 2026-08-19
+
+### Added
+- `add_node(dcid=..., name=..., type_of=...)` on `CustomDataManager` writes an MCF node with a
+  caller-supplied `typeOf`, for entity instances (e.g. organisations) or constraint-value
+  classes (e.g. `Commitment`) the typed builders don't cover.
+
+### Changed
+- `gcs_input_folder_path` (`GCS_INPUT_FOLDER_PATH`) is now optional and defaults to
+  `ingestion/input`, the DCP Terraform default.
+
+### Fixed
+- `KGSettings` accepts its snake_case field names as well as the uppercase environment aliases,
+  so `KGSettings(local_path=...)` works alongside `KGSettings(LOCAL_PATH=...)`.
+
 ## [1.0.0a2] - 2026-08-10
 
 ### Added
@@ -268,4 +283,5 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 [0.1.1]: https://github.com/ONEcampaign/dcp-tools/compare/v0.1.0...v0.1.1
 [1.0.0a1]: https://github.com/ONEcampaign/dcp-tools/compare/v0.1.1...v1.0.0a1
 [1.0.0a2]: https://github.com/ONEcampaign/dcp-tools/compare/v1.0.0a1...v1.0.0a2
-[unreleased]: https://github.com/ONEcampaign/dcp-tools/compare/v1.0.0a2...HEAD
+[1.0.0a3]: https://github.com/ONEcampaign/dcp-tools/compare/v1.0.0a2...v1.0.0a3
+[unreleased]: https://github.com/ONEcampaign/dcp-tools/compare/v1.0.0a3...HEAD

@@ -1,5 +1,15 @@
 # Changelog
 
+## v1.0.0a3 (2026-08-19)
+
+- Added `add_node(dcid=..., name=..., type_of=...)` to `CustomDataManager`, for MCF nodes with a
+  caller-supplied `typeOf` e.g. entity instances (e.g. an organisation) or constraint-value
+- classes (e.g. `Commitment`) the typed builders don't cover.
+- `gcs_input_folder_path` (`GCS_INPUT_FOLDER_PATH`) is now optional and defaults to
+  `ingestion/input`, the DCP Terraform default.
+- Fixed `KGSettings` rejecting its snake_case field names; `KGSettings(local_path=...)` now works
+  alongside `KGSettings(LOCAL_PATH=...)`.
+
 ## v1.0.0a2 (2026-08-10)
 
 - **Breaking:** `ProvenanceNode.source_link` is renamed to `source`, so a provenance's parent

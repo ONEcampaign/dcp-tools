@@ -1,3 +1,7 @@
+---
+description: Use CustomDataManager recipes to register data, define StatVars and schema nodes, merge configs, validate bundles, and export files.
+---
+
 # Preparing data
 
 `CustomDataManager` builds a Data Commons Platform import bundle (a `config.json` file, CSV data,

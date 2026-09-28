@@ -1,3 +1,7 @@
+---
+description: Why dcp-tools writes both config.json and MCF files, how a CSV column becomes an observation predicate, and how custom dimensions carry bilateral data.
+---
+
 # Why `config.json` and MCF, not one file
 
 ## The question this page answers

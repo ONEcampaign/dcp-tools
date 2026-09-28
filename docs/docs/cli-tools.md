@@ -1,3 +1,7 @@
+---
+description: Use the dcp-tools CLI reference to convert CSV files to MCF, upload bundles, trigger ingestion, and check command options.
+---
+
 # `dcp-tools` CLI
 
 `dcp-tools` is the command-line entry point for the functions documented under

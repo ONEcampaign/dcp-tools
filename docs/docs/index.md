@@ -1,3 +1,7 @@
+---
+description: Build Data Commons Platform import files with the dcp-tools Python API or CLI, upload them, and trigger ingestion.
+---
+
 # dcp-tools
 
 **Prepare and load data for Data Commons Platform instances.**

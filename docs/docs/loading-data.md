@@ -1,3 +1,7 @@
+---
+description: Upload an exported bundle to Google Cloud Storage, trigger the Data Commons Platform ingestion workflow, check the upload, and fix common settings errors.
+---
+
 # How to upload and load data into a Data Commons Platform instance
 
 Upload an exported data bundle to Google Cloud Storage, then trigger the Data Commons Platform (DCP) workflow that ingests it into your custom knowledge graph and serves it.

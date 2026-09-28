@@ -1,3 +1,7 @@
+---
+description: Install dcp-tools and build a complete climate finance import bundle from Python, then export it and check the config, MCF, and CSV files.
+---
+
 # Build your first Data Commons Platform import
 
 > A working import bundle for a Data Commons Platform instance, built with `dcp-tools` and verified by loading it back.

@@ -4,9 +4,13 @@ description: Read dcp-tools release notes from version 0.0.1 onwards, including 
 
 # Changelog
 
+## v1.0.1 (2026-10-13)
+
+- Fixed a fresh install failing to import `dcp_tools.gcp_utilities`, which broke the `dcp-tools` CLI and `run_ingestion_workflow`. `datacommons-admin` 1.1.3 moved `IngestionJobClient` to a new module, and 1.1.6 removed the `job_name` argument dcp-tools passes. The dependency is now capped at `datacommons-admin<1.1.3` until dcp-tools supports the new client.
+
 ## v1.0.0 (2026-10-13)
 
-First stable release, and the first under the name `dcp-tools`. The API is unchanged since v1.0.0a5, and from this release on, breaking changes wait for a new major version. To upgrade from `bblocks-datacommons-tools` 0.1.1, follow the migration notes in the v1.0.0a1 to v1.0.0a5 entries below, which describe each change in detail.
+First stable release under the name `dcp-tools`. The API is unchanged since v1.0.0a5, and from this release on, breaking changes wait for a new major version. To upgrade from `bblocks-datacommons-tools` 0.1.1, follow the migration notes in the v1.0.0a1 to v1.0.0a5 entries below, which describe each change in detail.
 
 - **Breaking:** renamed the package from `bblocks-datacommons-tools` to `dcp-tools`, the import path to `dcp_tools` and the CLI to `dcp-tools`. The old distribution installs `dcp-tools` and re-exports it with a `DeprecationWarning`.
 - **Breaking:** ingestion runs on the Data Commons Platform. `run_data_load` is now `run_ingestion_workflow`, the ingestion settings are renamed, and the Cloud SQL and redeploy settings and commands are removed.

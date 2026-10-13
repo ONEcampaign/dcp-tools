@@ -7,9 +7,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.0.1] - 2026-10-13
+
+### Fixed
+- A fresh install could not import `dcp_tools.gcp_utilities`, so the `dcp-tools` CLI and
+  `run_ingestion_workflow` failed. `datacommons-admin` 1.1.3 moved `IngestionJobClient` to a new
+  module, and 1.1.6 removed the `job_name` argument dcp-tools passes. The dependency is now capped
+  at `datacommons-admin<1.1.3` until dcp-tools supports the new client.
+
 ## [1.0.0] - 2026-10-13
 
-First stable release, and the first under the name `dcp-tools`. The API is unchanged since
+First stable release under the name `dcp-tools`. The API is unchanged since
 1.0.0a5, and from this release on, breaking changes wait for a new major version. To upgrade from
 `bblocks-datacommons-tools` 0.1.1, follow the migration notes in the 1.0.0a1 to 1.0.0a5 entries
 below, which describe each change in detail.
@@ -347,4 +355,5 @@ below, which describe each change in detail.
 [1.0.0a4]: https://github.com/ONEcampaign/dcp-tools/compare/v1.0.0a3...v1.0.0a4
 [1.0.0a5]: https://github.com/ONEcampaign/dcp-tools/compare/v1.0.0a4...v1.0.0a5
 [1.0.0]: https://github.com/ONEcampaign/dcp-tools/compare/v1.0.0a5...v1.0.0
-[unreleased]: https://github.com/ONEcampaign/dcp-tools/compare/v1.0.0...HEAD
+[1.0.1]: https://github.com/ONEcampaign/dcp-tools/compare/v1.0.0...v1.0.1
+[unreleased]: https://github.com/ONEcampaign/dcp-tools/compare/v1.0.1...HEAD

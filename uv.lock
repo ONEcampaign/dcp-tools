@@ -302,7 +302,7 @@ wheels = [
 
 [[package]]
 name = "dcp-tools"
-version = "1.0.0a5"
+version = "1.0.0"
 source = { editable = "." }
 dependencies = [
     { name = "datacommons-admin" },

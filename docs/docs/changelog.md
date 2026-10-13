@@ -4,6 +4,18 @@ description: Read dcp-tools release notes from version 0.0.1 onwards, including 
 
 # Changelog
 
+## v1.0.0 (2026-10-13)
+
+First stable release, and the first under the name `dcp-tools`. The API is unchanged since v1.0.0a5, and from this release on, breaking changes wait for a new major version. To upgrade from `bblocks-datacommons-tools` 0.1.1, follow the migration notes in the v1.0.0a1 to v1.0.0a5 entries below, which describe each change in detail.
+
+- **Breaking:** renamed the package from `bblocks-datacommons-tools` to `dcp-tools`, the import path to `dcp_tools` and the CLI to `dcp-tools`. The old distribution installs `dcp-tools` and re-exports it with a `DeprecationWarning`.
+- **Breaking:** ingestion runs on the Data Commons Platform. `run_data_load` is now `run_ingestion_workflow`, the ingestion settings are renamed, and the Cloud SQL and redeploy settings and commands are removed.
+- **Breaking:** the Python API is snake_case throughout, the node models drop their `MCF` prefix, and `add_source` and `add_provenance` take separate `dcid` and `name` parameters.
+- **Breaking:** `export_all` writes the complete bundle and empties the target directory first.
+- **Breaking:** the variable-per-column (implicit schema) input format and the `redeploy` command are removed.
+- Added `add_node`, `add_mcf_file`, Source and Provenance nodes with licence, refresh and coverage metadata, multi-entity observations through `custom:<name>` dimensions, and `constraint_properties` on StatVars.
+- Minimum supported Python is 3.13.
+
 ## v1.0.0a5 (2026-09-10)
 
 - **Breaking:** `license_type` and `curator` are now DCID references, written as

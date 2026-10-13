@@ -10,9 +10,9 @@ description: Build Data Commons Platform import files with the dcp-tools Python 
 Platform instance needs, then uploading them and triggering ingestion. Use it as a library or
 through the `dcp-tools` command-line tool.
 
-A Data Commons Platform instance lets an organization combine its own datasets with the public
+A Data Commons Platform instance lets an organisation combine its own datasets with the public
 knowledge graph at [datacommons.org](https://datacommons.org/), while reusing the platform's
-search and visualization tools. The official
+search and visualisation tools. The official
 [Custom Data Commons documentation](https://docs.datacommons.org/custom_dc/index.html) covers how
 the platform itself works. This site covers the tooling that prepares and loads data into it.
 

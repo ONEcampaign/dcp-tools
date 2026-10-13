@@ -20,14 +20,14 @@ Commons graph: your StatVars, your groups, your sources and provenances, and, fo
 concepts, custom entity types, event types, properties, units, and measurement methods. Every
 input file dcp-tools produces is variable-per-row (one observation per row). That's the only
 layout the current importer accepts, so there's no format to choose. The `columnMappings` block
-in `config.json` uses `observationAbout` for a row about one entity, and `custom:<name>` for a
+in `config.json` uses `dcid:observationAbout` for a row about one entity, and `custom:<name>` for a
 row about several. That split exists because a single dcid reference can't represent a bilateral
 relationship.
 
-## Background: what a Data Commons Platform deployment needs
+## What a Data Commons Platform deployment needs
 
-A Data Commons Platform instance serves an organization's own data next to the base Data Commons
-knowledge graph. Getting data in isn't a matter of writing rows into a database table. The
+A Data Commons Platform instance serves an organisation's own data next to the base Data Commons
+knowledge graph. The
 platform's ingestion workflow reads a declarative bundle (config, CSVs, MCF) and turns it into
 graph nodes and observations. `dcp-tools` builds that bundle. It doesn't talk to a database and it
 doesn't run the ingestion workflow itself. `CustomDataManager` assembles the files, and
@@ -44,9 +44,9 @@ predicate, and why the schema-defining nodes live in a separate file format.
 
 Every entry in `config.json`'s `inputFiles` list points at either a CSV of observations or an
 MCF file of node definitions. A CSV entry carries a `columnMappings` block. The block
-doesn't hold data. It holds a role assignment: which column in *this specific CSV* plays
+doesn't hold data. It holds a role assignment, naming which column in *this specific CSV* plays
 which part in *every* observation the importer will build from it. An MCF entry carries no
-mappings — there are no columns to assign — only the provenance its nodes belong to.
+mappings, since it has no columns to assign. It carries only the provenance its nodes belong to.
 
 ```python
 from dcp_tools import CustomDataManager
@@ -100,16 +100,16 @@ Each key in `columnMappings` is a role the importer already understands (`observ
 `date`, `variable`, `value`, `unit`, `scalingFactor`, `measurementMethod`,
 `observationPeriod`). The string you supply is the name of the column that fills that role in
 *this* file. `add_input_file` accepts the short names (`variable`, `date`, and so on).
-`config.json` stores them under their `dcid:`-prefixed aliases because that's the predicate
+`config.json` stores all but `scalingFactor` under their `dcid:`-prefixed aliases because that's the predicate
 form the importer reads them as. Two files can map the same role to differently named columns (one CSV might call
 its date column `year`, another `fiscal_year`) because the mapping is declared per file.
 
 What `columnMappings` cannot do is invent a column that isn't there, or tell the importer what a
-value like `climateFinanceProvidedCommitments` *means*. That's the MCF file's job: it defines
+value like `climateFinanceProvidedCommitments` *means*. That's the MCF file's job. It defines
 the `climateFinanceProvidedCommitments` StatVar node once, and every row across every CSV that
 references it by that dcid inherits the definition.
 
-### observationAbout vs. custom dimensions: why bilateral data needs a different mechanism
+### Why bilateral data needs a different mechanism from observationAbout
 
 `observationAbout` takes exactly one column, because it fills exactly one predicate:
 "this observation is about this entity." That works for the commitments file above, one country
@@ -150,8 +150,7 @@ manager.add_input_file(
 )
 ```
 
-`custom:<name>` in `columnMappings` doesn't replace `observationAbout`. It adds a named dimension
-alongside it. Each `custom:<name>` key becomes a `dcid:<name>` property reference on the
+A row with `custom:<name>` keys needs no `observationAbout`, as the flows file above shows. Each `custom:<name>` key becomes a `dcid:<name>` property reference on the
 observation. The StatVar's own `observationProperties` list tells the importer which
 properties to expect and validate against. Here that's `providerCountry` and `recipientCountry`,
 declared once on the StatVar rather than re-derived per file. A single-entity StatVar doesn't
@@ -171,43 +170,24 @@ of them inserts a namespace segment:
   segment.
 
 The difference tracks what's being identified. A source or provenance name is usually a short
-organizational label: `"ONEData"`, `"WEO"`, `"IMF"`. Two different datasets, even two teams at
-the same organization, can plausibly both register a source called `"WorldBank"`. Nesting the
+organisational label: `"ONEData"`, `"WEO"`, `"IMF"`. Two different datasets, even two teams at
+the same organisation, can plausibly both register a source called `"WorldBank"`. Nesting the
 name under `source/` or `provenance/` means that collision has to happen inside a much smaller
 namespace (one
-organization's list of sources) instead of the flat graph-wide dcid space, and it keeps a
+organisation's list of sources), and it keeps a
 source's identity separate from a provenance's even if someone reuses the same word for both.
 
 A custom entity type, property, unit, or measurement method doesn't have that problem, because
 defining one *is* the act of claiming a unique identifier. When you call
-`add_property(dcid="providerCountry", ...)`, you're not labeling something that already exists
-elsewhere. You're declaring that `dcid:providerCountry` is now a `Property` node. The
+`add_property(dcid="providerCountry", ...)`, you declare that `dcid:providerCountry` is now a `Property` node. The
 `typeOf: dcid:Property` on the node itself is what disambiguates it from a same-named source or
-StatVar, not an extra path segment on the id. That's why these builders use `ensure_dcid`, which
+StatVar. That's why these builders use `ensure_dcid`, which
 only adds the `dcid:` prefix, while sources and provenances use `mint_dcid`, which adds a
 namespace segment too.
 
-## Alternatives considered
-
-Earlier versions of this package supported two input-file formats side by side, then called
-"explicit" and "implicit" schema: the explicit one required the `columnMappings` block described
-above, and the implicit one (`variablePerColumn`) let the importer infer column roles by
-convention instead. The implicit format is gone. `Config` now rejects a `config.json` that
-declares `"format": "variablePerColumn"` with an error pointing at the migration path, rather
-than accepting it and guessing wrong. Maintaining two formats meant maintaining two mental models
-for the same underlying data (which column is the variable, which is the date) and two code paths
-for validating them, for a convenience (skipping explicit mappings) that mattered less than the
-ambiguity it introduced. Collapsing to one format also removed the need for the "explicit vs.
-implicit" name itself. A contrast only needs a name when there's something to contrast it with.
-
 ## Consequences
 
-Every CSV input file dcp-tools writes is variable-per-row. You don't choose a format when calling
-`add_input_file`. There's exactly one, so the question doesn't come up. `columnMappings` is
-always required on a CSV entry (it's how the importer finds your columns at all), and it always uses
-`observationAbout` for single-entity data or `custom:<name>` keys for multi-entity data, never a
-bare `entity` key. That field was renamed for the same reason, to stop implying entity and
-observationAbout were different things.
+`columnMappings` is always required on a CSV entry, because it is how the importer finds your columns.
 
 ## Related
 

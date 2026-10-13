@@ -25,9 +25,6 @@ imports to `dcp_tools` when convenient.
 pip install dcp-tools
 ```
 
-While `1.0.0` is still in alpha, this is a pre-release, so pip won't find it
-unless you ask for pre-releases explicitly: `pip install --pre dcp-tools`.
-
 Or from GitHub:
 
 ```bash

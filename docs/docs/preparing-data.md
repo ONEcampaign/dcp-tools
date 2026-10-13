@@ -9,8 +9,7 @@ and `.mcf` files) without hand-editing any of the three. Each section below is a
 Later recipes reuse the `manager`, source, and provenance from [How to register a source and provenance](#how-to-register-a-source-and-provenance), so run that section first.
 
 !!! note
-    Assumes `dcp-tools` is installed (`pip install --pre dcp-tools` while 1.0.0 is
-    still in alpha). See [Getting started](getting-started.md) if it isn't.
+    Assumes `dcp-tools` is installed. See [Getting started](getting-started.md) if it isn't.
 
 ## How to create a `CustomDataManager`
 

@@ -6,9 +6,9 @@ description: Use the dcp-tools CLI reference to convert CSV files to MCF, upload
 
 `dcp-tools` is the command-line entry point for the functions documented under
 [Preparing data](preparing-data.md) and [Loading data](loading-data.md). It converts a CSV into
-MCF, uploads a prepared export directory to Google Cloud Storage, and triggers the DCP ingestion
+MCF, uploads a prepared export directory to Google Cloud Storage, and triggers the Data Commons Platform (DCP) ingestion
 workflow. Each subcommand parses its arguments and calls straight into the Python API. It adds no
-behavior of its own.
+behaviour of its own.
 
 There are four subcommands and no subcommand groups: `csv2mcf`, `upload`, `ingest`, and
 `pipeline`. Run any of them as `dcp-tools <command> ...` or `python -m dcp_tools <command> ...`.
@@ -19,9 +19,9 @@ Every command, including `dcp-tools` itself, accepts `-h`/`--help` for its full 
 `upload`, `ingest`, and `pipeline` connect to Google Cloud through a `KGSettings` object (see
 [Loading data](loading-data.md)). Two flags control where those settings come from:
 
-- **`--settings-file PATH`** — a JSON file using the settings' alias keys, all uppercase
+- **`--settings-file PATH`**: a JSON file using the settings' alias keys, all uppercase
   (`LOCAL_PATH`, `GCP_PROJECT_ID`, `GCS_BUCKET_NAME`, and so on).
-- **`--env-file PATH`** — a `.env` file using the same keys.
+- **`--env-file PATH`**: a `.env` file using the same keys.
 
 If both are given, `--settings-file` wins and `--env-file` is ignored. If neither is given,
 settings are read from a `.env` file in the current directory.
@@ -80,22 +80,22 @@ dcp-tools csv2mcf <CSV> <MCF>
 
 **Arguments**
 
-- **`<CSV>`** — path to the input CSV file. Required.
-- **`<MCF>`** — path to write the generated MCF file. Required, must end in `.mcf`.
+- **`<CSV>`**: path to the input CSV file. Required.
+- **`<MCF>`**: path to write the generated MCF file. Required, must end in `.mcf`.
 
 **Options**
 
-- **`--node-type {Node,StatVar,StatVarGroup,Topic,StatVarPeerGroup}`** (default: `Node`) — the MCF
+- **`--node-type {Node,StatVar,StatVarGroup,Topic,StatVarPeerGroup}`** (default: `Node`): the MCF
   node type to build, one per CSV row. `StatVar`, `StatVarGroup`, `Topic`, and `StatVarPeerGroup`
   map to the typed node models under `dcp_tools.custom_data.models`. `Node` builds the untyped base
   model and accepts any column as an extra property.
-- **`--column-mapping CSV_COL=MCF_PROP`** (repeatable) — rename a CSV column to an MCF property
+- **`--column-mapping CSV_COL=MCF_PROP`** (repeatable): rename a CSV column to an MCF property
   before building nodes, e.g. `--column-mapping identifier=Node`. Pass the flag once per column.
-- **`--csv-option KEY=VALUE`** (repeatable) — an extra keyword argument forwarded to
+- **`--csv-option KEY=VALUE`** (repeatable): an extra keyword argument forwarded to
   `pandas.read_csv`, e.g. `--csv-option delimiter=";"`.
-- **`--ignore-column COLUMN`** (repeatable) — drop a CSV column before building nodes. Pass the
+- **`--ignore-column COLUMN`** (repeatable): drop a CSV column before building nodes. Pass the
   flag once per column.
-- **`--append`** — append to `<MCF>` if it already exists instead of overwriting it. Without this
+- **`--append`**: append to `<MCF>` if it already exists instead of overwriting it. Without this
   flag, `csv2mcf` overwrites the file (or creates it if it doesn't exist).
 
 CSV values that map to a `dcid:`-typed field (`Node`, `populationType`, `measuredProperty`,
@@ -156,14 +156,14 @@ dcp-tools upload [--settings-file PATH] [--env-file PATH] [--directory PATH] [--
 
 **Options**
 
-- **`--settings-file PATH`**, **`--env-file PATH`** — see [Global options](#global-options).
-- **`--directory PATH`** (default: the directory configured as `LOCAL_PATH` in settings) — local
+- **`--settings-file PATH`**, **`--env-file PATH`**: see [Global options](#global-options).
+- **`--directory PATH`** (default: the directory configured as `LOCAL_PATH` in settings): local
   directory to upload. Files are matched recursively. Anything under it that isn't `.csv`,
   `.json`, or `.mcf` is skipped with a warning. The local directory structure is preserved under
   the bucket's input folder.
-- **`--sync`** (default: off) — after uploading, delete remote blobs that no longer have a local
+- **`--sync`** (default: off): after uploading, delete remote blobs that no longer have a local
   counterpart. Deletion is scoped to import subdirectories that have local files present. An
-  import missing from `--directory` entirely, or present but empty, is left untouched remotely.
+  import missing from `--directory` entirely, or present but empty, is left untouched remotely. When `--directory` holds `.csv`, `.json`, or `.mcf` files at its top level, stale blobs directly under the input folder are deleted too.
 
 **Example**
 
@@ -186,8 +186,8 @@ dcp-tools ingest [--settings-file PATH] [--env-file PATH] [--imports a,b,c]
 
 **Options**
 
-- **`--settings-file PATH`**, **`--env-file PATH`** — see [Global options](#global-options).
-- **`--imports a,b,c`** (default: every import) — comma-separated import names to scope the run
+- **`--settings-file PATH`**, **`--env-file PATH`**: see [Global options](#global-options).
+- **`--imports a,b,c`** (default: every import): comma-separated import names to scope the run
   to. Omit it to ingest everything under the configured GCS input folder.
 
 **Example**
@@ -215,10 +215,10 @@ dcp-tools pipeline [--settings-file PATH] [--env-file PATH] [--directory PATH] [
 
 **Options**
 
-- **`--settings-file PATH`**, **`--env-file PATH`**, **`--directory PATH`**, **`--sync`** — same
+- **`--settings-file PATH`**, **`--env-file PATH`**, **`--directory PATH`**, **`--sync`**: same
   flags and defaults as [`upload`](#dcp-tools-upload).
 
-!!! warning "Heads up"
+!!! warning
     `pipeline` has no `--imports` flag. It always calls `ingest` with no import filter, loading
     everything. To load a subset of imports, run `upload` and `ingest --imports=...` as two
     separate commands instead.
@@ -237,7 +237,7 @@ $ dcp-tools pipeline --settings-file customDC.json --directory export/
 
 ## Related
 
-- **[Preparing data](preparing-data.md)** — build the `config.json`, CSVs, and `.mcf` files that
+- **[Preparing data](preparing-data.md)**: build the `config.json`, CSVs, and `.mcf` files that
   `csv2mcf`, `upload`, and `pipeline` operate on.
-- **[Loading data](loading-data.md)** — the `KGSettings` model and the Python functions these
+- **[Loading data](loading-data.md)**: the `KGSettings` model and the Python functions these
   commands wrap.

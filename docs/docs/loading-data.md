@@ -87,7 +87,7 @@ Upload an exported data bundle to Google Cloud Storage, then trigger the Data Co
    dcp-tools upload --env-file customDC.env
    ```
 
-   Pass `sync=True` (Python) or `--sync` (CLI) to also delete remote files that no longer have a local counterpart. This is useful when you've removed or renamed a CSV since the last upload. Sync only prunes import subdirectories that are present locally. It won't touch an import that isn't in your local bundle at all.
+   Pass `sync=True` (Python) or `--sync` (CLI) to also delete remote files that no longer have a local counterpart. This is useful when you've removed or renamed a CSV since the last upload. Sync prunes stale files under each import subdirectory present locally, and stale top-level files when the bundle has top-level files of its own. It won't touch an import that isn't in your local bundle at all.
 
    ```bash
    dcp-tools upload --env-file customDC.env --sync

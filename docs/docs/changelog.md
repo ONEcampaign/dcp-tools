@@ -28,7 +28,7 @@ description: Read dcp-tools release notes from version 0.0.1 onwards, including 
 
 - Added `add_node(dcid=..., name=..., type_of=...)` to `CustomDataManager`, for MCF nodes with a
   caller-supplied `typeOf` e.g. entity instances (e.g. an organisation) or constraint-value
-- classes (e.g. `Commitment`) the typed builders don't cover.
+  classes (e.g. `Commitment`) the typed builders don't cover.
 - `gcs_input_folder_path` (`GCS_INPUT_FOLDER_PATH`) is now optional and defaults to
   `ingestion/input`, the DCP Terraform default.
 - Fixed `KGSettings` rejecting its snake_case field names; `KGSettings(local_path=...)` now works

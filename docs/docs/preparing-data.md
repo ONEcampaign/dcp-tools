@@ -5,8 +5,8 @@ description: Use CustomDataManager recipes to register data, define StatVars and
 # Preparing data
 
 `CustomDataManager` builds a Data Commons Platform import bundle (a `config.json` file, CSV data,
-and `.mcf` files) without hand-editing any of the three. Each section below is a standalone
-recipe. Jump to the one you need.
+and `.mcf` files) without hand-editing any of the three. Each section below is a recipe.
+Later recipes reuse the `manager`, source, and provenance from [How to register a source and provenance](#how-to-register-a-source-and-provenance), so run that section first.
 
 !!! note
     Assumes `dcp-tools` is installed (`pip install --pre dcp-tools` while 1.0.0 is
@@ -60,11 +60,11 @@ manager.add_provenance(
 This writes two nodes to `provenance.mcf` (the default file for both methods): a `dcid:Source`
 node at `dcid:source/ONEData`, and a `dcid:Provenance` node at `dcid:provenance/ONEClimateFinance`
 linking to it. If `source` isn't registered in the bundle, `add_provenance` logs a warning and
-writes the node anyway — a `Provenance` may point at a `Source` that already exists in base Data
+writes the node anyway. A `Provenance` may point at a `Source` that already exists in base Data
 Commons, in which case it's on you to confirm that it does.
 
 !!! note
-    `dcid` is the node's identifier and gets minted: a bare token becomes `dcid:source/<token>`
+    `dcid` is the node's identifier and gets minted. A bare token becomes `dcid:source/<token>`
     or `dcid:provenance/<token>` (an already `dcid:`-prefixed value is used as-is), so it can't
     contain whitespace. `name` is the optional human-readable label, where spaces are fine. See
     [Why config.json and MCF](dc-schemas.md) for why the importer needs dcids shaped this way.
@@ -73,7 +73,7 @@ Both methods take `description`, `license`, `license_type`, `license_attribution
 `is_part_of`. `add_provenance` additionally takes `source_data_url`, `last_data_refresh_date`,
 `next_data_refresh_date`, `next_source_release_date`, `source_release_frequency`,
 `earliest_observation_date`, `latest_observation_date`, and `curator`. `license_type` and
-`curator` are DCID references — a bare token becomes `dcid:<token>`. Use
+`curator` are DCID references. A bare token becomes `dcid:<token>`. Use
 `additional_properties={"someProperty": "value"}` for anything else. Pass `override=True` to
 replace a node that's already registered under the same name.
 
@@ -185,12 +185,12 @@ with `dcid:providerCountry`.
     part of the base Data Commons schema, declare them with `add_property` first (see the next
     section).
 
-See [Why config.json and MCF](dc-schemas.md#observationabout-vs-custom-dimensions-why-bilateral-data-needs-a-different-mechanism)
+See [Why config.json and MCF](dc-schemas.md#why-bilateral-data-needs-a-different-mechanism-from-observationabout)
 for why `observationAbout` can't represent a row about two entities.
 
 ## How to declare StatVars and custom schema nodes
 
-`CustomDataManager` has six MCF node builders. Use `add_variable_to_mcf` for the StatVars
+`CustomDataManager` has six builders for schema concepts. Use `add_variable_to_mcf` for the StatVars
 themselves. Use the other five when your data needs a schema concept Data Commons doesn't already
 define.
 
@@ -203,7 +203,7 @@ define.
 | `add_unit`               | `dcid:UnitOfMeasure`                                 | Your values are in a unit Data Commons doesn't already define                                                            |
 | `add_measurement_method` | `dcid:MeasurementMethodEnum`                         | You want to record how an observation was produced (survey, estimate, administrative data)                               |
 
-All six accept a bare or `dcid:`-prefixed `Node` token. Bare tokens are normalized to
+All six accept a bare or `dcid:`-prefixed `Node` token. Bare tokens are normalised to
 `dcid:<token>` (no namespace segment, unlike source/provenance names). `add_measurement_method` is
 the only one where `name` is optional.
 
@@ -221,7 +221,7 @@ manager.add_variable_to_mcf(
 ```
 
 This emits a `dcid:StatisticalVariable` node to `custom_nodes.mcf` (the default file for this
-builder). `populationType` and `measuredProperty` go through the same bare-or-`dcid:` normalization
+builder). `populationType` and `measuredProperty` go through the same bare-or-`dcid:` normalisation
 as `Node`.
 
 Declaring the two properties the multi-entity StatVar from the previous section depends on:
@@ -246,7 +246,7 @@ manager.add_property(
 This mints `dcid:providerCountry` and `dcid:recipientCountry`. These are the same tokens the
 StatVar's `observationProperties` and the input file's `custom:` columnMappings keys referenced.
 
-`add_entity_type` and `add_event_type` take an `includedIn` kwarg that's a bare **provenance**
+`add_entity_type` and `add_event_type` take an `included_in` argument that is a bare **provenance**
 name, not a dcid, unlike every other ref parameter on these builders:
 
 ```python
@@ -264,7 +264,7 @@ linked Source node.
 
 ## How to add StatVar groups and bulk-import variables from a CSV
 
-Add a top-level StatVarGroup for all of an organization's custom variables:
+Add a top-level StatVarGroup for all of an organisation's custom variables:
 
 ```python
 manager.add_variable_group_to_mcf(
@@ -276,7 +276,7 @@ manager.add_variable_group_to_mcf(
 
 `Node` must contain `g/`. `specializationOf` is `"dcid:dc/g/Root"` for a top-level group, or
 another group's dcid for a sub-group. Unlike the schema-node builders above,
-`add_variable_group_to_mcf` doesn't normalize a bare `Node`. Pass it already `dcid:`-prefixed.
+`add_variable_group_to_mcf` doesn't normalise a bare `Node`. Pass it already `dcid:`-prefixed.
 
 To declare many StatVars at once instead of calling `add_variable_to_mcf` per variable, put them
 in a CSV with one row per StatVar and columns matching `StatVarNode` field names:
@@ -357,7 +357,7 @@ All three take `policy`, one of `"error"` (default, raises on any conflicting va
 merged by `filename`/`pattern`. Everything else (`importName`, `customIdNamespace`,
 `svHierarchyPropsBlocklist`, and so on) is merged field by field.
 
-!!! warning "Heads up"
+!!! warning
     `export_config` defaults an unset `importName` to the export directory's name. If two configs
     were each exported without an explicit `importName`, merging them raises a conflict on
     `importName` (`"climate"` vs. `"health"`) even though neither config set it on purpose. Call
@@ -377,11 +377,11 @@ manager.add_vertical_spec(
 )
 ```
 
-Each call appends one spec matching StatVars about `population_type` with the given
-`measured_properties` to `verticals`. The first call also sets the config's `verticalSpecsFile` to
+Each call appends one spec, for StatVars with the given `population_type` and
+`measured_properties`, to the accumulated vertical specs. The first call also sets the config's `verticalSpecsFile` to
 `"vertical_specs.json"`, unless you already set one with `set_vertical_specs_file` or passed
 `file_name=` here. `export_all` (or `export_vertical_specs` directly) writes the accumulated specs
-as `{"specs": [...]}` JSON. Exporting with no specs added raises `ValueError`.
+as `{"specs": [...]}` JSON. `export_vertical_specs` raises `ValueError` when no specs have been added. `export_all` writes no vertical-specs file in that case.
 
 ## How to declare MCF files for the importer
 
@@ -393,7 +393,7 @@ glob covers every MCF file:
 manager.add_mcf_file("*.mcf", provenance="MyProvenance")
 ```
 
-The entry carries no `columnMappings` and no `format` — there are no columns to map.
+The entry carries no `columnMappings` and no `format`. There are no columns to map.
 
 With more than one provenance, a single glob would attribute every node to the same one. Write
 nodes to per-provenance files with `mcf_file_name`, then declare each file against its own
@@ -432,7 +432,7 @@ Export everything in one call:
 manager.export_all("output_directory")
 ```
 
-`export_all` writes the full bundle, overwriting anything already in the directory: `config.json`
+`export_all` empties the directory first, deleting every existing file and subfolder, then writes the full bundle: `config.json`
 always, the data CSVs for any registered DataFrames, `vertical_specs.json` if any specs were added,
 and every MCF file you've added nodes to. To write only part of the bundle, use the individual
 `export_*` methods below.

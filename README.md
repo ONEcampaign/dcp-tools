@@ -4,7 +4,7 @@ __Manage and load data to Data Commons Platform instances__
 
 [![PyPI](https://img.shields.io/pypi/v/dcp-tools.svg)](https://pypi.org/project/dcp-tools/)
 [![PyPI - Python Version](https://img.shields.io/pypi/pyversions/dcp-tools.svg)](https://pypi.org/project/dcp-tools/)
-[![Docs](https://img.shields.io/badge/docs-dcp--tools-blue)](https://docs.one.org/tools/dcp-tools/)
+[![Docs](https://img.shields.io/badge/docs-dcp--tools-blue)](https://developmentfinance.org/docs/tools/dcp-tools)
 [![Lint/format: Ruff](https://img.shields.io/badge/lint%2Fformat-ruff-46a758.svg)](https://github.com/astral-sh/ruff)
 
 A [Data Commons Platform](https://docs.datacommons.org/custom_dc/custom_data.html) instance takes
@@ -129,7 +129,7 @@ run_ingestion_workflow(settings=settings)
 
 `run_ingestion_workflow` triggers the DCP (Data Commons Platform) ingestion workflow, which
 ingests the new data and serves it. There's no separate redeploy step to run. See the
-[loading-data docs](https://docs.one.org/tools/dcp-tools/loading-data/) for the
+[loading-data docs](https://developmentfinance.org/docs/tools/dcp-tools/loading-data) for the
 full settings reference, and the `dcp-tools` CLI (`upload`, `ingest`, `pipeline`), which wraps
 this same flow.
 

@@ -34,8 +34,8 @@ classifiers = [
 dcp-tools = "dcp_tools.cli:main"
 
 [project.urls]
-homepage = "https://docs.one.org/tools/dcp-tools/"
-documentation = "https://docs.one.org/tools/dcp-tools/"
+homepage = "https://developmentfinance.org/docs/tools/dcp-tools"
+documentation = "https://developmentfinance.org/docs/tools/dcp-tools"
 repository = "https://github.com/ONEcampaign/dcp-tools"
 issues = "https://github.com/ONEcampaign/dcp-tools/issues"
 

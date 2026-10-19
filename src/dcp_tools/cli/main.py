@@ -1,6 +1,8 @@
 """Entry point for the ``dcp_tools`` command line interface."""
 
 import argparse
+import logging
+import os
 from collections.abc import Iterable
 
 from dcp_tools.cli import (
@@ -28,6 +30,13 @@ def _build_parser() -> argparse.ArgumentParser:
 
 def main(argv: Iterable[str] | None = None) -> int:
     """Parse ``argv`` and execute the selected command."""
+    # LOG_LEVEL applies to dcp-tools only; dependencies show warnings and above.
+    logging.basicConfig(
+        level=logging.WARNING,
+        format="%(asctime)s | %(levelname)-8s | %(name)s | %(message)s",
+        datefmt="%Y-%m-%d %H:%M:%S",
+    )
+    logging.getLogger("dcp_tools").setLevel(os.getenv("LOG_LEVEL", "INFO").upper())
     parser = _build_parser()
     args = parser.parse_args(list(argv) if argv is not None else None)
 

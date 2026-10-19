@@ -1,9 +1,12 @@
 """This module contains functions to run the data ingestion workflow."""
 
+import logging
+
 from datacommons_admin.ingestion_job_client import IngestionJobClient
 
 from dcp_tools.gcp_utilities.settings import KGSettings
-from dcp_tools.logger import logger
+
+logger = logging.getLogger(__name__)
 
 
 def run_ingestion_workflow(settings: KGSettings, *, imports: str | None = None) -> None:

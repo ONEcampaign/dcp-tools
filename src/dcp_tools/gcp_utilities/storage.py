@@ -1,6 +1,7 @@
 import fnmatch
 import io
 import json
+import logging
 import os
 import tempfile
 from collections.abc import Iterable, Sequence
@@ -13,7 +14,8 @@ from google.cloud.storage import Bucket
 
 from dcp_tools.custom_data.models.config_file import Config
 from dcp_tools.custom_data.models.mcf import Nodes
-from dcp_tools.logger import logger
+
+logger = logging.getLogger(__name__)
 
 _VALID_EXTENSIONS = {".csv", ".json", ".mcf"}
 

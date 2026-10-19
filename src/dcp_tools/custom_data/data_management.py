@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import json
+import logging
 import shutil
 from collections.abc import Sequence
 from os import PathLike
@@ -44,7 +45,8 @@ from dcp_tools.custom_data.schema_tools import (
     csv_metadata_to_nodes,
     validate_mcf_file_name,
 )
-from dcp_tools.logger import logger
+
+logger = logging.getLogger(__name__)
 
 DEFAULT_STATVAR_MCF_NAME: str = "custom_nodes.mcf"
 DEFAULT_GROUP_NAME: str = "custom_groups.mcf"

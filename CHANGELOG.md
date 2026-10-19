@@ -13,8 +13,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   warnings. `LOG_LEVEL` now applies to the `dcp-tools` CLI only, which still prints its messages.
 
 ### Deprecated
-- `dcp_tools.logger` and the `dcp-tools` logger name, to be removed in 2.0. Both resolve to the
-  `dcp_tools` package logger until then.
+- `dcp_tools.logger` and the `dcp-tools` logger name, to be removed in 2.0. Until then both resolve
+  to the `dcp_tools` package logger, provided `dcp-tools` is configured after dcp-tools is imported.
 
 ## [1.0.1] - 2026-10-13
 

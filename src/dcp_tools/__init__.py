@@ -7,7 +7,7 @@ from .custom_data.schema_tools import csv_metadata_to_mcf_file, csv_metadata_to_
 
 __version__ = version("dcp-tools")
 
-# Until 2.0, configuring the old "dcp-tools" logger configures "dcp_tools".
+# Until 2.0, configuring the old "dcp-tools" logger after this import configures "dcp_tools".
 logging.Logger.manager.loggerDict.setdefault("dcp-tools", logging.getLogger(__name__))
 
 

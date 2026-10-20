@@ -8,3 +8,9 @@ nav:
     - Loading data: loading-data.md
     - CLI tools: cli-tools.md
     - Changelog: changelog.md
+
+markdown_extensions:
+    # Resolves `--8<-- "CHANGELOG.md"` from the repository root or from docs/.
+    - pymdownx.snippets:
+        base_path: [".", ".."]
+        check_paths: true

@@ -108,6 +108,8 @@ below, which describe each change in detail.
 ### Added
 - `add_mcf_file(file_name, provenance=...)` declares an MCF file in `config.json`'s `inputFiles`,
   so the importer reads it. The importer skips MCF files that aren't declared.
+  `add_mcf_file("*.mcf", provenance=...)` covers them all in a single-provenance import; declare
+  each file separately when an import has more than one provenance.
 - `constraint_properties` on `StatVarNode` and as a parameter on
   `CustomDataManager.add_variable_to_mcf`, listing the DCID(s) of properties that constrain the
   StatisticalVariable. Bare tokens are minted to `dcid:<token>`.
@@ -343,6 +345,8 @@ below, which describe each change in detail.
 
 ## [0.1.0] - 2026-02-13
 
+Released for external preview and testing.
+
 ### Added
 
 - Support for Application Default Credentials (ADC) as an alternative to service account JSON keys.
@@ -360,7 +364,79 @@ below, which describe each change in detail.
 
 - Config file merge order is now deterministic across platforms (sorted by path).
 
-[0.1.0]: https://github.com/ONEcampaign/dcp-tools/releases/tag/v0.1.0
+## [0.0.9] - 2025-09-17
+
+### Added
+
+- New configuration options, including `set_customIdNamespace`, `set_customSvgPrefix`,
+  `set_defaultCustomRootStatVarGroupName` and `set_svHierarchyPropsBlocklist`.
+
+## [0.0.8] - 2025-09-03
+
+### Fixed
+
+- White space between quoted items is removed, to defend against a bug with data loading on
+  the DC side.
+
+## [0.0.7] - 2025-08-27
+
+### Fixed
+
+- Linebreaks and trailing spaces are removed. This prevents errors when serialising to MCF that
+  could quietly break the data loading job.
+
+## [0.0.6] - 2025-08-14
+
+### Changed
+
+- Node name is now an optional attribute. This makes it easy to append data to existing Base DC
+  Nodes.
+
+## [0.0.5] - 2025-08-14
+
+### Added
+
+- Nodes can now contain a single `dcid` or a list of `dcids`.
+
+## [0.0.4] - 2025-07-22
+
+### Changed
+
+- Group strings are transformed to camelCase more reliably, with additional special characters
+  handled.
+
+### Removed
+
+- Option to override input and output folders on the data load job.
+
+## [0.0.3] - 2025-07-18
+
+### Fixed
+
+- Two bugs related to MCF files. The `dcid:` prefix is now enforced for Node, and spaces between
+  `dcid:` and the start of the id string are trimmed.
+
+## [0.0.2] - 2025-07-07
+
+### Changed
+
+- Minor update to documentation and release to PyPI.
+
+## 0.0.1 - 2025-07-07
+
+### Added
+
+- Initial release of `dcp-tools`.
+
+[0.0.2]: https://github.com/ONEcampaign/dcp-tools/releases/tag/v0.0.2
+[0.0.3]: https://github.com/ONEcampaign/dcp-tools/compare/v0.0.2...v.0.03
+[0.0.4]: https://github.com/ONEcampaign/dcp-tools/compare/v.0.03...v.0.04
+[0.0.5]: https://github.com/ONEcampaign/dcp-tools/compare/v.0.04...v0.0.5
+[0.0.6]: https://github.com/ONEcampaign/dcp-tools/compare/v0.0.5...v0.0.6
+[0.0.7]: https://github.com/ONEcampaign/dcp-tools/compare/v0.0.6...v0.0.7
+[0.0.8]: https://github.com/ONEcampaign/dcp-tools/compare/v0.0.7...v0.0.8
+[0.0.9]: https://github.com/ONEcampaign/dcp-tools/compare/v0.0.8...v0.0.9
+[0.1.0]: https://github.com/ONEcampaign/dcp-tools/compare/v0.0.9...v0.1.0
 [0.1.1]: https://github.com/ONEcampaign/dcp-tools/compare/v0.1.0...v0.1.1
 [1.0.0a1]: https://github.com/ONEcampaign/dcp-tools/compare/v0.1.1...v1.0.0a1
 [1.0.0a2]: https://github.com/ONEcampaign/dcp-tools/compare/v1.0.0a1...v1.0.0a2

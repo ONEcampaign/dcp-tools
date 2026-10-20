@@ -43,6 +43,7 @@ def test_provenance_to_mcf():
         license_attribution="Data provided by My Source",
         last_data_refresh_date="2026-01-01",
         next_data_refresh_date="2026-01-02",
+        imported_source_release_date="2025-12-31",
         next_source_release_date="2026-01-03",
         source_release_frequency="P1Y",
         earliest_observation_date="2026-01-04",
@@ -64,6 +65,7 @@ def test_provenance_to_mcf():
         'licenseAttribution: "Data provided by My Source"\n'
         'lastDataRefreshDate: "2026-01-01"\n'
         'nextDataRefreshDate: "2026-01-02"\n'
+        'importedSourceReleaseDate: "2025-12-31"\n'
         'nextSourceReleaseDate: "2026-01-03"\n'
         'sourceReleaseFrequency: "P1Y"\n'
         'earliestObservationDate: "2026-01-04"\n'

@@ -131,6 +131,7 @@ def test_add_provenance_metadata_lands_on_node():
         license_type="CreativeCommonsAttribution4_0",
         license_attribution="Data provided by Prov X",
         last_data_refresh_date="2024-01-01",
+        imported_source_release_date="2023-12-31",
         curator="dcid:MyOrganisation",
     )
     nodes = manager._mcf_nodes["provenance.mcf"].nodes
@@ -143,6 +144,7 @@ def test_add_provenance_metadata_lands_on_node():
     assert prov_node.source_data_url == "http://provx.org/data.csv"
     assert prov_node.license_attribution == "Data provided by Prov X"
     assert prov_node.last_data_refresh_date == "2024-01-01"
+    assert prov_node.imported_source_release_date == "2023-12-31"
     assert prov_node.license_type == "dcid:CreativeCommonsAttribution4_0"
     assert prov_node.curator == "dcid:MyOrganisation"
 

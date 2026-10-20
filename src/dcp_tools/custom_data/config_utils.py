@@ -1,12 +1,14 @@
 """Utilities for merging config files."""
 
+import logging
 from collections.abc import Iterator
 from os import PathLike
 from pathlib import Path
 from typing import Any, Literal
 
 from dcp_tools.custom_data.models.config_file import Config
-from dcp_tools.logger import logger
+
+logger = logging.getLogger(__name__)
 
 DuplicatePolicy = Literal["error", "override", "ignore"]
 

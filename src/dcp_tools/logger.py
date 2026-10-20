@@ -1,25 +1,21 @@
-"""
-Centralised console logger usable across all project modules.
+"""Deprecated: dcp-tools no longer configures logging.
+
+Each module logs under ``dcp_tools``, and the importing application configures
+logging. This module remains until 2.0 so existing imports keep working.
 """
 
 import logging
-import os
-from typing import Final
+import warnings
 
-_LOG_LEVEL: Final[str] = os.getenv("LOG_LEVEL", "INFO").upper()
+warnings.warn(
+    "dcp_tools.logger is deprecated and will be removed in 2.0. "
+    "Configure logging.getLogger('dcp_tools') instead.",
+    DeprecationWarning,
+    stacklevel=2,
+)
 
-_LOG_FORMAT = "%(asctime)s | %(levelname)-8s | %(name)s | %(message)s"
-_DATE_FORMAT = "%Y-%m-%d %H:%M:%S"
-
-_handler = logging.StreamHandler()
-_handler.setFormatter(logging.Formatter(_LOG_FORMAT, datefmt=_DATE_FORMAT))
+logger = logging.getLogger("dcp_tools")
 
 
 def get_logger(name: str | None = None) -> logging.Logger:
-    return logging.getLogger("dcp-tools" if name is None else name)
-
-
-logger = get_logger()
-logger.setLevel(_LOG_LEVEL)
-logger.addHandler(_handler)
-logger.propagate = False
+    return logging.getLogger("dcp_tools" if name is None else name)

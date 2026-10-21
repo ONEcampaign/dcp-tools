@@ -10,6 +10,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
 - `add_provenance` takes `imported_source_release_date`, written to the Provenance node as a
   quoted `importedSourceReleaseDate`.
+- `add_provenance` and `ProvenanceNode` take a list for `source_data_url`, written as one quoted
+  value per URL on the `sourceDataUrl` line. A single string is written as before.
 
 ### Changed
 - dcp-tools leaves logging to the importing application: its module loggers sit under `dcp_tools`,

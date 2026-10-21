@@ -149,6 +149,18 @@ def test_add_provenance_metadata_lands_on_node():
     assert prov_node.curator == "dcid:MyOrganisation"
 
 
+def test_add_provenance_accepts_a_list_of_source_data_urls():
+    urls = ["http://provx.org/a.csv", "http://provx.org/b.csv"]
+    manager = CustomDataManager()
+    manager.add_source(dcid="SrcX", url="http://srcx.org")
+    manager.add_provenance(
+        dcid="ProvX", url="http://provx.org", source="SrcX", source_data_url=urls
+    )
+    nodes = manager._mcf_nodes["provenance.mcf"].nodes
+    prov_node = next(n for n in nodes if isinstance(n, ProvenanceNode))
+    assert prov_node.source_data_url == urls
+
+
 def test_validate_provenances_raises_for_unknown_provenance(tmp_path):
     """An inputFile referencing a provenance with no matching node raises at export."""
     manager = CustomDataManager()

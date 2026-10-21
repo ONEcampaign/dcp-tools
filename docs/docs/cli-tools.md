@@ -54,10 +54,10 @@ INGESTION_WORKFLOW_NAME=dcp-ingestion-workflow
 ```
 
 !!! note
-    `GCP_CREDENTIALS` and `INGESTION_SERVICE_ACCOUNT` are optional and omitted above.
-    `LOCAL_PATH`, `GCS_INPUT_FOLDER_PATH` and `GCS_OUTPUT_FOLDER_PATH` are optional too. Without
+    `GCP_CREDENTIALS` and `INGESTION_SERVICE_ACCOUNT` are optional and omitted above. Without
     `GCP_CREDENTIALS`, GCP calls fall back to Application Default Credentials
-    (`gcloud auth application-default login`).
+    (`gcloud auth application-default login`). `LOCAL_PATH`, `GCS_INPUT_FOLDER_PATH` and
+    `GCS_OUTPUT_FOLDER_PATH` are optional too.
 
 ## Exit status
 
@@ -161,8 +161,8 @@ dcp-tools upload [--settings-file PATH] [--env-file PATH] [--directory PATH] [--
 - **`--settings-file PATH`**, **`--env-file PATH`**: see [Global options](#global-options).
 - **`--directory PATH`** (default: the directory configured as `LOCAL_PATH` in settings): local
   directory to upload. Required when `LOCAL_PATH` is unset. Files are matched recursively.
-  Anything under it that isn't `.csv`, `.json`, or `.mcf` is skipped with a warning. The local directory structure is preserved under
-  the bucket's input folder.
+  Anything under it that isn't `.csv`, `.json`, or `.mcf` is skipped with a warning. The local
+  directory structure is preserved under the bucket's input folder.
 - **`--sync`** (default: off): after uploading, delete remote blobs that no longer have a local
   counterpart. Deletion is scoped to import subdirectories that have local files present. An
   import missing from `--directory` entirely, or present but empty, is left untouched remotely. When `--directory` holds `.csv`, `.json`, or `.mcf` files at its top level, stale blobs directly under the input folder are deleted too.

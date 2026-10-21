@@ -1,10 +1,12 @@
 import json
 from pathlib import Path
 from typing import Any
+from unittest.mock import patch
 
 import pytest
 from pydantic import ValidationError
 
+from dcp_tools.gcp_utilities.pipeline import upload_to_cloud_storage
 from dcp_tools.gcp_utilities.settings import KGSettings, get_kg_settings
 
 RAW_SCREAMING: dict[str, Any] = {
@@ -18,6 +20,16 @@ RAW_SCREAMING: dict[str, Any] = {
     "INGESTION_WORKFLOW_NAME": "workflow",
     "INGESTION_SERVICE_ACCOUNT": "test@example.com",
 }
+
+OPTIONAL_KEYS = {
+    "LOCAL_PATH",
+    "GCP_CREDENTIALS",
+    "GCS_INPUT_FOLDER_PATH",
+    "GCS_OUTPUT_FOLDER_PATH",
+    "INGESTION_SERVICE_ACCOUNT",
+}
+
+RAW_REQUIRED = {k: v for k, v in RAW_SCREAMING.items() if k not in OPTIONAL_KEYS}
 
 RAW_SNAKE: dict[str, Any] = {
     "local_path": "/tmp/data",
@@ -120,3 +132,64 @@ def test_env_source_still_accepts_screaming_snake(monkeypatch) -> None:
 
     assert settings.local_path == Path("/tmp/data")
     assert settings.gcs_input_folder_path == "ingestion/input"
+
+
+@pytest.fixture
+def isolated_env(monkeypatch, tmp_path: Path) -> Path:
+    """Clear KG variables from the environment and run away from any real .env."""
+    for key in RAW_SCREAMING.keys() | OPTIONAL_KEYS:
+        monkeypatch.delenv(key, raising=False)
+    monkeypatch.chdir(tmp_path)
+    return tmp_path
+
+
+def test_env_file_ignores_unrelated_variables(isolated_env: Path) -> None:
+    """A .env shared with other tools must load, ignoring lines KGSettings doesn't own."""
+    env_file = isolated_env / ".env"
+    lines = [f"{k}={v}" for k, v in RAW_REQUIRED.items()]
+    env_file.write_text("\n".join([*lines, "DUCKDB_PATH=warehouse.duckdb"]))
+
+    settings = get_kg_settings(env_file=env_file)
+
+    assert settings.gcp_project_id == "proj"
+    assert not hasattr(settings, "duckdb_path")
+
+
+def test_optional_paths_default_to_none(isolated_env: Path) -> None:
+    """LOCAL_PATH and GCS_OUTPUT_FOLDER_PATH aren't needed to validate."""
+    settings = KGSettings(**RAW_REQUIRED)
+
+    assert settings.local_path is None
+    assert settings.gcs_output_folder_path is None
+
+
+def test_full_gcs_output_path_names_missing_setting(isolated_env: Path) -> None:
+    settings = KGSettings(**RAW_REQUIRED)
+
+    with pytest.raises(ValueError, match="GCS_OUTPUT_FOLDER_PATH"):
+        _ = settings.full_gcs_output_path
+
+
+def test_upload_without_directory_or_local_path_names_missing_setting(
+    isolated_env: Path,
+) -> None:
+    settings = KGSettings(**RAW_REQUIRED)
+
+    with (
+        patch("dcp_tools.gcp_utilities.pipeline.get_gcs_client") as client,
+        pytest.raises(ValueError, match="LOCAL_PATH"),
+    ):
+        upload_to_cloud_storage(settings)
+    client.assert_not_called()
+
+
+def test_upload_with_directory_needs_no_local_path(isolated_env: Path) -> None:
+    settings = KGSettings(**RAW_REQUIRED)
+
+    with (
+        patch("dcp_tools.gcp_utilities.pipeline.get_gcs_client"),
+        patch("dcp_tools.gcp_utilities.pipeline.upload_directory_to_gcs") as upload,
+    ):
+        upload_to_cloud_storage(settings, directory=isolated_env)
+
+    assert upload.call_args.kwargs["directory"] == isolated_env

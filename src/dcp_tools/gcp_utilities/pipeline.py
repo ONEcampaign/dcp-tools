@@ -34,7 +34,9 @@ def upload_to_cloud_storage(
 
     directory = Path(directory) if directory is not None else settings.local_path
 
-    gcs_client = get_gcs_client(credentials=settings.gcp_credentials)
+    gcs_client = get_gcs_client(
+        credentials=settings.gcp_credentials, project=settings.gcp_project_id
+    )
     bucket = gcs_client.get_bucket(settings.gcs_bucket_name)
 
     upload_fn = sync_directory_to_gcs if sync else upload_directory_to_gcs

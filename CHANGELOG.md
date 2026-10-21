@@ -20,6 +20,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - `dcp_tools.logger` and the `dcp-tools` logger name, to be removed in 2.0. Until then both resolve
   to the `dcp_tools` package logger, provided `dcp-tools` is configured after dcp-tools is imported.
 
+### Fixed
+- Uploads under Application Default Credentials failed with "Project was not passed" when the
+  credentials carried no default project. `upload_to_cloud_storage` passes `gcp_project_id` to the
+  GCS client, and `get_gcs_client` takes a `project` argument for the same purpose.
+
 ## [1.0.1] - 2026-10-13
 
 ### Fixed

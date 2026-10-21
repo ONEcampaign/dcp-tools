@@ -3,6 +3,7 @@ from unittest.mock import Mock, patch
 
 from dcp_tools.cli import main
 from dcp_tools.gcp_utilities.clients import _build_client
+from dcp_tools.gcp_utilities.pipeline import upload_to_cloud_storage
 
 
 def test_upload_command_invokes_pipeline(tmp_path: Path) -> None:
@@ -107,3 +108,28 @@ def test_build_client_without_credentials_uses_adc() -> None:
     mock_cls.assert_called_once_with()
     assert result == mock_cls.return_value
     mock_cls.from_service_account_info.assert_not_called()
+
+
+def test_build_client_without_credentials_passes_project_to_adc() -> None:
+    mock_cls = Mock()
+
+    result = _build_client(mock_cls, credentials=None, project="proj")
+
+    mock_cls.assert_called_once_with(project="proj")
+    assert result == mock_cls.return_value
+
+
+def test_upload_to_cloud_storage_passes_project_id_under_adc(tmp_path: Path) -> None:
+    settings = Mock(gcp_credentials=None, gcp_project_id="proj")
+    with (
+        patch("dcp_tools.gcp_utilities.clients.Client") as client_cls,
+        patch("dcp_tools.gcp_utilities.pipeline.upload_directory_to_gcs") as upload,
+    ):
+        upload_to_cloud_storage(settings=settings, directory=tmp_path)
+
+    client_cls.assert_called_once_with(project="proj")
+    upload.assert_called_once_with(
+        bucket=client_cls.return_value.get_bucket.return_value,
+        directory=tmp_path,
+        gcs_folder_name=settings.gcs_input_folder_path,
+    )

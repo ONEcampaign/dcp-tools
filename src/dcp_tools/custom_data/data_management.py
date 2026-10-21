@@ -475,6 +475,7 @@ class CustomDataManager:
         license_attribution: str | None = None,
         last_data_refresh_date: str | None = None,
         next_data_refresh_date: str | None = None,
+        imported_source_release_date: str | None = None,
         next_source_release_date: str | None = None,
         source_release_frequency: str | None = None,
         earliest_observation_date: str | None = None,
@@ -510,6 +511,8 @@ class CustomDataManager:
             license_attribution: Optional attribution text required by the license. (Optional)
             last_data_refresh_date: Optional date of last data refresh. (Optional)
             next_data_refresh_date: Optional date of next expected data refresh. (Optional)
+            imported_source_release_date: Optional release date of the imported source
+                data. (Optional)
             next_source_release_date: Optional date of next source release. (Optional)
             source_release_frequency: Optional frequency of source releases. (Optional)
             earliest_observation_date: Optional earliest observation date. (Optional)

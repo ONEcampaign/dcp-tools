@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+- `add_provenance` takes `imported_source_release_date`, written to the Provenance node as a
+  quoted `importedSourceReleaseDate`.
+
 ### Changed
 - dcp-tools leaves logging to the importing application: its module loggers sit under `dcp_tools`,
   propagate to the root logger and set no handler or level, so unconfigured applications see only

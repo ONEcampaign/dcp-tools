@@ -49,6 +49,7 @@ class ProvenanceNode(Node):
         license_attribution: Optional attribution text required by the license.
         last_data_refresh_date: Optional date of last data refresh.
         next_data_refresh_date: Optional date of next expected data refresh.
+        imported_source_release_date: Optional release date of the imported source data.
         next_source_release_date: Optional date of next source release.
         source_release_frequency: Optional frequency of source releases.
         earliest_observation_date: Optional earliest observation date in the dataset.
@@ -66,6 +67,7 @@ class ProvenanceNode(Node):
     license_attribution: QuotedStr | None = None
     last_data_refresh_date: QuotedStr | None = None
     next_data_refresh_date: QuotedStr | None = None
+    imported_source_release_date: QuotedStr | None = None
     next_source_release_date: QuotedStr | None = None
     source_release_frequency: QuotedStr | None = None
     earliest_observation_date: QuotedStr | None = None

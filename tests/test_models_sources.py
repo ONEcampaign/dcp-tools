@@ -76,6 +76,26 @@ def test_provenance_to_mcf():
     )
 
 
+def test_provenance_source_data_url_list_writes_one_quoted_value_per_url():
+    urls = ["https://example.com/A_D.xlsx", "https://example.com/E_K.xlsx"]
+    node = ProvenanceNode(dcid="dcid:MyProvenance", source_data_url=urls)
+
+    expected = ",".join(f'"{url}"' for url in urls)
+    assert f"sourceDataUrl: {expected}\n" in node.to_mcf()
+
+
+def test_provenance_source_data_url_string_is_never_split_on_commas():
+    url = "https://example.com/data?ids=1,2"
+    node = ProvenanceNode(dcid="dcid:MyProvenance", source_data_url=url)
+
+    assert f'sourceDataUrl: "{url}"\n' in node.to_mcf()
+
+
+def test_provenance_source_data_url_rejects_empty_list():
+    with pytest.raises(ValidationError):
+        ProvenanceNode(dcid="dcid:MyProvenance", source_data_url=[])
+
+
 def test_license_type_and_curator_reject_bare_tokens():
     """Dcid-typed properties must carry the ``dcid:`` prefix."""
     with pytest.raises(ValidationError):

@@ -1,7 +1,13 @@
 import csv
 from typing import Annotated, Any, overload
 
-from pydantic import BeforeValidator, PlainSerializer, PlainValidator, StringConstraints
+from pydantic import (
+    BeforeValidator,
+    Field,
+    PlainSerializer,
+    PlainValidator,
+    StringConstraints,
+)
 
 
 def _strip_space_after_dcid(v: Any) -> Any:
@@ -122,6 +128,13 @@ QuotedStr = Annotated[
 QuotedStrListOrStr = Annotated[
     str | list[str],
     PlainValidator(parse_str_or_list),
+    PlainSerializer(mcf_quoted_str, return_type=str | None, when_used="always"),
+]
+
+# Like QuotedStrListOrStr, but never splits a string on commas, so URLs survive intact.
+# An empty list is rejected because it would serialise to None after exclude_none ran.
+UnsplitQuotedStrListOrStr = Annotated[
+    str | Annotated[list[str], Field(min_length=1)],
     PlainSerializer(mcf_quoted_str, return_type=str | None, when_used="always"),
 ]
 

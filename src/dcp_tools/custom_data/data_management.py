@@ -469,7 +469,7 @@ class CustomDataManager:
         source: str,
         name: str | None = None,
         description: str | None = None,
-        source_data_url: str | None = None,
+        source_data_url: str | list[str] | None = None,
         license: str | None = None,
         license_type: str | None = None,
         license_attribution: str | None = None,
@@ -504,7 +504,8 @@ class CustomDataManager:
                 Commons, in which case verify it exists there yourself.
             name: Optional human-readable name of the provenance. (Optional)
             description: Optional human-readable description. (Optional)
-            source_data_url: Optional URL of the underlying data files. (Optional)
+            source_data_url: Optional URL, or list of URLs, of the underlying data
+                files. A list is written as one quoted value per URL. (Optional)
             license: Optional license information. (Optional)
             license_type: Optional DCID of the license the data is published under. A bare
                 token is minted to ``dcid:<token>``. (Optional)

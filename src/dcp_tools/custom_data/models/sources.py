@@ -1,6 +1,10 @@
 from typing import Literal
 
-from dcp_tools.custom_data.models.common import Dcid, QuotedStr
+from dcp_tools.custom_data.models.common import (
+    Dcid,
+    QuotedStr,
+    UnsplitQuotedStrListOrStr,
+)
 from dcp_tools.custom_data.models.mcf import Node
 
 
@@ -43,7 +47,7 @@ class ProvenanceNode(Node):
         type_of: Fixed type indicating this is a Provenance (``dcid:Provenance``).
         url: Optional URL of the provenance landing page.
         source: DCID of the parent Source node.
-        source_data_url: Optional URL of the source data.
+        source_data_url: Optional URL, or list of URLs, of the source data.
         license: Optional license information.
         license_type: Optional DCID of the license the data is published under.
         license_attribution: Optional attribution text required by the license.
@@ -61,7 +65,7 @@ class ProvenanceNode(Node):
     type_of: Literal["dcid:Provenance"] = "dcid:Provenance"
     url: QuotedStr | None = None
     source: Dcid | None = None
-    source_data_url: QuotedStr | None = None
+    source_data_url: UnsplitQuotedStrListOrStr | None = None
     license: QuotedStr | None = None
     license_type: Dcid | None = None
     license_attribution: QuotedStr | None = None

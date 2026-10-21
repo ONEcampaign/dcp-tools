@@ -30,9 +30,16 @@ def upload_to_cloud_storage(
         sync (bool): If True, delete remote blobs that no longer have a local
             counterpart after uploading. Defaults to False.
 
+    Raises:
+        ValueError: If `directory` is None and `LOCAL_PATH` is not set.
+
     """
 
-    directory = Path(directory) if directory is not None else settings.local_path
+    if directory is None:
+        if settings.local_path is None:
+            raise ValueError("Pass a directory to upload, or set LOCAL_PATH.")
+        directory = settings.local_path
+    directory = Path(directory)
 
     gcs_client = get_gcs_client(
         credentials=settings.gcp_credentials, project=settings.gcp_project_id

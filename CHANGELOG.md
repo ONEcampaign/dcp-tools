@@ -7,6 +7,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed
+- `LOCAL_PATH` and `GCS_OUTPUT_FOLDER_PATH` are optional. `upload_to_cloud_storage` without a
+  `directory` and `full_gcs_output_path` raise a `ValueError` naming the setting when it's unset.
+- Requires `pydantic-settings>=2.14.0`.
+
+### Fixed
+- `KGSettings` ignores variables in its `.env` file that it doesn't define, instead of rejecting
+  them as extra inputs. JSON files and constructor calls still reject unknown keys.
+
 ## [1.1.0] - 2026-10-23
 
 ### Added

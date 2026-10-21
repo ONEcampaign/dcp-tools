@@ -8,7 +8,7 @@ from dcp_tools.custom_data.models.data_files import (
     ColumnMappings,
     InputFile,
 )
-from dcp_tools.gcp_utilities.settings import KGSettings
+from dcp_tools.gcp_utilities.settings import get_kg_settings
 from dcp_tools.gcp_utilities.storage import (
     delete_bucket_files,
     get_bucket_files,
@@ -466,7 +466,7 @@ def test_registration_checks_fresh_import_empty_prefix():
 
 
 def test_gcs_input_folder_path_strips_slashes(monkeypatch):
-    """KGSettings strips leading/trailing slashes from folder paths at model init."""
+    """KGSettings strips leading/trailing slashes from folder paths read from env."""
     env_vals = {
         "LOCAL_PATH": "/tmp/data",
         "GCP_PROJECT_ID": "proj",
@@ -481,8 +481,7 @@ def test_gcs_input_folder_path_strips_slashes(monkeypatch):
     for k, v in env_vals.items():
         monkeypatch.setenv(k, v)
 
-    # Required fields come from the environment, which ty doesn't model.
-    settings = KGSettings()  # ty: ignore[missing-argument]
+    settings = get_kg_settings()
     assert settings.gcs_input_folder_path == "ingestion/input"
     assert settings.gcs_output_folder_path == "output/path"
 

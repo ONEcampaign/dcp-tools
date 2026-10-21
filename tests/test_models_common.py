@@ -176,11 +176,11 @@ def test_dcid_or_list_dcid_rejects_non_string_input():
         field: DcidOrListDcid
 
     with pytest.raises(ValidationError):
-        Dummy(field=123)
+        Dummy(field=123)  # ty: ignore[invalid-argument-type]
     with pytest.raises(ValidationError):
-        Dummy(field=["dcid:ok", 5])
+        Dummy(field=["dcid:ok", 5])  # ty: ignore[invalid-argument-type]
     with pytest.raises(ValidationError):
-        Dummy(field={"a": "b"})
+        Dummy(field={"a": "b"})  # ty: ignore[invalid-argument-type]
 
 
 # --- GroupDcidOrListGroupDcid (regression test for #131) ---

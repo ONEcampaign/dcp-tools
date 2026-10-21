@@ -1,12 +1,13 @@
 import json
 from pathlib import Path
+from typing import Any
 
 import pytest
 from pydantic import ValidationError
 
 from dcp_tools.gcp_utilities.settings import KGSettings, get_kg_settings
 
-RAW_SCREAMING = {
+RAW_SCREAMING: dict[str, Any] = {
     "LOCAL_PATH": "/tmp/data",
     "GCP_PROJECT_ID": "proj",
     "GCP_REGION": "us-central1",
@@ -18,7 +19,7 @@ RAW_SCREAMING = {
     "INGESTION_SERVICE_ACCOUNT": "test@example.com",
 }
 
-RAW_SNAKE = {
+RAW_SNAKE: dict[str, Any] = {
     "local_path": "/tmp/data",
     "gcp_project_id": "proj",
     "gcp_region": "us-central1",

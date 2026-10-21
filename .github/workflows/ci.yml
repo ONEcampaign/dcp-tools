@@ -36,7 +36,7 @@ jobs:
         run: uv run ruff format --check .
 
       - name: Run ty
-        run: uv run ty check 'src/dcp_tools'
+        run: uv run ty check
 
       - name: Build distributions (package + deprecation shim)
         run: |

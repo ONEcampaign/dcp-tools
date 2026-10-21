@@ -58,6 +58,7 @@ def test_custom_data_manager_add_provenance_and_override():
         for n in manager._mcf_nodes["provenance.mcf"].nodes
         if n.type_of == "dcid:Provenance"
     )
+    assert isinstance(updated_prov, ProvenanceNode)
     # url is stored raw; QuotedStr serialization wraps it in quotes at dump time
     assert updated_prov.url == "http://prov2"
     assert updated_prov.model_dump()["url"] == '"http://prov2"'
@@ -78,6 +79,7 @@ def test_add_provenance_warns_when_source_missing():
         for n in manager._mcf_nodes["provenance.mcf"].nodes
         if n.type_of == "dcid:Provenance"
     )
+    assert isinstance(prov_node, ProvenanceNode)
     assert prov_node.dcid == "dcid:provenance/pA"
     assert prov_node.source == "dcid:source/base_dc_source"
 
@@ -283,6 +285,7 @@ def test_add_input_file_without_column_mappings():
     entry = next(e for e in manager._config.input_files if e.filename == "input.csv")
     assert isinstance(entry, InputFile)
     mappings = entry.column_mappings
+    assert mappings is not None
     assert mappings.model_dump(exclude_none=True) == {}
 
 
@@ -707,7 +710,7 @@ def test_add_input_file_observation_properties():
     assert isinstance(entry, InputFile)
     assert entry.observation_properties is not None
     assert entry.observation_properties.unit == "USDollar"
-    assert entry.observation_properties.__pydantic_extra__["customProp"] == "x"
+    assert entry.observation_properties.model_extra == {"customProp": "x"}
     # columnMappings coexists
     assert entry.column_mappings is not None
 

@@ -59,7 +59,7 @@ def _make_cfg(
         InputFile(
             filename=key,
             provenance=prov,
-            columnMappings=ColumnMappings(
+            column_mappings=ColumnMappings(
                 observation_about="Country", date="Year", value="Val"
             ),
         )
@@ -161,6 +161,7 @@ def test_export_config_round_trip(tmp_path):
 
     entry = next(e for e in loaded.input_files if e.filename == "input.csv")
     mappings = entry.column_mappings
+    assert mappings is not None
     assert mappings.model_dump(exclude_none=True) == {
         "dcid:observationAbout": "entity",
         "dcid:observationDate": "Year",

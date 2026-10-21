@@ -179,9 +179,11 @@ def test_enum_carrying_a_line_break_is_still_cleaned():
     class Dirty(StrEnum):
         BAD = "line\nbreak  "
 
-    node = Node(dcid="dcid:n1", type_of="dcid:T1", custom=Dirty.BAD)
+    node = Node.model_validate(
+        {"dcid": "dcid:n1", "type_of": "dcid:T1", "custom": Dirty.BAD}
+    )
 
-    assert node.custom == "linebreak"
+    assert node.model_extra == {"custom": "linebreak"}
     assert "custom: linebreak\n" in node.to_mcf()
 
 

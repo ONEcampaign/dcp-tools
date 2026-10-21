@@ -7,15 +7,15 @@ from dcp_tools.gcp_utilities import KGSettings
 from dcp_tools.gcp_utilities.ingestion import run_ingestion_workflow
 
 TEST_SETTINGS = KGSettings(
-    LOCAL_PATH=Path("/tmp/data"),
-    GCP_PROJECT_ID="test_proj",
-    GCP_REGION="test_region",
-    GCS_BUCKET_NAME="test_bucket",
-    GCS_INPUT_FOLDER_PATH="ingestion/input/",
-    GCS_OUTPUT_FOLDER_PATH="/output/path/",
-    INGESTION_PREP_JOB_NAME="test_prep_job",
-    INGESTION_WORKFLOW_NAME="test_workflow",
-    INGESTION_SERVICE_ACCOUNT="test@example.com",
+    local_path=Path("/tmp/data"),
+    gcp_project_id="test_proj",
+    gcp_region="test_region",
+    gcs_bucket_name="test_bucket",
+    gcs_input_folder_path="ingestion/input/",
+    gcs_output_folder_path="/output/path/",
+    ingestion_prep_job_name="test_prep_job",
+    ingestion_workflow_name="test_workflow",
+    ingestion_service_account="test@example.com",
 )
 
 

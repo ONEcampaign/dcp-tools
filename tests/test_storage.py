@@ -481,7 +481,8 @@ def test_gcs_input_folder_path_strips_slashes(monkeypatch):
     for k, v in env_vals.items():
         monkeypatch.setenv(k, v)
 
-    settings = KGSettings()
+    # Required fields come from the environment, which ty doesn't model.
+    settings = KGSettings()  # ty: ignore[missing-argument]
     assert settings.gcs_input_folder_path == "ingestion/input"
     assert settings.gcs_output_folder_path == "output/path"
 
@@ -512,7 +513,7 @@ def test_upload_directory_to_gcs_kwargs_only(tmp_path):
     bucket = Mock()
     bucket.name = "my-bucket"
     with pytest.raises(TypeError):
-        upload_directory_to_gcs(bucket, tmp_path, "prefix")  # type: ignore[call-arg]
+        upload_directory_to_gcs(bucket, tmp_path, "prefix")  # ty: ignore[too-many-positional-arguments]
 
 
 def test_delete_bucket_files():

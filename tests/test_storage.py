@@ -474,7 +474,6 @@ def test_gcs_input_folder_path_strips_slashes(monkeypatch):
         "GCS_BUCKET_NAME": "bucket",
         "GCS_INPUT_FOLDER_PATH": "ingestion/input/",
         "GCS_OUTPUT_FOLDER_PATH": "/output/path/",
-        "INGESTION_PREP_JOB_NAME": "prep-job",
         "INGESTION_WORKFLOW_NAME": "workflow",
         "INGESTION_SERVICE_ACCOUNT": "test@example.com",
     }

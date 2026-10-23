@@ -3,12 +3,40 @@ Module for Knowledge Graph pipeline settings.
 """
 
 import json
+import sys
+import warnings
 from os import PathLike
 from pathlib import Path
 from typing import Literal
 
+import pydantic
+import pydantic_settings
 from pydantic import Field, Json, field_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
+
+# Frames between a caller and a field validator: pydantic, pydantic-settings and
+# get_kg_settings.
+_SETTINGS_FRAME_PREFIXES = (
+    str(Path(pydantic.__file__).parent),
+    str(Path(pydantic_settings.__file__).parent),
+    __file__,
+)
+
+
+def _caller_stacklevel() -> int:
+    """Return the `warnings.warn` stacklevel, from a validator, of the settings' caller.
+
+    `warnings.warn(skip_file_prefixes=...)` keeps the frame right above the validator
+    on Python 3.13, so the frames are counted here instead.
+    """
+    level = 2
+    frame = sys._getframe(2)
+    while frame.f_back and frame.f_code.co_filename.startswith(
+        _SETTINGS_FRAME_PREFIXES
+    ):
+        frame = frame.f_back
+        level += 1
+    return level
 
 
 class KGSettings(BaseSettings):
@@ -24,10 +52,11 @@ class KGSettings(BaseSettings):
         gcs_input_folder_path: Google Cloud Storage input folder path. Defaults to
             "ingestion/input", the DCP Terraform default.
         gcs_output_folder_path: Google Cloud Storage output folder path.
-        ingestion_prep_job_name: Name of the Cloud Run ingestion preprocessing job.
         ingestion_workflow_name: Name of the Cloud Workflow that runs ingestion.
         ingestion_service_account: Service account email to impersonate when triggering
             ingestion, optional.
+        ingestion_prep_job_name: Deprecated and ignored, to be removed in 2.0. The
+            ingestion workflow creates its own preprocessing job.
     """
 
     local_path: Path = Field(validation_alias="LOCAL_PATH")
@@ -45,16 +74,31 @@ class KGSettings(BaseSettings):
     gcs_output_folder_path: str = Field(validation_alias="GCS_OUTPUT_FOLDER_PATH")
 
     # Ingestion
-    ingestion_prep_job_name: str = Field(validation_alias="INGESTION_PREP_JOB_NAME")
     ingestion_workflow_name: str = Field(validation_alias="INGESTION_WORKFLOW_NAME")
     ingestion_service_account: str | None = Field(
         validation_alias="INGESTION_SERVICE_ACCOUNT", default=None
+    )
+    ingestion_prep_job_name: str | None = Field(
+        default=None, validation_alias="INGESTION_PREP_JOB_NAME"
     )
 
     @field_validator("gcs_input_folder_path", "gcs_output_folder_path")
     @classmethod
     def _strip_slashes(cls, v: str) -> str:
         return v.strip("/")
+
+    @field_validator("ingestion_prep_job_name")
+    @classmethod
+    def _warn_prep_job_name(cls, v: str | None) -> str | None:
+        if v is not None:
+            warnings.warn(
+                "ingestion_prep_job_name (INGESTION_PREP_JOB_NAME) is deprecated and "
+                "ignored, and will be removed in dcp-tools 2.0. The ingestion "
+                "workflow creates its own preprocessing job. Remove the setting.",
+                FutureWarning,
+                stacklevel=_caller_stacklevel(),
+            )
+        return v
 
     @property
     def full_gcs_input_path(self) -> str:

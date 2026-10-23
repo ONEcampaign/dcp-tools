@@ -1,10 +1,20 @@
+import json
+from collections.abc import Iterator
 from pathlib import Path
-from unittest.mock import patch
+from typing import Any
+from unittest.mock import MagicMock, create_autospec, patch
 
 import pytest
+from google.auth.transport.requests import AuthorizedSession
+from requests import Response
 
 from dcp_tools.gcp_utilities import KGSettings
-from dcp_tools.gcp_utilities.ingestion import run_ingestion_workflow
+from dcp_tools.gcp_utilities.ingestion import (
+    IngestionExecutionState,
+    WorkflowContractError,
+    get_ingestion_execution_state,
+    run_ingestion_workflow,
+)
 
 TEST_SETTINGS = KGSettings(
     local_path=Path("/tmp/data"),
@@ -17,54 +27,190 @@ TEST_SETTINGS = KGSettings(
     ingestion_service_account="test@example.com",
 )
 
+WORKFLOW = "projects/test_proj/locations/test_region/workflows/test_workflow"
+WORKFLOW_URL = f"https://workflows.googleapis.com/v1/{WORKFLOW}"
+EXECUTION = f"{WORKFLOW}/executions/abc-123"
 
-def test_run_ingestion_workflow() -> None:
-    with patch("dcp_tools.gcp_utilities.ingestion.IngestionJobClient") as patch_client:
-        run_ingestion_workflow(TEST_SETTINGS, imports="test_import_a,test_import_b")
+# The preprocessing call of each DCP release's deployed ingestion workflow.
+DCP_116_SOURCE = """
+launch_and_poll_preprocessing_job:
+  steps:
+    - create_batch_job:
+        call: googleapis.batch.v1.projects.locations.jobs.create
+"""
+DCP_115_SOURCE = """
+launch_and_poll_preprocessing_job:
+  steps:
+    - run_cloud_run_job:
+        call: googleapis.run.v2.projects.locations.jobs.run
+"""
 
-        patch_client.assert_called_once_with(
-            workflow_name="test_workflow",
-            service_account_email="test@example.com",
-            project_id="test_proj",
-            location="test_region",
-        )
-        patch_client.return_value.start_workflow.assert_called_once_with(
-            imports="test_import_a,test_import_b"
-        )
+
+def http_response(status_code: int, body: dict[str, Any]) -> Response:
+    response = Response()
+    response.status_code = status_code
+    response._content = json.dumps(body).encode()
+    return response
 
 
-def test_run_ingestion_workflow_no_imports() -> None:
-    with patch("dcp_tools.gcp_utilities.ingestion.IngestionJobClient") as patch_client:
+@pytest.fixture
+def client_class() -> Iterator[MagicMock]:
+    with patch(
+        "dcp_tools.gcp_utilities.ingestion.IngestionJobClient", autospec=True
+    ) as client_class:
+        yield client_class
+
+
+@pytest.fixture
+def client(client_class: MagicMock) -> MagicMock:
+    """The IngestionJobClient instance, serving a DCP 1.1.6 workflow definition."""
+    instance = client_class.return_value
+    instance.full_workflow_name = WORKFLOW
+    instance.session = create_autospec(AuthorizedSession, instance=True)
+    instance.session.get.return_value = http_response(
+        200, {"name": WORKFLOW, "sourceContents": DCP_116_SOURCE}
+    )
+    instance.start_workflow.return_value = {"name": EXECUTION}
+    return instance
+
+
+def test_run_ingestion_workflow(client_class: MagicMock, client: MagicMock) -> None:
+    execution = run_ingestion_workflow(
+        TEST_SETTINGS, imports="test_import_a,test_import_b"
+    )
+
+    client_class.assert_called_once_with(
+        workflow_name="test_workflow",
+        service_account_email="test@example.com",
+        project_id="test_proj",
+        location="test_region",
+    )
+    client.session.get.assert_called_once_with(WORKFLOW_URL, timeout=60)
+    client.start_workflow.assert_called_once_with(imports="test_import_a,test_import_b")
+    assert execution == EXECUTION
+
+
+@pytest.mark.parametrize("imports", [None, "", "  ", ",", " , ,"])
+def test_run_ingestion_workflow_blank_imports_ingest_all(
+    client: MagicMock, imports: str | None
+) -> None:
+    run_ingestion_workflow(TEST_SETTINGS, imports=imports)
+
+    client.start_workflow.assert_called_once_with(imports="ALL_IMPORTS")
+
+
+def test_run_ingestion_workflow_raises_when_execution_name_missing(
+    client: MagicMock,
+) -> None:
+    client.start_workflow.return_value = {}
+
+    with pytest.raises(RuntimeError, match="no execution name"):
         run_ingestion_workflow(TEST_SETTINGS)
 
-        patch_client.assert_called_once_with(
-            workflow_name="test_workflow",
-            service_account_email="test@example.com",
-            project_id="test_proj",
-            location="test_region",
-        )
-        patch_client.return_value.start_workflow.assert_called_once_with(
-            imports="ALL_IMPORTS"
-        )
 
+def test_run_ingestion_workflow_wraps_errors(client: MagicMock) -> None:
+    original_exception = Exception("Test exception")
+    client.start_workflow.side_effect = original_exception
 
-def test_run_ingestion_workflow_warns_when_execution_id_missing() -> None:
-    """A response with no 'name' key logs a warning instead of raising."""
-    with (
-        patch("dcp_tools.gcp_utilities.ingestion.IngestionJobClient") as patch_client,
-        patch("dcp_tools.gcp_utilities.ingestion.logger") as mock_logger,
-    ):
-        patch_client.return_value.start_workflow.return_value = {}
+    with pytest.raises(RuntimeError, match="Test exception") as exc_info:
         run_ingestion_workflow(TEST_SETTINGS)
-        mock_logger.warning.assert_called_once_with(
-            "Failed to retrieve workflow execution id"
-        )
+
+    assert not isinstance(exc_info.value, WorkflowContractError)
+    assert exc_info.value.__cause__ == original_exception
 
 
-def test_run_ingestion_workflow_wraps_errors() -> None:
-    with patch("dcp_tools.gcp_utilities.ingestion.IngestionJobClient") as patch_client:
-        original_exception = Exception("Test exception")
-        patch_client.return_value.start_workflow.side_effect = original_exception
-        with pytest.raises(RuntimeError, match="Test exception") as exc_info:
-            run_ingestion_workflow(TEST_SETTINGS)
-        assert exc_info.value.__cause__ == original_exception
+@pytest.mark.parametrize(
+    "workflow_response",
+    [
+        pytest.param(
+            http_response(200, {"sourceContents": DCP_115_SOURCE}), id="dcp-1.1.5"
+        ),
+        pytest.param(http_response(200, {"name": WORKFLOW}), id="no-source"),
+        pytest.param(
+            http_response(403, {"error": {"status": "PERMISSION_DENIED"}}),
+            id="forbidden",
+        ),
+        pytest.param(OSError("connection reset"), id="network-error"),
+    ],
+)
+def test_contract_check_refuses_unconfirmed_workflow(
+    client: MagicMock, workflow_response: Response | Exception
+) -> None:
+    if isinstance(workflow_response, Exception):
+        client.session.get.side_effect = workflow_response
+    else:
+        client.session.get.return_value = workflow_response
+
+    with pytest.raises(WorkflowContractError):
+        run_ingestion_workflow(TEST_SETTINGS)
+
+    client.start_workflow.assert_not_called()
+
+
+def test_skipping_contract_check_starts_without_reading_workflow(
+    client: MagicMock,
+) -> None:
+    client.session.get.return_value = http_response(
+        200, {"sourceContents": DCP_115_SOURCE}
+    )
+
+    execution = run_ingestion_workflow(TEST_SETTINGS, skip_workflow_contract_check=True)
+
+    client.session.get.assert_not_called()
+    client.start_workflow.assert_called_once_with(imports="ALL_IMPORTS")
+    assert execution == EXECUTION
+
+
+@pytest.mark.parametrize(
+    ("body", "expected"),
+    [
+        pytest.param(
+            {
+                "state": "ACTIVE",
+                "status": {
+                    "currentSteps": [
+                        {"routine": "main", "step": "run_preprocessing"},
+                        {
+                            "routine": "poll_cloud_batch_job_execution",
+                            "step": "get_job",
+                        },
+                    ]
+                },
+            },
+            IngestionExecutionState(
+                state="ACTIVE",
+                current_steps=(
+                    "main.run_preprocessing",
+                    "poll_cloud_batch_job_execution.get_job",
+                ),
+                error=None,
+            ),
+            id="active",
+        ),
+        pytest.param(
+            {"state": "FAILED", "error": {"payload": "Dataflow job failed"}},
+            IngestionExecutionState(
+                state="FAILED", current_steps=(), error="Dataflow job failed"
+            ),
+            id="failed",
+        ),
+    ],
+)
+def test_get_ingestion_execution_state(
+    client: MagicMock, body: dict[str, Any], expected: IngestionExecutionState
+) -> None:
+    client.session.get.return_value = http_response(200, {"name": EXECUTION} | body)
+
+    state = get_ingestion_execution_state(TEST_SETTINGS, EXECUTION)
+
+    client.session.get.assert_called_once_with(
+        f"https://workflowexecutions.googleapis.com/v1/{EXECUTION}", timeout=60
+    )
+    assert state == expected
+
+
+def test_get_ingestion_execution_state_raises_on_http_error(client: MagicMock) -> None:
+    client.session.get.return_value = http_response(404, {"error": {"code": 404}})
+
+    with pytest.raises(RuntimeError, match="HTTP 404"):
+        get_ingestion_execution_state(TEST_SETTINGS, EXECUTION)

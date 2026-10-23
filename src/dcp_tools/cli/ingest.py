@@ -25,11 +25,20 @@ def add_parser(subparsers: argparse._SubParsersAction) -> None:
         type=str,
         help="Comma-separated list of imports to ingest, defaults to all imports",
     )
+    parser.add_argument(
+        "--skip-workflow-contract-check",
+        action="store_true",
+        help="Start the workflow without checking it comes from a DCP 1.1.6 stack",
+    )
     parser.set_defaults(func=run)
 
 
 def run(args: argparse.Namespace) -> int:
     """Execute the ``ingest`` command."""
     settings = load_settings_from_args(args)
-    run_ingestion_workflow(settings=settings, imports=args.imports)
+    run_ingestion_workflow(
+        settings=settings,
+        imports=args.imports,
+        skip_workflow_contract_check=args.skip_workflow_contract_check,
+    )
     return 0

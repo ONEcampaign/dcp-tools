@@ -31,6 +31,15 @@ RAW_SNAKE: dict[str, Any] = {
 }
 
 
+@pytest.fixture(autouse=True)
+def isolated_settings_sources(monkeypatch: pytest.MonkeyPatch, tmp_path: Path) -> None:
+    """Keep the developer's environment and any ./.env out of KGSettings."""
+    monkeypatch.chdir(tmp_path)
+    for field in KGSettings.model_fields.values():
+        assert isinstance(field.validation_alias, str)
+        monkeypatch.delenv(field.validation_alias, raising=False)
+
+
 def test_model_dump_round_trips_to_field_names() -> None:
     """model_dump() must return snake_case field names callers expect, not aliases."""
     settings = KGSettings(**RAW_SCREAMING)
@@ -124,15 +133,28 @@ def test_env_source_still_accepts_screaming_snake(monkeypatch) -> None:
 @pytest.mark.parametrize("key", ["INGESTION_PREP_JOB_NAME", "ingestion_prep_job_name"])
 def test_prep_job_name_is_deprecated(key: str) -> None:
     """The ingestion workflow creates its own preprocessing job on DCP 1.1.6."""
-    with pytest.warns(DeprecationWarning, match="INGESTION_PREP_JOB_NAME"):
+    with pytest.warns(FutureWarning) as record:
         settings = KGSettings(**RAW_SCREAMING, **{key: "prep-job"})
 
     assert settings.ingestion_prep_job_name == "prep-job"
+    assert [w.filename for w in record] == [__file__]
+
+
+def test_prep_job_name_env_var_is_deprecated(monkeypatch: pytest.MonkeyPatch) -> None:
+    for key, value in RAW_SCREAMING.items():
+        monkeypatch.setenv(key, value)
+    monkeypatch.setenv("INGESTION_PREP_JOB_NAME", "prep-job")
+
+    with pytest.warns(FutureWarning) as record:
+        settings = get_kg_settings(source="env")
+
+    assert settings.ingestion_prep_job_name == "prep-job"
+    assert [w.filename for w in record] == [__file__]
 
 
 def test_settings_without_prep_job_name_do_not_warn() -> None:
     with warnings.catch_warnings():
-        warnings.simplefilter("error")
+        warnings.simplefilter("error", FutureWarning)
         settings = KGSettings(**RAW_SCREAMING)
 
     assert settings.ingestion_prep_job_name is None

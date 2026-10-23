@@ -3,13 +3,40 @@ Module for Knowledge Graph pipeline settings.
 """
 
 import json
+import sys
 import warnings
 from os import PathLike
 from pathlib import Path
 from typing import Literal
 
+import pydantic
+import pydantic_settings
 from pydantic import Field, Json, field_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
+
+# Frames between a caller and a field validator: pydantic, pydantic-settings and
+# get_kg_settings.
+_SETTINGS_FRAME_PREFIXES = (
+    str(Path(pydantic.__file__).parent),
+    str(Path(pydantic_settings.__file__).parent),
+    __file__,
+)
+
+
+def _caller_stacklevel() -> int:
+    """Return the `warnings.warn` stacklevel, from a validator, of the settings' caller.
+
+    `warnings.warn(skip_file_prefixes=...)` keeps the frame right above the validator
+    on Python 3.13, so the frames are counted here instead.
+    """
+    level = 2
+    frame = sys._getframe(2)
+    while frame.f_back and frame.f_code.co_filename.startswith(
+        _SETTINGS_FRAME_PREFIXES
+    ):
+        frame = frame.f_back
+        level += 1
+    return level
 
 
 class KGSettings(BaseSettings):
@@ -65,10 +92,11 @@ class KGSettings(BaseSettings):
     def _warn_prep_job_name(cls, v: str | None) -> str | None:
         if v is not None:
             warnings.warn(
-                "INGESTION_PREP_JOB_NAME is deprecated, ignored, and will be removed "
-                "in 2.0. The ingestion workflow creates its own preprocessing job.",
-                DeprecationWarning,
-                stacklevel=2,
+                "ingestion_prep_job_name (INGESTION_PREP_JOB_NAME) is deprecated and "
+                "ignored, and will be removed in dcp-tools 2.0. The ingestion "
+                "workflow creates its own preprocessing job. Remove the setting.",
+                FutureWarning,
+                stacklevel=_caller_stacklevel(),
             )
         return v
 

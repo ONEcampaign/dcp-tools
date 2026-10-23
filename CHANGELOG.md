@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.1.0] - 2026-10-23
+
 ### Added
 - `add_provenance` takes `imported_source_release_date`, written to the Provenance node as a
   quoted `importedSourceReleaseDate`.
@@ -17,10 +19,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - dcp-tools leaves logging to the importing application: its module loggers sit under `dcp_tools`,
   propagate to the root logger and set no handler or level, so unconfigured applications see only
   warnings. `LOG_LEVEL` now applies to the `dcp-tools` CLI only, which still prints its messages.
+- `run_ingestion_workflow`, `dcp-tools ingest` and `dcp-tools pipeline` start ingestion only on a
+  Data Commons Platform 1.1.6 instance. dcp-tools requires `datacommons-admin>=1.1.6,<1.1.7`, whose
+  `IngestionJobClient` sends the ingestion workflow only the list of imports. The workflow runs
+  preprocessing as a Cloud Batch job it creates itself, so no preprocessing job name is sent.
+  `datacommons-admin` 1.1.6 depends on `datacommons-db`, which adds Spanner and SQLAlchemy to the
+  installed packages.
 
 ### Deprecated
 - `dcp_tools.logger` and the `dcp-tools` logger name, to be removed in 2.0. Until then both resolve
   to the `dcp_tools` package logger, provided `dcp-tools` is configured after dcp-tools is imported.
+- `KGSettings.ingestion_prep_job_name` and `INGESTION_PREP_JOB_NAME`, to be removed in 2.0. The
+  setting is optional and ignored, and setting it emits a `DeprecationWarning`.
 
 ### Fixed
 - Uploads under Application Default Credentials failed with "Project was not passed" when the
@@ -452,4 +462,5 @@ Released for external preview and testing.
 [1.0.0a5]: https://github.com/ONEcampaign/dcp-tools/compare/v1.0.0a4...v1.0.0a5
 [1.0.0]: https://github.com/ONEcampaign/dcp-tools/compare/v1.0.0a5...v1.0.0
 [1.0.1]: https://github.com/ONEcampaign/dcp-tools/compare/v1.0.0...v1.0.1
-[unreleased]: https://github.com/ONEcampaign/dcp-tools/compare/v1.0.1...HEAD
+[1.1.0]: https://github.com/ONEcampaign/dcp-tools/compare/v1.0.1...v1.1.0
+[unreleased]: https://github.com/ONEcampaign/dcp-tools/compare/v1.1.0...HEAD

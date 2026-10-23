@@ -128,7 +128,7 @@ run_ingestion_workflow(settings=settings)
 ```
 
 `run_ingestion_workflow` triggers the DCP (Data Commons Platform) ingestion workflow, which
-ingests the new data and serves it. There's no separate redeploy step to run. See the
+ingests the new data and serves it. dcp-tools 1.1 needs a DCP 1.1.6 instance. See the
 [loading-data docs](https://docs.one.org/tools/dcp-tools/loading-data/) for the
 full settings reference, and the `dcp-tools` CLI (`upload`, `ingest`, `pipeline`), which wraps
 this same flow.

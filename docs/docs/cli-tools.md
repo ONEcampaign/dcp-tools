@@ -36,7 +36,6 @@ settings are read from a `.env` file in the current directory.
   "GCS_BUCKET_NAME": "one-dcp-import",
   "GCS_INPUT_FOLDER_PATH": "climate-finance",
   "GCS_OUTPUT_FOLDER_PATH": "climate-finance/output",
-  "INGESTION_PREP_JOB_NAME": "dcp-prep-job",
   "INGESTION_WORKFLOW_NAME": "dcp-ingestion-workflow"
 }
 ```
@@ -48,7 +47,6 @@ GCP_REGION=us-central1
 GCS_BUCKET_NAME=one-dcp-import
 GCS_INPUT_FOLDER_PATH=climate-finance
 GCS_OUTPUT_FOLDER_PATH=climate-finance/output
-INGESTION_PREP_JOB_NAME=dcp-prep-job
 INGESTION_WORKFLOW_NAME=dcp-ingestion-workflow
 ```
 
@@ -179,6 +177,7 @@ $ dcp-tools upload --settings-file customDC.json --directory export/
 
 Triggers the DCP ingestion workflow that loads uploaded files into the knowledge graph, wrapping
 `run_ingestion_workflow`.
+`ingest` and `pipeline` need a DCP 1.1.6 instance.
 
 ```
 dcp-tools ingest [--settings-file PATH] [--env-file PATH] [--imports a,b,c]

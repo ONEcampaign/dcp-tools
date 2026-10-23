@@ -8,7 +8,7 @@ Upload an exported data bundle to Google Cloud Storage, then trigger the Data Co
 
 ## Before you start
 
-- A Data Commons Platform instance with the DCP ingestion pipeline already deployed. `dcp-tools` doesn't provision instances. Follow Google's [guide to deploying a custom instance ↗](https://docs.datacommons.org/custom_dc/deploy_cloud.html) first.
+- A Data Commons Platform 1.1.6 instance with the DCP ingestion pipeline already deployed. `dcp-tools` 1.1 starts ingestion the way DCP 1.1.6 expects and can't start it on an older stack. `dcp-tools` doesn't provision instances. Follow Google's [guide to deploying a custom instance ↗](https://docs.datacommons.org/custom_dc/deploy_cloud.html) first.
 
 - An exported bundle: a local directory holding `config.json`, your CSV data files, and any `.mcf` files, built with `CustomDataManager.export_all` (see [Preparing data](preparing-data.md)).
 
@@ -21,7 +21,6 @@ Upload an exported data bundle to Google Cloud Storage, then trigger the Data Co
   - `gcs_bucket_name` (`GCS_BUCKET_NAME`): the Cloud Storage bucket the DCP pipeline reads from.
   - `gcs_input_folder_path` (`GCS_INPUT_FOLDER_PATH`, optional): folder in that bucket to upload the bundle to. Defaults to `ingestion/input`, the DCP Terraform default.
   - `gcs_output_folder_path` (`GCS_OUTPUT_FOLDER_PATH`): folder the pipeline writes its output to.
-  - `ingestion_prep_job_name` (`INGESTION_PREP_JOB_NAME`): name of the Cloud Run ingestion preprocessing job.
   - `ingestion_workflow_name` (`INGESTION_WORKFLOW_NAME`): name of the Cloud Workflow that runs the ingestion.
   - `ingestion_service_account` (`INGESTION_SERVICE_ACCOUNT`, optional): service account to impersonate when triggering the workflow. Leave unset to use your own credentials.
 
@@ -51,7 +50,6 @@ Upload an exported data bundle to Google Cloud Storage, then trigger the Data Co
      "GCS_BUCKET_NAME": "one-campaign-dc-custom-data",
      "GCS_INPUT_FOLDER_PATH": "customdc/input",
      "GCS_OUTPUT_FOLDER_PATH": "customdc/output",
-     "INGESTION_PREP_JOB_NAME": "dc-ingestion-preprocessing-job",
      "INGESTION_WORKFLOW_NAME": "dc-ingestion-workflow"
    }
    ```
@@ -68,7 +66,6 @@ Upload an exported data bundle to Google Cloud Storage, then trigger the Data Co
        GCS_BUCKET_NAME="one-campaign-dc-custom-data",
        GCS_INPUT_FOLDER_PATH="customdc/input",
        GCS_OUTPUT_FOLDER_PATH="customdc/output",
-       INGESTION_PREP_JOB_NAME="dc-ingestion-preprocessing-job",
        INGESTION_WORKFLOW_NAME="dc-ingestion-workflow",
    )
    ```
@@ -114,10 +111,10 @@ Upload an exported data bundle to Google Cloud Storage, then trigger the Data Co
 
    `pipeline` always loads every import. It has no `--imports` flag. If you need to load a subset, run `upload` then `ingest --imports=...` separately.
 
-`run_ingestion_workflow` returns as soon as the workflow execution starts. It doesn't wait for it to finish. Under the hood it calls `datacommons-admin`'s `IngestionJobClient`, which starts the Cloud Workflow (`ingestion_workflow_name`) that ingests the uploaded data and serves it automatically. There's nothing further to trigger from `dcp-tools`.
+`run_ingestion_workflow` returns as soon as the workflow execution starts. It doesn't wait for it to finish. Under the hood it calls `datacommons-admin`'s `IngestionJobClient`, which starts the Cloud Workflow (`ingestion_workflow_name`) with the list of imports to load. The workflow runs preprocessing as a Cloud Batch job it creates itself, ingests the uploaded data, and serves it. There's nothing further to trigger from `dcp-tools`.
 
 !!! note
-    Older versions of this package required a separate `redeploy` call after ingestion, plus a set of `CLOUD_SQL_*` settings to reach the underlying database. Both are gone. The DCP prep job now owns the restart, and there's no Cloud SQL in the current architecture.
+    `ingestion_prep_job_name` (`INGESTION_PREP_JOB_NAME`) is deprecated and ignored, and will be removed in 2.0. Setting it emits a `DeprecationWarning`. Delete it from your settings.
 
 ## Verify it worked
 
@@ -144,10 +141,10 @@ Ingestion itself runs as a Cloud Workflow execution (`ingestion_workflow_name` i
 
 ## Troubleshooting
 
-- **`KGSettings`/`get_kg_settings` raises a `pydantic.ValidationError` listing several fields as "Field required".** One or more required settings are missing from your `.env`/JSON file, or weren't passed to the constructor. Every field except `gcp_credentials`, `gcs_input_folder_path`, and `ingestion_service_account` is required. Check the list under [Before you start](#before-you-start).
+- **`KGSettings`/`get_kg_settings` raises a `pydantic.ValidationError` listing several fields as "Field required".** One or more required settings are missing from your `.env`/JSON file, or weren't passed to the constructor. Every field except `gcp_credentials`, `gcs_input_folder_path`, `ingestion_prep_job_name`, and `ingestion_service_account` is required. Check the list under [Before you start](#before-you-start).
 - **`GCP_CREDENTIALS` raises `Invalid JSON`.** `gcp_credentials` expects the *contents* of a service-account key as a JSON string, not a file path. Read the key file and pass its contents (`Path("key.json").read_text()`), or leave the setting unset to use Application Default Credentials.
 - **`get_missing_csv_files` reports every registered CSV as missing, even though the upload succeeded.** Both functions treat a `gcs_folder_name` that doesn't match anything in the bucket as an empty folder rather than raising: `get_missing_csv_files` then reports every `inputFiles` entry as missing, and `get_unregistered_csv_files` reports nothing (there's nothing to compare against). Check `gcs_input_folder_path` for a typo, or confirm the upload step ran first. Leading and trailing slashes are stripped automatically, so those aren't the issue.
-- **`run_ingestion_workflow` raises `RuntimeError: Failed to start ingestion workflow: ...`.** The underlying `IngestionJobClient` call failed, most often from a wrong `ingestion_workflow_name`/`ingestion_prep_job_name`/`gcp_region`, or an `ingestion_service_account` that isn't allowed to invoke the workflow.
+- **`run_ingestion_workflow` raises `RuntimeError: Failed to start ingestion workflow: ...`.** The underlying `IngestionJobClient` call failed, most often from a wrong `ingestion_workflow_name`/`gcp_region`, or an `ingestion_service_account` that isn't allowed to invoke the workflow.
 
 ## See also
 

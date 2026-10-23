@@ -2,7 +2,7 @@
 
 import logging
 
-from datacommons_admin.ingestion_job_client import IngestionJobClient
+from datacommons_admin.core.clients import IngestionJobClient
 
 from dcp_tools.gcp_utilities.settings import KGSettings
 
@@ -21,11 +21,8 @@ def run_ingestion_workflow(settings: KGSettings, *, imports: str | None = None) 
     )
     try:
         client = IngestionJobClient(
-            job_name=settings.ingestion_prep_job_name,
             workflow_name=settings.ingestion_workflow_name,
-            # datacommons-admin annotates service_account_email as `str` but defaults it
-            # to None and handles None at runtime; the annotation should be `str | None`.
-            service_account_email=settings.ingestion_service_account,  # ty: ignore[invalid-argument-type]
+            service_account_email=settings.ingestion_service_account,
             project_id=settings.gcp_project_id,
             location=settings.gcp_region,
         )

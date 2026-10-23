@@ -3,6 +3,7 @@ Module for Knowledge Graph pipeline settings.
 """
 
 import json
+import warnings
 from os import PathLike
 from pathlib import Path
 from typing import Literal
@@ -24,10 +25,11 @@ class KGSettings(BaseSettings):
         gcs_input_folder_path: Google Cloud Storage input folder path. Defaults to
             "ingestion/input", the DCP Terraform default.
         gcs_output_folder_path: Google Cloud Storage output folder path.
-        ingestion_prep_job_name: Name of the Cloud Run ingestion preprocessing job.
         ingestion_workflow_name: Name of the Cloud Workflow that runs ingestion.
         ingestion_service_account: Service account email to impersonate when triggering
             ingestion, optional.
+        ingestion_prep_job_name: Deprecated and ignored, to be removed in 2.0. The
+            ingestion workflow creates its own preprocessing job.
     """
 
     local_path: Path = Field(validation_alias="LOCAL_PATH")
@@ -45,16 +47,30 @@ class KGSettings(BaseSettings):
     gcs_output_folder_path: str = Field(validation_alias="GCS_OUTPUT_FOLDER_PATH")
 
     # Ingestion
-    ingestion_prep_job_name: str = Field(validation_alias="INGESTION_PREP_JOB_NAME")
     ingestion_workflow_name: str = Field(validation_alias="INGESTION_WORKFLOW_NAME")
     ingestion_service_account: str | None = Field(
         validation_alias="INGESTION_SERVICE_ACCOUNT", default=None
+    )
+    ingestion_prep_job_name: str | None = Field(
+        default=None, validation_alias="INGESTION_PREP_JOB_NAME"
     )
 
     @field_validator("gcs_input_folder_path", "gcs_output_folder_path")
     @classmethod
     def _strip_slashes(cls, v: str) -> str:
         return v.strip("/")
+
+    @field_validator("ingestion_prep_job_name")
+    @classmethod
+    def _warn_prep_job_name(cls, v: str | None) -> str | None:
+        if v is not None:
+            warnings.warn(
+                "INGESTION_PREP_JOB_NAME is deprecated, ignored, and will be removed "
+                "in 2.0. The ingestion workflow creates its own preprocessing job.",
+                DeprecationWarning,
+                stacklevel=2,
+            )
+        return v
 
     @property
     def full_gcs_input_path(self) -> str:

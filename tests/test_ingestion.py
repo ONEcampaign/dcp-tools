@@ -13,7 +13,6 @@ TEST_SETTINGS = KGSettings(
     gcs_bucket_name="test_bucket",
     gcs_input_folder_path="ingestion/input/",
     gcs_output_folder_path="/output/path/",
-    ingestion_prep_job_name="test_prep_job",
     ingestion_workflow_name="test_workflow",
     ingestion_service_account="test@example.com",
 )
@@ -24,7 +23,6 @@ def test_run_ingestion_workflow() -> None:
         run_ingestion_workflow(TEST_SETTINGS, imports="test_import_a,test_import_b")
 
         patch_client.assert_called_once_with(
-            job_name="test_prep_job",
             workflow_name="test_workflow",
             service_account_email="test@example.com",
             project_id="test_proj",
@@ -40,7 +38,6 @@ def test_run_ingestion_workflow_no_imports() -> None:
         run_ingestion_workflow(TEST_SETTINGS)
 
         patch_client.assert_called_once_with(
-            job_name="test_prep_job",
             workflow_name="test_workflow",
             service_account_email="test@example.com",
             project_id="test_proj",

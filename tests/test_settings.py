@@ -1,4 +1,5 @@
 import json
+import warnings
 from pathlib import Path
 from typing import Any
 
@@ -14,7 +15,6 @@ RAW_SCREAMING: dict[str, Any] = {
     "GCS_BUCKET_NAME": "bucket",
     "GCS_INPUT_FOLDER_PATH": "ingestion/input/",
     "GCS_OUTPUT_FOLDER_PATH": "/output/path/",
-    "INGESTION_PREP_JOB_NAME": "prep-job",
     "INGESTION_WORKFLOW_NAME": "workflow",
     "INGESTION_SERVICE_ACCOUNT": "test@example.com",
 }
@@ -26,7 +26,6 @@ RAW_SNAKE: dict[str, Any] = {
     "gcs_bucket_name": "bucket",
     "gcs_input_folder_path": "ingestion/input/",
     "gcs_output_folder_path": "/output/path/",
-    "ingestion_prep_job_name": "prep-job",
     "ingestion_workflow_name": "workflow",
     "ingestion_service_account": "test@example.com",
 }
@@ -120,3 +119,20 @@ def test_env_source_still_accepts_screaming_snake(monkeypatch) -> None:
 
     assert settings.local_path == Path("/tmp/data")
     assert settings.gcs_input_folder_path == "ingestion/input"
+
+
+@pytest.mark.parametrize("key", ["INGESTION_PREP_JOB_NAME", "ingestion_prep_job_name"])
+def test_prep_job_name_is_deprecated(key: str) -> None:
+    """The ingestion workflow creates its own preprocessing job on DCP 1.1.6."""
+    with pytest.warns(DeprecationWarning, match="INGESTION_PREP_JOB_NAME"):
+        settings = KGSettings(**RAW_SCREAMING, **{key: "prep-job"})
+
+    assert settings.ingestion_prep_job_name == "prep-job"
+
+
+def test_settings_without_prep_job_name_do_not_warn() -> None:
+    with warnings.catch_warnings():
+        warnings.simplefilter("error")
+        settings = KGSettings(**RAW_SCREAMING)
+
+    assert settings.ingestion_prep_job_name is None

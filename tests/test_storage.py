@@ -254,7 +254,9 @@ def test_sync_directory_to_gcs_legacy_root_level_still_prunes(tmp_path):
 
 
 def _md5_of(content: bytes) -> str:
-    return base64.b64encode(hashlib.md5(content).digest()).decode("ascii")
+    return base64.b64encode(
+        hashlib.md5(content, usedforsecurity=False).digest()
+    ).decode("ascii")
 
 
 def _remote_blob(name: str, md5_hash: str | None) -> Mock:

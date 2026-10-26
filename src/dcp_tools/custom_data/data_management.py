@@ -1086,12 +1086,14 @@ class CustomDataManager:
             data: Data to register (optional; only valid with ``file_name``).
             column_mappings: Column mappings. Match the headings in the CSV file to the
                 allowed properties. Allowed keys are [variable, observationAbout, date, value, unit,
-                scalingFactor, measurementMethod, observationPeriod, custom:<name>].
+                scalingFactor, measurementMethod, observationPeriod, custom:<name>]; the spec's
+                variableMeasured and observationDate, and the dcid:-prefixed forms, work too.
                 Use custom:<name> keys to map each entity dimension for multi-entity observations.
             observation_properties: Optional file-level constant observation properties applied
                 to every observation (e.g. ``{"unit": "USDollar"}``). Standard keys are
-                ``unit``/``scalingFactor``/``measurementMethod``/``observationPeriod``; custom
-                keys are preserved verbatim.
+                ``unit``/``scalingFactor``/``measurementMethod``/``observationPeriod``, in
+                camelCase or snake_case, and are written in camelCase; custom keys are
+                preserved verbatim.
             ignore_columns: List of columns to ignore (optional).
             pattern: Glob pattern matching one or more input files. Mutually exclusive
                 with ``file_name``. Pattern entries carry no local data.

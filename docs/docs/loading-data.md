@@ -72,7 +72,7 @@ Upload an exported data bundle to Google Cloud Storage, then trigger the Data Co
 
    Using the CLI instead of the Python API? Skip building a `KGSettings` object yourself and pass `--env-file customDC.env` or `--settings-file customDC.json` to any of the commands in the next two steps.
 
-1. **Upload the bundle to Cloud Storage.** This pushes every `.csv`, `.json`, and `.mcf` file under `settings.local_path` to `gs://<gcs_bucket_name>/<gcs_input_folder_path>/`, preserving the directory structure. Other file types are skipped with a warning.
+1. **Upload the bundle to Cloud Storage.** This pushes every `.csv`, `.json`, and `.mcf` file under `settings.local_path` to `gs://<gcs_bucket_name>/<gcs_input_folder_path>/`, preserving the directory structure. Other file types are skipped with a warning. A file whose MD5 matches the blob already at its remote path isn't uploaded again.
 
    ```python
    from dcp_tools.gcp_utilities import upload_to_cloud_storage

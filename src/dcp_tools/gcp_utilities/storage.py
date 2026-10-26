@@ -1,4 +1,6 @@
+import base64
 import fnmatch
+import hashlib
 import io
 import json
 import logging
@@ -75,6 +77,13 @@ def _remote_path(local_path: Path, directory: Path, gcs_folder_name: str | None)
     return f"{gcs_folder_name}/{relative}" if gcs_folder_name else relative
 
 
+def _local_md5(path: Path) -> str:
+    """Return the base64-encoded MD5 of ``path``, in the form of ``Blob.md5_hash``."""
+    with path.open("rb") as file:
+        digest = hashlib.file_digest(file, "md5").digest()
+    return base64.b64encode(digest).decode("ascii")
+
+
 def _scoped_prefix(gcs_folder_name: str | None, import_name: str | None) -> str | None:
     """Append ``import_name`` to ``gcs_folder_name`` when scoping to one import.
 
@@ -112,6 +121,9 @@ def upload_directory_to_gcs(
     upload (no scratch or intermediate ``.json``); callers are responsible for
     keeping the source tree clean.
 
+    A file whose MD5 matches the blob already at its remote path is skipped.
+    A blob without an MD5 (such as a composite object) is always overwritten.
+
     Args:
         bucket (Bucket): GCS bucket instance.
         directory (Path): Local directory to upload.
@@ -128,20 +140,32 @@ def upload_directory_to_gcs(
     if gcs_folder_name is not None:
         gcs_folder_name = gcs_folder_name.strip("/") or None
 
+    prefix = f"{gcs_folder_name}/" if gcs_folder_name else None
+    remote_md5s = {
+        blob.name: blob.md5_hash for blob in bucket.list_blobs(prefix=prefix)
+    }
+
     files_uploaded = 0
+    files_skipped = 0
 
     for local_path in _iter_local_files(directory):
         if local_path.suffix not in _VALID_EXTENSIONS:
             logger.warning(f"Skipping unsupported file type: {local_path}")
             continue
         remote_path = _remote_path(local_path, directory, gcs_folder_name)
+        remote_md5 = remote_md5s.get(remote_path)
+        if remote_md5 is not None and remote_md5 == _local_md5(local_path):
+            logger.info(f"Skipped {local_path}, unchanged at {remote_path}")
+            files_skipped += 1
+            continue
         bucket.blob(remote_path).upload_from_filename(str(local_path))
         logger.info(f"Uploaded {local_path} to {remote_path}")
         files_uploaded += 1
 
     dest = gcs_folder_name if gcs_folder_name else "root"
     logger.info(
-        f"Uploaded {files_uploaded} files to {dest} in GCS bucket {bucket.name}"
+        f"Uploaded {files_uploaded} files to {dest} in GCS bucket {bucket.name}, "
+        f"skipped {files_skipped} unchanged"
     )
 
 
@@ -150,7 +174,7 @@ def sync_directory_to_gcs(
 ) -> None:
     """Upload a local directory then delete stale remote blobs.
 
-    This function first uploads all local files (via
+    This function first uploads local files (via
     :func:`upload_directory_to_gcs`) and then removes any blobs that are
     stale (no longer have a local counterpart) within the scopes of the
     import subdirectories that contain files locally.

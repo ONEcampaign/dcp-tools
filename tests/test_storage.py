@@ -1,3 +1,6 @@
+import base64
+import hashlib
+import logging
 from unittest.mock import Mock
 
 import pandas as pd
@@ -51,6 +54,7 @@ def test_upload_directory_to_gcs(tmp_path):
 
     bucket.blob.side_effect = blob_side
     bucket.name = "my-bucket"
+    bucket.list_blobs.return_value = []
 
     upload_directory_to_gcs(bucket, tmp_path, gcs_folder_name="prefix")
 
@@ -78,6 +82,7 @@ def test_upload_directory_to_gcs_no_prefix(tmp_path):
 
     bucket.blob.side_effect = blob_side
     bucket.name = "my-bucket"
+    bucket.list_blobs.return_value = []
 
     upload_directory_to_gcs(bucket, tmp_path)
 
@@ -246,6 +251,105 @@ def test_sync_directory_to_gcs_legacy_root_level_still_prunes(tmp_path):
 
     all_blob_calls = [c.args[0] for c in bucket.blob.call_args_list]
     assert "prefix/old.csv" in all_blob_calls
+
+
+def _md5_of(content: bytes) -> str:
+    return base64.b64encode(
+        hashlib.md5(content, usedforsecurity=False).digest()
+    ).decode("ascii")
+
+
+def _remote_blob(name: str, md5_hash: str | None) -> Mock:
+    blob = Mock()
+    blob.name = name
+    blob.md5_hash = md5_hash
+    return blob
+
+
+def _uploading_bucket(remote_blobs: list[Mock]) -> tuple[Mock, dict[str, Mock]]:
+    """Return a mock bucket listing ``remote_blobs`` and a record of blobs it hands out."""
+    bucket = Mock()
+    bucket.name = "my-bucket"
+    bucket.list_blobs.return_value = remote_blobs
+    handed_out: dict[str, Mock] = {}
+
+    def blob_side(name: str) -> Mock:
+        handed_out[name] = Mock()
+        return handed_out[name]
+
+    bucket.blob.side_effect = blob_side
+    return bucket, handed_out
+
+
+def test_upload_skips_file_matching_remote_md5(tmp_path, caplog):
+    content = b"col\n1\n"
+    (tmp_path / "a.csv").write_bytes(content)
+    bucket, handed_out = _uploading_bucket(
+        [_remote_blob("prefix/a.csv", _md5_of(content))]
+    )
+
+    with caplog.at_level(logging.INFO, logger="dcp_tools.gcp_utilities.storage"):
+        upload_directory_to_gcs(bucket, tmp_path, gcs_folder_name="prefix")
+
+    assert handed_out == {}
+    assert any(
+        "a.csv" in record.message and "unchanged" in record.message
+        for record in caplog.records
+    )
+    bucket.list_blobs.assert_called_once_with(prefix="prefix/")
+
+
+def test_upload_uploads_file_with_different_md5(tmp_path):
+    (tmp_path / "a.csv").write_bytes(b"col\n2\n")
+    bucket, handed_out = _uploading_bucket(
+        [_remote_blob("prefix/a.csv", _md5_of(b"col\n1\n"))]
+    )
+
+    upload_directory_to_gcs(bucket, tmp_path, gcs_folder_name="prefix")
+
+    handed_out["prefix/a.csv"].upload_from_filename.assert_called_once_with(
+        str(tmp_path / "a.csv")
+    )
+
+
+def test_upload_uploads_new_file(tmp_path):
+    content = b"col\n1\n"
+    (tmp_path / "a.csv").write_bytes(content)
+    (tmp_path / "new.csv").write_bytes(content)
+    bucket, handed_out = _uploading_bucket(
+        [_remote_blob("prefix/a.csv", _md5_of(content))]
+    )
+
+    upload_directory_to_gcs(bucket, tmp_path, gcs_folder_name="prefix")
+
+    assert set(handed_out) == {"prefix/new.csv"}
+    handed_out["prefix/new.csv"].upload_from_filename.assert_called_once()
+
+
+def test_upload_uploads_file_when_remote_has_no_md5(tmp_path):
+    (tmp_path / "a.csv").write_bytes(b"col\n1\n")
+    bucket, handed_out = _uploading_bucket([_remote_blob("prefix/a.csv", None)])
+
+    upload_directory_to_gcs(bucket, tmp_path, gcs_folder_name="prefix")
+
+    handed_out["prefix/a.csv"].upload_from_filename.assert_called_once()
+
+
+def test_sync_skips_unchanged_file_and_deletes_stale_blob(tmp_path):
+    content = b"col\n1\n"
+    (tmp_path / "a.csv").write_bytes(content)
+    bucket, handed_out = _uploading_bucket(
+        [
+            _remote_blob("prefix/a.csv", _md5_of(content)),
+            _remote_blob("prefix/old.csv", _md5_of(b"old")),
+        ]
+    )
+
+    sync_directory_to_gcs(bucket, tmp_path, gcs_folder_name="prefix")
+
+    assert set(handed_out) == {"prefix/old.csv"}
+    handed_out["prefix/old.csv"].delete.assert_called_once()
+    handed_out["prefix/old.csv"].upload_from_filename.assert_not_called()
 
 
 def test_list_bucket_files_with_prefix():
@@ -499,6 +603,7 @@ def test_upload_trailing_slash_single_slash_keys(tmp_path):
 
     bucket.blob.side_effect = blob_side
     bucket.name = "my-bucket"
+    bucket.list_blobs.return_value = []
 
     upload_directory_to_gcs(bucket, tmp_path, gcs_folder_name="prefix/")
 

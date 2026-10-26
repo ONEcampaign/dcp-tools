@@ -160,7 +160,8 @@ dcp-tools upload [--settings-file PATH] [--env-file PATH] [--directory PATH] [--
 - **`--directory PATH`** (default: the directory configured as `LOCAL_PATH` in settings): local
   directory to upload. Required when `LOCAL_PATH` is unset. Files are matched recursively.
   Anything under it that isn't `.csv`, `.json`, or `.mcf` is skipped with a warning. The local
-  directory structure is preserved under the bucket's input folder.
+  directory structure is preserved under the bucket's input folder. A file whose MD5 matches the
+  blob already at its remote path is skipped and logged as unchanged.
 - **`--sync`** (default: off): after uploading, delete remote blobs that no longer have a local
   counterpart. Deletion is scoped to import subdirectories that have local files present. An
   import missing from `--directory` entirely, or present but empty, is left untouched remotely. When `--directory` holds `.csv`, `.json`, or `.mcf` files at its top level, stale blobs directly under the input folder are deleted too.
@@ -172,7 +173,7 @@ $ dcp-tools upload --settings-file customDC.json --directory export/
 2026-07-21 09:14:02 | INFO     | dcp-tools | Uploaded export/config.json to climate-finance/config.json
 2026-07-21 09:14:02 | INFO     | dcp-tools | Uploaded export/provenance.mcf to climate-finance/provenance.mcf
 2026-07-21 09:14:03 | INFO     | dcp-tools | Uploaded export/custom_nodes.mcf to climate-finance/custom_nodes.mcf
-2026-07-21 09:14:03 | INFO     | dcp-tools | Uploaded 3 files to climate-finance in GCS bucket one-dcp-import
+2026-07-21 09:14:03 | INFO     | dcp-tools | Uploaded 3 files to climate-finance in GCS bucket one-dcp-import, skipped 0 unchanged
 ```
 
 ## `dcp-tools ingest`

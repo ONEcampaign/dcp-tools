@@ -696,6 +696,30 @@ def test_export_all_includes_vertical_specs(tmp_path):
     assert config["verticalSpecsFile"] == DEFAULT_VERTICAL_SPECS_NAME
 
 
+def test_add_input_file_exports_observation_properties_in_camel_case(tmp_path):
+    manager = CustomDataManager()
+    manager.add_source(dcid="S", url="http://s/")
+    manager.add_provenance(dcid="prov1", url="http://p/", source="S")
+    manager.add_input_file(
+        "data.csv",
+        provenance="prov1",
+        observation_properties={
+            "scaling_factor": "100",
+            "measurement_method": "dcAggregate/Census",
+            "observation_period": "P1Y",
+        },
+    )
+
+    manager.export_config(tmp_path)
+
+    config = json.loads((tmp_path / "config.json").read_text())
+    assert config["inputFiles"][0]["observationProperties"] == {
+        "scalingFactor": "100",
+        "measurementMethod": "dcAggregate/Census",
+        "observationPeriod": "P1Y",
+    }
+
+
 def test_add_input_file_observation_properties():
     manager = CustomDataManager()
 
@@ -1036,6 +1060,19 @@ def test_column_mappings_accepts_dcid_keys_on_input():
     # Short-key input must also still work
     cm2 = ColumnMappings.model_validate({"observationAbout": "Country"})
     assert cm2.observation_about == "Country"
+
+
+def test_column_mappings_accepts_spec_keys_and_exports_dcid_keys():
+    """The spec's bare variableMeasured/observationDate keys load and export as dcid: keys."""
+    cm = ColumnMappings.model_validate(
+        {"variableMeasured": "Var", "observationDate": "Year"}
+    )
+    assert cm.variable == "Var"
+    assert cm.date == "Year"
+    assert cm.model_dump(by_alias=True, exclude_none=True) == {
+        "dcid:variableMeasured": "Var",
+        "dcid:observationDate": "Year",
+    }
 
 
 def test_column_mappings_round_trip_preserves_custom_prefix():

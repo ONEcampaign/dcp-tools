@@ -15,6 +15,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Fixed
 - `KGSettings` ignores variables in its `.env` file that it doesn't define, instead of rejecting
   them as extra inputs. JSON files and constructor calls still reject unknown keys.
+- `ColumnMappings` accepts the spec's `variableMeasured` and `observationDate` keys, so a
+  `config.json` written to the spec loads. Mappings are still written with `dcid:` keys.
+- `observationProperties` in an exported `config.json` uses camelCase keys (`scalingFactor`,
+  `measurementMethod`, `observationPeriod`) when `add_input_file` or `ObservationProperties` gets
+  snake_case ones. Passing both spellings of one key raises a `ValidationError`.
 
 ## [1.1.0] - 2026-10-23
 

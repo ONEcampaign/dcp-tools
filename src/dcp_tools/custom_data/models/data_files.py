@@ -27,7 +27,8 @@ class ColumnMappings(BaseModel):
 
     The DCP importer keys observations by ``dcid:``-prefixed predicate names, so each
     field serialises to its ``dcid:`` alias (via ``model_dump(by_alias=True)``) while the
-    friendly short name remains the Python attribute. Both forms are accepted on input.
+    friendly short name remains the Python attribute. Input accepts the short name, the
+    ``dcid:`` form and the spec's bare key (``variableMeasured``, ``observationDate``).
     ``scalingFactor`` has no recognised ``dcid:`` key and stays a plain short field.
 
     Attributes:
@@ -44,12 +45,16 @@ class ColumnMappings(BaseModel):
 
     variable: str | None = Field(
         default=None,
-        validation_alias=AliasChoices("variable", "dcid:variableMeasured"),
+        validation_alias=AliasChoices(
+            "variable", "variableMeasured", "dcid:variableMeasured"
+        ),
         serialization_alias="dcid:variableMeasured",
     )
     date: str | None = Field(
         default=None,
-        validation_alias=AliasChoices("date", "dcid:observationDate"),
+        validation_alias=AliasChoices(
+            "date", "observationDate", "dcid:observationDate"
+        ),
         serialization_alias="dcid:observationDate",
     )
     value: str | None = Field(
@@ -119,9 +124,10 @@ class ObservationProperties(BaseModel):
     """File-level constant observation properties for an input file.
 
     Applied as constants to every observation in the file (the only working route to a
-    constant ``unit``/``scalingFactor``/``measurementMethod``/``observationPeriod``). Keys
-    are emitted verbatim with no ``dcid:`` aliasing; the DCP importer reads the four standard
-    keys directly and passes any custom keys through unchanged.
+    constant ``unit``/``scalingFactor``/``measurementMethod``/``observationPeriod``). The
+    four standard fields accept snake_case or camelCase and serialise as camelCase, the keys
+    the DCP importer reads; passing both spellings of one field raises. Custom keys pass
+    through verbatim, with no ``dcid:`` aliasing.
 
     Attributes:
         unit: Unit applied to every observation.
@@ -135,7 +141,22 @@ class ObservationProperties(BaseModel):
     measurement_method: str | None = None
     observation_period: str | None = None
 
-    model_config = ConfigDict(extra="allow")
+    model_config = ConfigDict(
+        alias_generator=to_camel,
+        extra="allow",
+        populate_by_name=True,
+        serialize_by_alias=True,
+    )
+
+    @model_validator(mode="before")
+    @classmethod
+    def _reject_duplicate_spellings(cls, data: Any) -> Any:
+        # Otherwise the snake_case key would survive as an extra beside the camelCase one.
+        if isinstance(data, dict):
+            for name, field in cls.model_fields.items():
+                if field.alias != name and name in data and field.alias in data:
+                    raise ValueError(f"Pass '{name}' or '{field.alias}', not both.")
+        return data
 
 
 class InputFile(BaseModel):

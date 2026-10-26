@@ -125,9 +125,10 @@ state = get_ingestion_execution_state(settings, execution)
 print(state.state)          # "ACTIVE", then "SUCCEEDED", "FAILED" or "CANCELLED"
 print(state.current_steps)  # ("main.run_preprocessing", ...) while it runs
 print(state.error)          # the error payload when it failed, otherwise None
+print(state.state_error)    # why the data is unavailable ("UNAVAILABLE" state), otherwise None
 ```
 
-To block until the run finishes, pass the resource name to `wait_for_ingestion`. It polls every 30 seconds by default, logs the state and current steps when they change, and returns the terminal state: `SUCCEEDED`, `FAILED`, `CANCELLED` or `UNAVAILABLE`. A failed run is returned, not raised, so check the state yourself:
+To block until the run finishes, pass the resource name to `wait_for_ingestion`. It polls every 30 seconds by default, logs the state and current steps when they change, and returns the terminal state: `SUCCEEDED`, `FAILED` or `CANCELLED`. `UNAVAILABLE` means the API can't read the execution's data, for example after its KMS key permissions were revoked. The execution may still be running, so polling continues and logs a warning with `state_error`. A failed run is returned, not raised, so check the state yourself:
 
 ```python
 from dcp_tools.gcp_utilities import run_ingestion_workflow, wait_for_ingestion
@@ -138,7 +139,7 @@ if state.state != "SUCCEEDED":
     raise RuntimeError(f"Ingestion ended {state.state}: {state.error}")
 ```
 
-Without `timeout` it waits indefinitely. With one, it raises `TimeoutError` once that many seconds pass, and the execution keeps running. On the CLI, `--wait` does the same and exits non-zero if the run does not succeed:
+Without `timeout` it waits indefinitely, including on an execution that stays `UNAVAILABLE`. With one, it raises `TimeoutError` once that many seconds pass, and the execution keeps running. On the CLI, `--wait` does the same and exits non-zero if the run does not succeed:
 
 ```bash
 dcp-tools pipeline --env-file customDC.env --wait --timeout 7200

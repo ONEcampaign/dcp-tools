@@ -11,6 +11,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - `wait_for_ingestion` polls an ingestion execution until it finishes and returns its terminal
   `IngestionExecutionState`, including a failed or cancelled one. It raises `TimeoutError` only when
   a `timeout` is passed and runs out. `TERMINAL_EXECUTION_STATES` lists the states it stops on.
+  `UNAVAILABLE` is not one of them: the execution may still be running, so polling continues and
+  logs a warning with the new `IngestionExecutionState.state_error`.
 - `--wait` on `dcp-tools ingest` and `dcp-tools pipeline` blocks until the execution finishes and
   exits non-zero when it doesn't succeed or `--timeout` runs out. `--poll-interval` sets the
   seconds between checks. Both need `--wait`.

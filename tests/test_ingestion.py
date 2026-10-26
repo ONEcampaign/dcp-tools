@@ -198,6 +198,29 @@ def test_skipping_contract_check_starts_without_reading_workflow(
             ),
             id="failed",
         ),
+        pytest.param(
+            {
+                "state": "UNAVAILABLE",
+                "stateError": {"type": "KMS_ERROR", "details": "Key revoked"},
+            },
+            IngestionExecutionState(
+                state="UNAVAILABLE",
+                current_steps=(),
+                error=None,
+                state_error="KMS_ERROR: Key revoked",
+            ),
+            id="unavailable",
+        ),
+        pytest.param(
+            {"state": "UNAVAILABLE", "stateError": {"type": "TYPE_UNSPECIFIED"}},
+            IngestionExecutionState(
+                state="UNAVAILABLE",
+                current_steps=(),
+                error=None,
+                state_error="TYPE_UNSPECIFIED",
+            ),
+            id="state-error-without-details",
+        ),
     ],
 )
 def test_get_ingestion_execution_state(
@@ -262,6 +285,32 @@ def test_wait_for_ingestion_returns_terminal_state(
     assert state.state == terminal_state
     assert client.session.get.call_count == 5
     assert clock.sleeps == [5, 5, 5, 5]
+
+
+def test_wait_for_ingestion_keeps_polling_through_unavailable(
+    client: MagicMock, clock: FakeClock, caplog: pytest.LogCaptureFixture
+) -> None:
+    unavailable = {
+        "state": "UNAVAILABLE",
+        "stateError": {"type": "KMS_ERROR", "details": "Key revoked"},
+    }
+    client.session.get.side_effect = [
+        http_response(200, {"state": "ACTIVE"}),
+        http_response(200, unavailable),
+        http_response(200, unavailable),
+        http_response(200, {"state": "SUCCEEDED"}),
+    ]
+
+    with caplog.at_level(logging.INFO, logger="dcp_tools.gcp_utilities.ingestion"):
+        state = wait_for_ingestion(TEST_SETTINGS, EXECUTION, poll_interval=5)
+
+    assert state.state == "SUCCEEDED"
+    assert client.session.get.call_count == 4
+    warnings = [r for r in caplog.records if r.levelno == logging.WARNING]
+    assert [record.getMessage() for record in warnings] == [
+        f"Execution '{EXECUTION}' is UNAVAILABLE (current steps: none): "
+        "KMS_ERROR: Key revoked"
+    ]
 
 
 def test_wait_for_ingestion_builds_one_client(

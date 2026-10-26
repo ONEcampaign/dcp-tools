@@ -153,7 +153,6 @@ def ingestion_command_mocks(module: str) -> Iterator[dict[str, Mock]]:
         ("SUCCEEDED", None, 0),
         ("FAILED", "Dataflow job failed", 1),
         ("CANCELLED", None, 1),
-        ("UNAVAILABLE", None, 1),
     ],
 )
 def test_wait_exit_code_follows_terminal_state(

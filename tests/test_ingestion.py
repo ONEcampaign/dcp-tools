@@ -377,11 +377,22 @@ def test_wait_for_ingestion_zero_timeout_polls_once(
         (None, 0, "poll_interval"),
         (None, -1, "poll_interval"),
         (-1, 30, "timeout"),
+        (None, float("nan"), "poll_interval"),
+        (None, float("inf"), "poll_interval"),
+        (float("nan"), 30, "timeout"),
+        (float("inf"), 30, "timeout"),
+        (float("-inf"), 30, "timeout"),
     ],
 )
 def test_wait_for_ingestion_validates_arguments(
-    client: MagicMock, timeout: float | None, poll_interval: float, message: str
+    client: MagicMock,
+    clock: FakeClock,
+    timeout: float | None,
+    poll_interval: float,
+    message: str,
 ) -> None:
+    client.session.get.side_effect = AssertionError("polled before validating")
+
     with pytest.raises(ValueError, match=message):
         wait_for_ingestion(
             TEST_SETTINGS, EXECUTION, timeout=timeout, poll_interval=poll_interval

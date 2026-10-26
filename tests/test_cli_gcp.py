@@ -222,6 +222,22 @@ def test_without_wait_does_not_poll(command: list[str], module: str) -> None:
             ["--wait", "--poll-interval", "0"],
             "argument --poll-interval: must be positive",
         ),
+        (
+            ["--wait", "--timeout", "nan"],
+            "argument --timeout: must be a finite number of seconds",
+        ),
+        (
+            ["--wait", "--timeout", "inf"],
+            "argument --timeout: must be a finite number of seconds",
+        ),
+        (
+            ["--wait", "--poll-interval", "nan"],
+            "argument --poll-interval: must be a finite number of seconds",
+        ),
+        (
+            ["--wait", "--poll-interval", "inf"],
+            "argument --poll-interval: must be a finite number of seconds",
+        ),
     ],
 )
 def test_wait_options_are_rejected_before_any_work(

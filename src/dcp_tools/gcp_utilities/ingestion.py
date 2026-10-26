@@ -1,6 +1,7 @@
 """This module contains functions to run the data ingestion workflow."""
 
 import logging
+import math
 import time
 from dataclasses import dataclass
 from typing import Any
@@ -249,14 +250,17 @@ def wait_for_ingestion(
             returned, not raised.
 
     Raises:
-        ValueError: `poll_interval` is not positive, or `timeout` is negative.
+        ValueError: `poll_interval` is not a positive finite number, or `timeout` is
+            not a non-negative finite number.
         TimeoutError: The execution had not finished within `timeout` seconds.
         RuntimeError: The Workflow Executions API returned an error.
     """
-    if poll_interval <= 0:
-        raise ValueError(f"poll_interval must be positive, got {poll_interval}")
-    if timeout is not None and timeout < 0:
-        raise ValueError(f"timeout must not be negative, got {timeout}")
+    if not math.isfinite(poll_interval) or poll_interval <= 0:
+        raise ValueError(
+            f"poll_interval must be a positive finite number, got {poll_interval}"
+        )
+    if timeout is not None and (not math.isfinite(timeout) or timeout < 0):
+        raise ValueError(f"timeout must be a non-negative finite number, got {timeout}")
 
     session = _ingestion_client(settings).session
     deadline = None if timeout is None else time.monotonic() + timeout

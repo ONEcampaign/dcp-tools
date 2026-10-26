@@ -1,5 +1,6 @@
 import argparse
 import logging
+import math
 
 from dcp_tools.gcp_utilities import KGSettings, get_kg_settings
 from dcp_tools.gcp_utilities.ingestion import DEFAULT_POLL_INTERVAL, wait_for_ingestion
@@ -15,11 +16,14 @@ def load_settings_from_args(args: argparse.Namespace) -> KGSettings:
 
 def _seconds(text: str) -> float:
     try:
-        return float(text)
+        seconds = float(text)
     except ValueError:
         raise argparse.ArgumentTypeError(
             f"invalid number of seconds: {text!r}"
         ) from None
+    if not math.isfinite(seconds):
+        raise argparse.ArgumentTypeError("must be a finite number of seconds")
+    return seconds
 
 
 def _non_negative_seconds(text: str) -> float:

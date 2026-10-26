@@ -1,6 +1,8 @@
 """This module contains functions to run the data ingestion workflow."""
 
 import logging
+import math
+import time
 from dataclasses import dataclass
 from typing import Any
 
@@ -20,6 +22,11 @@ WORKFLOW_EXECUTIONS_API = "https://workflowexecutions.googleapis.com/v1"
 # earlier run a Cloud Run job instead and need a temp location in the request.
 DCP_116_WORKFLOW_MARKER = "googleapis.batch.v1.projects.locations.jobs.create"
 
+# Workflow Executions API states after which an execution no longer changes.
+# UNAVAILABLE is not one: the execution's data can't be read, but it may still run.
+TERMINAL_EXECUTION_STATES = frozenset({"SUCCEEDED", "FAILED", "CANCELLED"})
+DEFAULT_POLL_INTERVAL = 30
+
 
 class WorkflowContractError(RuntimeError):
     """The ingestion workflow is not one this version of dcp-tools can start."""
@@ -32,15 +39,20 @@ class IngestionExecutionState:
     Attributes:
         state: Execution state from the Workflow Executions API: "QUEUED", "ACTIVE",
             "SUCCEEDED", "FAILED", "CANCELLED", "UNAVAILABLE" or
-            "STATE_UNSPECIFIED".
-        current_steps: Steps the execution is running, as "routine.step". Empty
-            once the execution has finished.
+            "STATE_UNSPECIFIED". "UNAVAILABLE" means the execution's data can't be
+            read, for example after its KMS key permissions were revoked. The
+            execution may still be running, so it is not terminal.
+        current_steps: Steps the execution is running, as "routine.step". A
+            finished execution reports its last step, such as "main.return_result".
         error: Error payload when the execution failed, otherwise None.
+        state_error: Why the execution's data is unavailable, as "TYPE: details",
+            otherwise None.
     """
 
     state: str
     current_steps: tuple[str, ...]
     error: str | None
+    state_error: str | None = None
 
 
 def _ingestion_client(settings: KGSettings) -> IngestionJobClient:
@@ -133,7 +145,7 @@ def run_ingestion_workflow(
 
     Returns:
         str: Resource name of the started execution, which
-            `get_ingestion_execution_state` takes.
+            `get_ingestion_execution_state` and `wait_for_ingestion` take.
 
     Raises:
         WorkflowContractError: The workflow definition could not be read, or does
@@ -167,6 +179,26 @@ def run_ingestion_workflow(
     return execution_name
 
 
+def _format_state_error(state_error: dict[str, Any] | None) -> str | None:
+    if not state_error:
+        return None
+    parts = [state_error.get("type"), state_error.get("details")]
+    return ": ".join(part for part in parts if part) or None
+
+
+def _read_execution_state(
+    session: AuthorizedSession, execution_name: str
+) -> IngestionExecutionState:
+    execution = _get_json(session, f"{WORKFLOW_EXECUTIONS_API}/{execution_name}")
+    steps = execution.get("status", {}).get("currentSteps", [])
+    return IngestionExecutionState(
+        state=execution.get("state", "STATE_UNSPECIFIED"),
+        current_steps=tuple(f"{s['routine']}.{s['step']}" for s in steps),
+        error=execution.get("error", {}).get("payload"),
+        state_error=_format_state_error(execution.get("stateError")),
+    )
+
+
 def get_ingestion_execution_state(
     settings: KGSettings, execution_name: str
 ) -> IngestionExecutionState:
@@ -180,16 +212,82 @@ def get_ingestion_execution_state(
             `run_ingestion_workflow`.
 
     Returns:
-        IngestionExecutionState: The execution's state, current steps and error.
+        IngestionExecutionState: The execution's state, current steps, error and
+            state error.
 
     Raises:
         RuntimeError: The Workflow Executions API returned an error.
     """
-    client = _ingestion_client(settings)
-    execution = _get_json(client.session, f"{WORKFLOW_EXECUTIONS_API}/{execution_name}")
-    steps = execution.get("status", {}).get("currentSteps", [])
-    return IngestionExecutionState(
-        state=execution.get("state", "STATE_UNSPECIFIED"),
-        current_steps=tuple(f"{s['routine']}.{s['step']}" for s in steps),
-        error=execution.get("error", {}).get("payload"),
-    )
+    return _read_execution_state(_ingestion_client(settings).session, execution_name)
+
+
+def wait_for_ingestion(
+    settings: KGSettings,
+    execution_name: str,
+    *,
+    timeout: float | None = None,
+    poll_interval: float = DEFAULT_POLL_INTERVAL,
+) -> IngestionExecutionState:
+    """Poll an ingestion workflow execution until it reaches a terminal state.
+
+    Uses the same credentials as `run_ingestion_workflow`. Logs the state and
+    current steps each time they change, as a warning while the state is
+    UNAVAILABLE. Polling continues through UNAVAILABLE, since the execution may
+    recover, so without a timeout an execution that stays unavailable is polled
+    indefinitely.
+
+    Args:
+        settings (KGSettings): Settings for the workflow.
+        execution_name (str): Execution resource name returned by
+            `run_ingestion_workflow`.
+        timeout (float | None): Seconds to wait before giving up. Waits
+            indefinitely if None.
+        poll_interval (float): Seconds between polls.
+
+    Returns:
+        IngestionExecutionState: The terminal state, one of
+            `TERMINAL_EXECUTION_STATES`. A failed or cancelled execution is
+            returned, not raised.
+
+    Raises:
+        ValueError: `poll_interval` is not a positive finite number, or `timeout` is
+            not a non-negative finite number.
+        TimeoutError: The execution had not finished within `timeout` seconds.
+        RuntimeError: The Workflow Executions API returned an error.
+    """
+    if not math.isfinite(poll_interval) or poll_interval <= 0:
+        raise ValueError(
+            f"poll_interval must be a positive finite number, got {poll_interval}"
+        )
+    if timeout is not None and (not math.isfinite(timeout) or timeout < 0):
+        raise ValueError(f"timeout must be a non-negative finite number, got {timeout}")
+
+    session = _ingestion_client(settings).session
+    deadline = None if timeout is None else time.monotonic() + timeout
+    previous_state = None
+    while True:
+        execution_state = _read_execution_state(session, execution_name)
+        if execution_state != previous_state:
+            steps = ", ".join(execution_state.current_steps) or "none"
+            message = (
+                f"Execution '{execution_name}' is {execution_state.state} "
+                f"(current steps: {steps})"
+            )
+            if execution_state.state == "UNAVAILABLE":
+                logger.warning(f"{message}: {execution_state.state_error}")
+            else:
+                logger.info(message)
+            previous_state = execution_state
+        if execution_state.state in TERMINAL_EXECUTION_STATES:
+            return execution_state
+
+        if deadline is None:
+            time.sleep(poll_interval)
+            continue
+        remaining = deadline - time.monotonic()
+        if remaining <= 0:
+            raise TimeoutError(
+                f"Execution '{execution_name}' had not finished after {timeout} "
+                f"seconds; its last state was {execution_state.state}"
+            )
+        time.sleep(min(poll_interval, remaining))

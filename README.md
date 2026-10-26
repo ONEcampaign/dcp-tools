@@ -130,7 +130,9 @@ run_ingestion_workflow(settings=settings)
 `run_ingestion_workflow` triggers the DCP (Data Commons Platform) ingestion workflow, which
 ingests the new data and serves it. dcp-tools 1.0.x pairs with DCP stacks up to 1.1.5, and
 dcp-tools 1.1.x with DCP 1.1.6. Starting an ingestion uses Application Default Credentials, or
-impersonates `ingestion_service_account`, and ignores `gcp_credentials`. See the
+impersonates `ingestion_service_account`, and ignores `gcp_credentials`. `run_ingestion_workflow`
+returns the execution name as soon as the run starts. Pass it to `wait_for_ingestion` to block
+until the run finishes. See the
 [loading-data docs](https://docs.one.org/tools/dcp-tools/loading-data/) for the
 full settings reference, and the `dcp-tools` CLI (`upload`, `ingest`, `pipeline`), which wraps
 this same flow.

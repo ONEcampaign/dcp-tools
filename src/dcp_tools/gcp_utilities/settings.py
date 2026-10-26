@@ -43,7 +43,8 @@ class KGSettings(BaseSettings):
     """Configuration constants for the project.
 
     Attributes:
-        local_path: Path to the local directory that will be exported.
+        local_path: Path to the local directory that will be exported. Optional;
+            only read when no directory is passed to `upload_to_cloud_storage`.
         gcp_project_id: GCP project ID.
         gcp_region: GCP region the ingestion resources live in.
         gcp_credentials: GCP credentials in JSON format. Optional; if not provided,
@@ -51,7 +52,7 @@ class KGSettings(BaseSettings):
         gcs_bucket_name: Google Cloud Storage bucket name.
         gcs_input_folder_path: Google Cloud Storage input folder path. Defaults to
             "ingestion/input", the DCP Terraform default.
-        gcs_output_folder_path: Google Cloud Storage output folder path.
+        gcs_output_folder_path: Google Cloud Storage output folder path, optional.
         ingestion_workflow_name: Name of the Cloud Workflow that runs ingestion.
         ingestion_service_account: Service account email to impersonate when triggering
             ingestion, optional.
@@ -59,7 +60,7 @@ class KGSettings(BaseSettings):
             ingestion workflow creates its own preprocessing job.
     """
 
-    local_path: Path = Field(validation_alias="LOCAL_PATH")
+    local_path: Path | None = Field(default=None, validation_alias="LOCAL_PATH")
     gcp_project_id: str = Field(validation_alias="GCP_PROJECT_ID")
     gcp_region: str = Field(validation_alias="GCP_REGION")
     gcp_credentials: Json[dict] | None = Field(
@@ -71,7 +72,9 @@ class KGSettings(BaseSettings):
     gcs_input_folder_path: str = Field(
         default="ingestion/input", validation_alias="GCS_INPUT_FOLDER_PATH"
     )
-    gcs_output_folder_path: str = Field(validation_alias="GCS_OUTPUT_FOLDER_PATH")
+    gcs_output_folder_path: str | None = Field(
+        default=None, validation_alias="GCS_OUTPUT_FOLDER_PATH"
+    )
 
     # Ingestion
     ingestion_workflow_name: str = Field(validation_alias="INGESTION_WORKFLOW_NAME")
@@ -84,8 +87,8 @@ class KGSettings(BaseSettings):
 
     @field_validator("gcs_input_folder_path", "gcs_output_folder_path")
     @classmethod
-    def _strip_slashes(cls, v: str) -> str:
-        return v.strip("/")
+    def _strip_slashes(cls, v: str | None) -> str | None:
+        return v.strip("/") if v is not None else None
 
     @field_validator("ingestion_prep_job_name")
     @classmethod
@@ -107,7 +110,13 @@ class KGSettings(BaseSettings):
 
     @property
     def full_gcs_output_path(self) -> str:
-        """Get the full GCS path for data."""
+        """Get the full GCS path for data.
+
+        Raises:
+            ValueError: If `GCS_OUTPUT_FOLDER_PATH` is not set.
+        """
+        if self.gcs_output_folder_path is None:
+            raise ValueError("GCS_OUTPUT_FOLDER_PATH is not set.")
         return f"gs://{self.gcs_bucket_name}/{self.gcs_output_folder_path}"
 
     model_config = SettingsConfigDict(
@@ -115,6 +124,8 @@ class KGSettings(BaseSettings):
         env_file_encoding="utf-8",
         case_sensitive=False,
         populate_by_name=True,
+        # Other tools' variables can share the .env file.
+        dotenv_filtering="only_existing",
     )
 
 

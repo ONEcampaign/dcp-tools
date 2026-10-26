@@ -192,3 +192,87 @@ def test_input_file_observation_properties_roundtrip():
     assert reloaded.observation_properties is not None
     assert reloaded.observation_properties.unit == "USD"
     assert reloaded.observation_properties.model_extra == {"customProp": "x"}
+
+
+def test_config_loads_spec_keyed_file_and_exports_dcid_keys(tmp_path):
+    """A config.json written with the spec's bare keys exports in the canonical form."""
+    config_data = {
+        "inputFiles": [
+            {
+                "filename": "data.csv",
+                "provenance": "dcid:provenance/p1",
+                "columnMappings": {
+                    "variableMeasured": "Var",
+                    "observationDate": "Year",
+                    "value": "Val",
+                    "observationAbout": "Country",
+                },
+                "observationProperties": {"scaling_factor": "100"},
+                "format": "variablePerRow",
+            }
+        ],
+    }
+    config_file = tmp_path / "config.json"
+    config_file.write_text(json.dumps(config_data))
+
+    loaded = Config.from_json(str(config_file))
+
+    entry = loaded.model_dump(mode="json", exclude_none=True, by_alias=True)[
+        "inputFiles"
+    ][0]
+    assert entry["columnMappings"] == {
+        "dcid:variableMeasured": "Var",
+        "dcid:observationDate": "Year",
+        "dcid:value": "Val",
+        "dcid:observationAbout": "Country",
+    }
+    assert entry["observationProperties"] == {"scalingFactor": "100"}
+
+
+@pytest.mark.parametrize(
+    "properties",
+    [
+        {
+            "unit": "USDollar",
+            "scaling_factor": "100",
+            "measurement_method": "dcAggregate/Census",
+            "observation_period": "P1Y",
+        },
+        {
+            "unit": "USDollar",
+            "scalingFactor": "100",
+            "measurementMethod": "dcAggregate/Census",
+            "observationPeriod": "P1Y",
+        },
+    ],
+    ids=["snake_case", "camelCase"],
+)
+def test_observation_properties_serialise_camel_case(properties):
+    """Standard fields serialise camelCase whichever spelling the caller passed."""
+    dumped = ObservationProperties.model_validate(properties).model_dump(
+        exclude_none=True, by_alias=True
+    )
+    assert dumped == {
+        "unit": "USDollar",
+        "scalingFactor": "100",
+        "measurementMethod": "dcAggregate/Census",
+        "observationPeriod": "P1Y",
+    }
+
+
+def test_observation_properties_keeps_custom_keys_verbatim():
+    """Custom keys keep their spelling, snake_case included."""
+    dumped = ObservationProperties.model_validate(
+        {"custom_prop": "a", "customProp": "b"}
+    ).model_dump(exclude_none=True, by_alias=True)
+    assert dumped == {"custom_prop": "a", "customProp": "b"}
+
+
+@pytest.mark.parametrize(
+    "field_name", ["scaling_factor", "measurement_method", "observation_period"]
+)
+def test_observation_properties_rejects_both_spellings_of_one_field(field_name):
+    alias = ObservationProperties.model_fields[field_name].alias
+    assert alias is not None
+    with pytest.raises(ValueError, match="not both"):
+        ObservationProperties.model_validate({field_name: "a", alias: "b"})

@@ -3,9 +3,15 @@
 from __future__ import annotations
 
 import argparse
+from functools import partial
 from pathlib import Path
 
-from dcp_tools.cli.common import load_settings_from_args
+from dcp_tools.cli.common import (
+    add_wait_arguments,
+    check_wait_arguments,
+    load_settings_from_args,
+    wait_for_execution,
+)
 from dcp_tools.gcp_utilities.ingestion import (
     check_ingestion_workflow_contract,
     run_ingestion_workflow,
@@ -42,15 +48,21 @@ def add_parser(subparsers: argparse._SubParsersAction) -> None:
         action="store_true",
         help="Start the workflow without checking it comes from a DCP 1.1.6 stack",
     )
-    parser.set_defaults(func=run)
+    add_wait_arguments(parser)
+    parser.set_defaults(func=partial(run, parser=parser))
 
 
-def run(args: argparse.Namespace) -> int:
+def run(args: argparse.Namespace, *, parser: argparse.ArgumentParser) -> int:
     """Execute the ``pipeline`` command."""
+    check_wait_arguments(parser, args)
     settings = load_settings_from_args(args)
     # Check before uploading, so a stack older than DCP 1.1.6 gets no files.
     if not args.skip_workflow_contract_check:
         check_ingestion_workflow_contract(settings)
     upload_to_cloud_storage(settings=settings, directory=args.directory, sync=args.sync)
-    run_ingestion_workflow(settings=settings, skip_workflow_contract_check=True)
-    return 0
+    execution_name = run_ingestion_workflow(
+        settings=settings, skip_workflow_contract_check=True
+    )
+    if not args.wait:
+        return 0
+    return wait_for_execution(settings, execution_name, args)

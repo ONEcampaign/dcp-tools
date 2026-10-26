@@ -1,4 +1,5 @@
 import json
+import logging
 from collections.abc import Iterator
 from pathlib import Path
 from typing import Any
@@ -10,10 +11,13 @@ from requests import Response
 
 from dcp_tools.gcp_utilities import KGSettings
 from dcp_tools.gcp_utilities.ingestion import (
+    DEFAULT_POLL_INTERVAL,
+    TERMINAL_EXECUTION_STATES,
     IngestionExecutionState,
     WorkflowContractError,
     get_ingestion_execution_state,
     run_ingestion_workflow,
+    wait_for_ingestion,
 )
 
 TEST_SETTINGS = KGSettings(
@@ -214,3 +218,151 @@ def test_get_ingestion_execution_state_raises_on_http_error(client: MagicMock) -
 
     with pytest.raises(RuntimeError, match="HTTP 404"):
         get_ingestion_execution_state(TEST_SETTINGS, EXECUTION)
+
+
+class FakeClock:
+    """Stands in for the `time` module: `sleep` advances `monotonic` instantly."""
+
+    def __init__(self) -> None:
+        self.now = 0.0
+        self.sleeps: list[float] = []
+
+    def monotonic(self) -> float:
+        return self.now
+
+    def sleep(self, seconds: float) -> None:
+        self.sleeps.append(seconds)
+        self.now += seconds
+
+
+@pytest.fixture
+def clock() -> Iterator[FakeClock]:
+    fake = FakeClock()
+    with patch("dcp_tools.gcp_utilities.ingestion.time", fake):
+        yield fake
+
+
+def execution_responses(client: MagicMock, *states: str) -> None:
+    """Serve one execution poll per state, in order."""
+    client.session.get.side_effect = [
+        http_response(200, {"name": EXECUTION, "state": state}) for state in states
+    ]
+
+
+@pytest.mark.parametrize("terminal_state", sorted(TERMINAL_EXECUTION_STATES))
+def test_wait_for_ingestion_returns_terminal_state(
+    client: MagicMock, clock: FakeClock, terminal_state: str
+) -> None:
+    execution_responses(
+        client, "STATE_UNSPECIFIED", "QUEUED", "ACTIVE", "ACTIVE", terminal_state
+    )
+
+    state = wait_for_ingestion(TEST_SETTINGS, EXECUTION, poll_interval=5)
+
+    assert state.state == terminal_state
+    assert client.session.get.call_count == 5
+    assert clock.sleeps == [5, 5, 5, 5]
+
+
+def test_wait_for_ingestion_builds_one_client(
+    client_class: MagicMock, client: MagicMock, clock: FakeClock
+) -> None:
+    execution_responses(client, "ACTIVE", "ACTIVE", "SUCCEEDED")
+
+    wait_for_ingestion(TEST_SETTINGS, EXECUTION)
+
+    client_class.assert_called_once()
+    assert clock.sleeps == [DEFAULT_POLL_INTERVAL] * 2
+
+
+def test_wait_for_ingestion_without_timeout_never_raises(
+    client: MagicMock, clock: FakeClock
+) -> None:
+    polls = 1_000
+    execution_responses(client, *["ACTIVE"] * polls, "SUCCEEDED")
+
+    state = wait_for_ingestion(TEST_SETTINGS, EXECUTION, poll_interval=3600)
+
+    assert state.state == "SUCCEEDED"
+    assert len(clock.sleeps) == polls
+
+
+def test_wait_for_ingestion_raises_on_timeout(
+    client: MagicMock, clock: FakeClock
+) -> None:
+    execution_responses(client, *["ACTIVE"] * 10)
+
+    with pytest.raises(TimeoutError, match=f"{EXECUTION}.*ACTIVE"):
+        wait_for_ingestion(TEST_SETTINGS, EXECUTION, timeout=25, poll_interval=10)
+
+    # The last sleep is cut short so the final poll lands on the deadline.
+    assert clock.sleeps == [10, 10, 5]
+    assert clock.now == 25
+    assert client.session.get.call_count == 4
+
+
+def test_wait_for_ingestion_returns_terminal_state_found_at_deadline(
+    client: MagicMock, clock: FakeClock
+) -> None:
+    execution_responses(client, "ACTIVE", "FAILED")
+
+    state = wait_for_ingestion(TEST_SETTINGS, EXECUTION, timeout=10, poll_interval=10)
+
+    assert state.state == "FAILED"
+
+
+def test_wait_for_ingestion_zero_timeout_polls_once(
+    client: MagicMock, clock: FakeClock
+) -> None:
+    execution_responses(client, "ACTIVE")
+
+    with pytest.raises(TimeoutError):
+        wait_for_ingestion(TEST_SETTINGS, EXECUTION, timeout=0)
+
+    assert clock.sleeps == []
+
+
+@pytest.mark.parametrize(
+    ("timeout", "poll_interval", "message"),
+    [
+        (None, 0, "poll_interval"),
+        (None, -1, "poll_interval"),
+        (-1, 30, "timeout"),
+    ],
+)
+def test_wait_for_ingestion_validates_arguments(
+    client: MagicMock, timeout: float | None, poll_interval: float, message: str
+) -> None:
+    with pytest.raises(ValueError, match=message):
+        wait_for_ingestion(
+            TEST_SETTINGS, EXECUTION, timeout=timeout, poll_interval=poll_interval
+        )
+
+    client.session.get.assert_not_called()
+
+
+def test_wait_for_ingestion_logs_only_on_change(
+    client: MagicMock, clock: FakeClock, caplog: pytest.LogCaptureFixture
+) -> None:
+    def execution(state: str, step: str | None = None) -> Response:
+        steps = [] if step is None else [{"routine": "main", "step": step}]
+        return http_response(200, {"state": state, "status": {"currentSteps": steps}})
+
+    client.session.get.side_effect = [
+        execution("QUEUED"),
+        execution("QUEUED"),
+        execution("ACTIVE", "preprocess"),
+        execution("ACTIVE", "preprocess"),
+        execution("ACTIVE", "ingest"),
+        execution("SUCCEEDED"),
+    ]
+
+    with caplog.at_level(logging.INFO, logger="dcp_tools.gcp_utilities.ingestion"):
+        wait_for_ingestion(TEST_SETTINGS, EXECUTION)
+
+    assert [record.getMessage() for record in caplog.records] == [
+        f"Execution '{EXECUTION}' is QUEUED (current steps: none)",
+        f"Execution '{EXECUTION}' is ACTIVE (current steps: main.preprocess)",
+        f"Execution '{EXECUTION}' is ACTIVE (current steps: main.ingest)",
+        f"Execution '{EXECUTION}' is SUCCEEDED (current steps: none)",
+    ]

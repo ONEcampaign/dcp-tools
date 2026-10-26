@@ -42,8 +42,8 @@ class IngestionExecutionState:
             "STATE_UNSPECIFIED". "UNAVAILABLE" means the execution's data can't be
             read, for example after its KMS key permissions were revoked. The
             execution may still be running, so it is not terminal.
-        current_steps: Steps the execution is running, as "routine.step". Empty
-            once the execution has finished.
+        current_steps: Steps the execution is running, as "routine.step". A
+            finished execution reports its last step, such as "main.return_result".
         error: Error payload when the execution failed, otherwise None.
         state_error: Why the execution's data is unavailable, as "TYPE: details",
             otherwise None.

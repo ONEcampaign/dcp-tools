@@ -80,7 +80,9 @@ def _remote_path(local_path: Path, directory: Path, gcs_folder_name: str | None)
 def _local_md5(path: Path) -> str:
     """Return the base64-encoded MD5 of ``path``, in the form of ``Blob.md5_hash``."""
     with path.open("rb") as file:
-        digest = hashlib.file_digest(file, "md5").digest()
+        digest = hashlib.file_digest(
+            file, lambda: hashlib.md5(usedforsecurity=False)
+        ).digest()
     return base64.b64encode(digest).decode("ascii")
 
 
